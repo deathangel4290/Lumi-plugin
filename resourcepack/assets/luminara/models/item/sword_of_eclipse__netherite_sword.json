@@ -1,0 +1,6 @@
+{
+    "parent":  "minecraft:item/netherite_sword",
+    "textures":  {
+                     "layer0":  "luminara:item/sword_of_eclipse__netherite_sword"
+                 }
+}

@@ -1,0 +1,6 @@
+{
+    "parent":  "minecraft:item/trident",
+    "textures":  {
+                     "layer0":  "luminara:item/lost_trident__trident"
+                 }
+}

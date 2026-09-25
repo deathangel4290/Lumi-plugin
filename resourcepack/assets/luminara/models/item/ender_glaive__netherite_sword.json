@@ -1,0 +1,6 @@
+{
+    "parent":  "minecraft:item/netherite_sword",
+    "textures":  {
+                     "layer0":  "luminara:item/ender_glaive__netherite_sword"
+                 }
+}

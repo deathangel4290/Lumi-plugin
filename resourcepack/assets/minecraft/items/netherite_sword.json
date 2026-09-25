@@ -1,0 +1,55 @@
+{
+    "model":  {
+                  "type":  "minecraft:range_dispatch",
+                  "property":  "minecraft:custom_model_data",
+                  "index":  0,
+                  "entries":  [
+                                  {
+                                      "threshold":  1,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/scythe_of_diablo__netherite_sword"
+                                                }
+                                  },
+                                  {
+                                      "threshold":  2,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/ender_glaive__netherite_sword"
+                                                }
+                                  },
+                                  {
+                                      "threshold":  4,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/sword_of_eclipse__netherite_sword"
+                                                }
+                                  },
+                                  {
+                                      "threshold":  7,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/hermes_blade__netherite_sword"
+                                                }
+                                  },
+                                  {
+                                      "threshold":  8,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/chiones_blade__netherite_sword"
+                                                }
+                                  },
+                                  {
+                                      "threshold":  10,
+                                      "model":  {
+                                                    "type":  "minecraft:model",
+                                                    "model":  "luminara:item/blade_of_diminution__netherite_sword"
+                                                }
+                                  }
+                              ],
+                  "fallback":  {
+                                   "type":  "minecraft:model",
+                                   "model":  "minecraft:item/netherite_sword"
+                               }
+              }
+}

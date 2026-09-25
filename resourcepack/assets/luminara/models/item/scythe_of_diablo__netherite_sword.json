@@ -1,0 +1,6 @@
+{
+    "parent":  "minecraft:item/netherite_sword",
+    "textures":  {
+                     "layer0":  "luminara:item/scythe_of_diablo__netherite_sword"
+                 }
+}

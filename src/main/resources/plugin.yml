@@ -1,0 +1,55 @@
+name: LegendaryWeapons
+version: ${project.version}
+main: com.legendaryweapons.LegendaryWeapons
+api-version: 1.21
+commands:
+  recipes:
+    description: Shows the recipes for legendary weapons.
+    usage: /recipes
+  binds:
+    description: Binds a legendary weapon ability to a key.
+    usage: /binds [unbind]
+  unbind:
+    description: Clears your legendary weapon ability bind.
+    usage: /unbind
+  wpspark:
+    description: Fires the held legendary's ability. Bind this to any key with a client keybind mod such as CommandKeys.
+    usage: /wpspark [alt]
+    aliases: [spark, wps]
+  lw:
+    description: Admin commands for LegendaryWeapons.
+    usage: /lw <subcommand>
+    permission: legendaryweapons.admin
+  giveritualblock:
+    description: Gives the player a ritual block.
+    usage: /giveritualblock
+    permission: legendaryweapons.admin
+  gui:
+    description: Opens the legendary weapon give-menu (testing).
+    usage: /gui
+    permission: legendaryweapons.admin
+  resetcd:
+    description: Resets all legendary cooldowns and charge pools (testing).
+    usage: /resetcd [player]
+    permission: legendaryweapons.admin
+  setkills:
+    description: Sets the kill count on the held kill-based weapon (testing).
+    usage: /setkills <amount> [player]
+    permission: legendaryweapons.admin
+  charge:
+    description: Fills the ultimate meter of the held charged weapon (testing).
+    usage: /charge [percent] [player]
+    permission: legendaryweapons.admin
+  trust:
+    description: Trusts a player.
+    usage: /trust <player>
+  untrust:
+    description: Untrusts a player.
+    usage: /untrust <player>
+  trustlist:
+    description: Shows your trusted players.
+    usage: /trustlist
+permissions:
+  legendaryweapons.admin:
+    description: Grants access to admin commands.
+    default: op

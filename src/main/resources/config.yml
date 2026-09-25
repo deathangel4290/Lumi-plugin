@@ -1,0 +1,630 @@
+# ============================================================================
+#  LegendaryWeapons / Luminara
+# ============================================================================
+#
+#  UNITS
+#    Durations are in TICKS unless the comment says otherwise. 20 ticks = 1 second.
+#    The one exception is ritual.timer, which is in seconds.
+#    Damage is in half-hearts: a player has 20 health = 10 hearts.
+#
+#  DAMAGE REFERENCE (for balancing)
+#    Netherite sword 8  |  Netherite axe 10  |  Trident 9
+#    Sharpness V adds +3.0, Sharpness IV adds +2.5.
+#
+#  EVERY KEY IN THIS FILE IS READ BY THE PLUGIN. If you add a key that isn't
+#  listed here it will be silently ignored -- that is exactly what went wrong
+#  with the old hellstorm cooldown. Run _tools/ConfigCheck.java after editing.
+#
+#  Lore below quotes the tuned numbers. If you change a value, change the lore
+#  line with it -- nothing keeps them in step automatically.
+#
+# ============================================================================
+
+
+# ============================================================================
+#  Audio -- these weapons are used in PvP, where stacked flavour sounds mask
+#  the cues players rely on (footsteps, bow pulls, crits).
+# ============================================================================
+audio:
+  volume: 0.5        # master multiplier for every sound the plugin plays; 0 = silent
+  hit-sounds: false  # extra per-swing sounds on top of vanilla's own attack sound
+  ambient: false     # flavour loops and projectile trails
+
+
+# ============================================================================
+#  Effects -- particle control. Same reasoning as audio: in PvP a constant
+#  swirl of particles around every legendary-holder buries the view and the
+#  visual cues a fight depends on.
+# ============================================================================
+effects:
+  particles: true        # master switch for every particle the plugin spawns
+  # The persistent auras that orbit a HELD weapon (the Sword of Eclipse stage
+  # aura and dual-wield swirl). OFF by default -- they are pure decoration and
+  # they were the main thing obscuring players. Ability bursts are unaffected.
+  passive-auras: false
+  trails: true           # projectile and dash trails
+  density: 0.5           # 0..1 multiplier on every burst's particle count
+
+
+weapons:
+
+  # --------------------------------------------------------------------------
+  # Scythe Of Diablo -- netherite sword + Sharpness V = 11 base damage
+  # Identity: reward for chaining hits and for positioning behind people.
+  # --------------------------------------------------------------------------
+  scythe-of-diablo:
+    display-name: "§c§lScythe Of Diablo"
+    material: NETHERITE_SWORD
+    custom-model-data: 1
+    power-tier: 3
+    lore:
+      - "§8Reaps what it kills."
+      - ""
+      - "§7Kill a player  §f»  §7heal to full"
+      - "§7Strike from behind  §f»  §c1.35x §7damage"
+      - "§7Sweep attacks  §f»  §c1.25x §7damage"
+      - "§75 hits on a player  §f»  §7Absorption, 2 hearts"
+      - ""
+      - "§8Taking a hit resets your combo."
+      - "§8Sweeps build no combo."
+    abilities:
+      # 1.5 put a backstab at 16.5 -- over 8 hearts, near a one-shot on light
+      # armour. 1.35 keeps it decisive without removing counterplay.
+      backstab-damage-multiplier: 1.35
+      sweep-damage-multiplier: 1.25
+      # Direct hits on players only. Sweeps deliberately do not count: a sweep
+      # fires one damage event per entity caught, so counting them let a single
+      # swing through a mob group close an entire combo.
+      combo-hits-required: 5
+      combo-absorption-duration: 200    # 10s
+      combo-absorption-amplifier: 0     # 0 = Absorption I = 2 hearts
+    enchantments:
+      - "SHARPNESS:5"
+      - "LOOTING:3"
+    recipe:
+      - NETHERITE_SWORD
+      - BEACON
+      - TOTEM_OF_UNDYING
+
+  # --------------------------------------------------------------------------
+  # Ender Glaive -- netherite sword = 8 base damage
+  # Identity: mobility and reach, not raw damage.
+  # --------------------------------------------------------------------------
+  ender-glaive:
+    display-name: "§5§lEnder Glaive"
+    material: NETHERITE_SWORD
+    custom-model-data: 2
+    power-tier: 1
+    lore:
+      - "§8Folded from the space between worlds."
+      - ""
+      - "§7Ability  §f»  §7throw the glaive, §d5 §7damage"
+      - "§8  It finds its way back to you."
+      - "§7Sneak + hold ability  §f»  §7charge a Spear Pearl"
+      - "§8  Tells you when it hits 100%."
+      - ""
+      - "§7Pearl cooldown  §f»  §710s"
+    abilities:
+      # Spec calls for 2-3 hearts on the spear throw.
+      spear-damage: 5.0
+      # 0 disables the override so melee uses the netherite sword's own damage,
+      # plus Sharpness, crits and Strength. A flat setDamage() discarded all of
+      # that and made the glaive worse than the sword it is built from.
+      melee-damage: 0.0
+      max-charge-time: 3000             # MILLISECONDS of hold for a full charge
+      max-throw-strength: 2.0
+      # The pearl had no cooldown at all, so it was a free unlimited blink.
+      pearl-cooldown: 200               # 10s
+    enchantments:
+      - "UNBREAKING:3"
+    recipe:
+      - DIAMOND_SWORD
+      - ENDER_PEARL:16
+      - GHAST_TEAR:4
+
+  # --------------------------------------------------------------------------
+  # Axe Of Zeus -- netherite axe + Sharpness V = 13 base damage
+  # Identity: control. The stun is the payload; damage is secondary.
+  # --------------------------------------------------------------------------
+  axe-of-zeus:
+    display-name: "§b§lAxe Of Zeus"
+    material: NETHERITE_AXE
+    custom-model-data: 3
+    power-tier: 3
+    lore:
+      - "§8The storm answers when it is thrown."
+      - ""
+      - "§7Ability  §f»  §7hurl the axe, §b8 §7damage"
+      - "§8  Calls lightning where it lands."
+      - "§7On hit  §f»  §7stunned 2s, then Weakness 5s"
+      - "§7Returns on its own, hit or miss"
+      - "§7Charged melee  §f»  §710% to strike lightning"
+      - "§7Against a shield  §f»  §7disabled 8s"
+      - ""
+      - "§7Cooldown  §f»  §710s"
+    abilities:
+      throw-damage: 8.0
+      # Spec says 2 seconds. This was 80 (4s), which is an extremely long time
+      # to be unable to act in a PvP fight.
+      throw-stun-duration: 40           # 2s
+      throw-weakness-duration: 100      # 5s
+      melee-stun-duration: 20           # 1s
+      melee-lightning-chance: 0.1       # only on a fully charged swing
+      # Vanilla axe shield disable is 100 (5s), so this has to beat it to read
+      # as "breaks the shield for longer".
+      shield-break-duration: 160        # 8s
+      # Was 100 (5s). A 2s stun plus lightning on a 5s cycle meant near
+      # permanent lockdown on a single target.
+      throw-cooldown: 200               # 10s
+      # Blocks per tick. The old code halved this internally, so 1.2 actually
+      # flew at 0.6 -- roughly a twentieth of an arrow, which is why the throw
+      # felt sluggish. Movement is now sub-stepped so it cannot tunnel walls.
+      projectile-speed: 1.6
+      return-speed: 2.0
+      # Turns the axe around after this many blocks. Without it, a miss flew
+      # for the full projectile-lifetime and then simply vanished.
+      max-travel-distance: 40.0
+      spin-degrees-per-tick: 50.0       # end-over-end tumble rate
+      projectile-lifetime: 200          # safety net only
+    enchantments:
+      - "SHARPNESS:5"
+      - "LOYALTY:3"
+    recipe:
+      - NETHERITE_AXE
+      - LIGHTNING_ROD
+      - COPPER_BLOCK:4
+
+  # --------------------------------------------------------------------------
+  # Sword Of Eclipse -- netherite sword + Sharpness IV = 10.5, plus stage bonus
+  # Identity: a snowball that resets on death. Progression is the whole point,
+  # so it has to be slow enough to be worth protecting.
+  # --------------------------------------------------------------------------
+  sword-of-eclipse:
+    display-name: "§d§lSword Of Eclipse"
+    material: NETHERITE_SWORD
+    custom-model-data: 4
+    power-tier: 4
+    lore:
+      - "§8Light and dark held in one edge."
+      - ""
+      - "§7Grows with every player you kill"
+      - "§74 stages  §f»  §7up to §d+3 §7damage"
+      - "§7Charged hits  §f»  §725% chance to blind"
+      - "§79 kills  §f»  §7ability splits it in two, 10s"
+      - "§7Kills while split  §f»  §d+1 heart §7(max 3)"
+      - ""
+      - "§7Split cooldown  §f»  §760s"
+      - "§8Dying resets your progress and hearts."
+    abilities:
+      # Dual wield unlocks at kills-per-stage * 3. At the old value of 1 that
+      # was 3 kills; 3 puts it at 9, which is a real run to protect.
+      kills-per-stage: 3
+      blindness-chance: 0.25
+      stage-1-damage-bonus: 0
+      stage-2-damage-bonus: 1
+      stage-3-damage-bonus: 2
+      stage-4-damage-bonus: 3
+      # TICKS. This used to be multiplied by 20 in code, so 200 meant 200
+      # SECONDS against a 30s cooldown -- dual wield was effectively permanent.
+      dual-wield-duration: 200          # 10s
+      dual-wield-cooldown: 1200         # 60s
+      # "Light hearts" granted per kill while dual wielding, and the ceiling on
+      # the total. Uncapped, this grew forever and never reset.
+      max-health-bonus: 2.0             # 1 heart per kill
+      max-health-bonus-cap: 6.0         # 3 hearts maximum
+    enchantments:
+      - "SHARPNESS:4"
+      - "FIRE_ASPECT:2"
+    recipe:
+      - DRAGON_EGG
+      - DIAMOND_SWORD
+      - NETHER_STAR
+
+  # --------------------------------------------------------------------------
+  # Hellstorm -- a volley weapon on a long cooldown
+  # Identity: one big committed burst. NOTE: the heavy arrow breaks blocks.
+  # --------------------------------------------------------------------------
+  hellstorm:
+    display-name: "§e§lHellstorm"
+    material: CROSSBOW
+    custom-model-data: 5
+    power-tier: 3
+    lore:
+      - "§8Five shots, one breath."
+      - ""
+      - "§7Shoot  §f»  §7volley of §e5 §7burning arrows"
+      - "§7Final arrow  §f»  §7explodes on impact"
+      - "§8  It will break blocks."
+      - ""
+      - "§7Cooldown  §f»  §730s"
+      - "§8Arrows fly flat and never drop."
+    abilities:
+      # The loop was hardcoded to 3, so this key did nothing and you got 3.
+      arrow-count: 5                    # the final arrow is the heavy shot
+      # Full volley on one target = (arrow-count - 1) * normal + explosive.
+      # At 4.0 that is 28 against a player's 20 health: lethal on a stationary
+      # unarmoured target, roughly 6 through full Protection IV netherite.
+      normal-arrow-damage: 4.0
+      # Was 18. A full volley on one target was 20 + 18 + explosion, far past
+      # the 20 health a player has.
+      explosive-arrow-damage: 12.0
+      explosive-arrow-power: 2.5        # TNT is 4.0; this still breaks blocks
+      fire-ticks: 100                   # 5s
+      cooldown: 600                     # 30s -- spec calls for a long cooldown
+    enchantments:
+      - "QUICK_CHARGE:3"
+      - "MULTISHOT:1"
+    recipe:
+      - CROSSBOW
+      - FIRE_CHARGE:64
+      - TNT:16
+
+  # --------------------------------------------------------------------------
+  # Lost Trident Of Atlantis -- trident = 9 base damage
+  # Identity: area denial and displacement.
+  # --------------------------------------------------------------------------
+  lost-trident-of-atlantis:
+    display-name: "§3§lLost Trident Of Atlantis"
+    material: TRIDENT
+    custom-model-data: 6
+    power-tier: 2
+    lore:
+      - "§8Dredged from a city that drowned."
+      - ""
+      - "§7Throw  §f»  §7water pulse on impact, §36 §7damage"
+      - "§8  Returns to your hand."
+      - "§7Sneak + ability  §f»  §7raise a water wall"
+      - "§8  Shoves anyone near it clear."
+      - ""
+      - "§7Wall cooldown  §f»  §78s"
+      - "§8The water boils away in the Nether."
+    abilities:
+      pulse-radius: 4.0
+      # The pulse was knockback-only. Set to 0 to go back to that.
+      pulse-damage: 6.0                 # 3 hearts
+      water-pulse-knockback: 1.5
+      # Widened, and the ends now curve forward so it reads as a cresting wave.
+      water-wall-width: 7
+      water-wall-height: 4
+      water-wall-duration: 80           # 4s
+      # The wall never touched anyone before, despite the spec calling for it
+      # to push enemies away.
+      water-wall-push: 0.9
+      water-wall-cooldown: 160          # 8s
+    enchantments:
+      - "LOYALTY:3"
+      - "IMPALING:5"
+    recipe:
+      - TRIDENT
+      - HEART_OF_THE_SEA
+      - PRISMARINE_CRYSTALS:32
+
+  # --------------------------------------------------------------------------
+  # Hermes's Blade -- netherite sword = 8 base damage
+  # Identity: momentum. Rewards winning, and closes distance.
+  # --------------------------------------------------------------------------
+  hermes-blade:
+    display-name: "§f§lHermes's Blade"
+    material: NETHERITE_SWORD
+    custom-model-data: 7
+    power-tier: 1
+    lore:
+      - "§8Nothing that runs gets away."
+      - ""
+      - "§7First kill  §f»  §7Speed I"
+      - "§7Second kill  §f»  §7Speed II"
+      - "§7Ability  §f»  §7dash forward, through players"
+      - "§8  Anyone you pass is slowed."
+      - ""
+      - "§7Dash cooldown  §f»  §75s"
+      - "§8Dying resets your kills."
+    abilities:
+      kills-for-speed-1: 1
+      kills-for-speed-2: 2
+      # The buff is a short effect re-applied on this interval, so it lapses by
+      # itself once the blade is put away. Keep it above 20.
+      speed-refresh-ticks: 40
+      dash-power: 1.4
+      dash-lift: 0.25                   # small hop so the dash does not grind the floor
+      dash-cooldown: 100                # 5s
+      dash-duration: 8                  # ticks the pass-through check runs for
+      dash-hit-radius: 1.6
+      dash-slowness-duration: 60        # 3s
+      dash-slowness-amplifier: 1
+    enchantments:
+      - "SHARPNESS:4"
+    recipe:
+      - NETHERITE_SWORD
+      - FEATHER:64
+      - SUGAR:64
+
+  # --------------------------------------------------------------------------
+  # Chione's Blade -- netherite sword = 8 base damage
+  # Identity: control through cold. Low damage, high lockdown.
+  # --------------------------------------------------------------------------
+  chiones-blade:
+    display-name: "§b§lChione's Blade"
+    material: NETHERITE_SWORD
+    custom-model-data: 8
+    power-tier: 2
+    lore:
+      - "§8Her breath stops the blood."
+      - ""
+      - "§75 hits on a player  §f»  §7frozen in place"
+      - "§7Ability  §f»  §7Ice Wave, slows all it passes"
+      - "§7On ice or snow  §f»  §7Speed II"
+      - ""
+      - "§7Wave cooldown  §f»  §710s"
+      - "§8Taking a hit resets your combo."
+      - "§8Sweeps build no combo."
+    abilities:
+      combo-hits-required: 5
+      combo-window-millis: 3000         # MILLISECONDS a streak survives between hits
+      # A per-tick velocity pin holds the target in place (Slowness is only for the
+      # visual). Short on purpose: a long full stop in PvP is miserable to be on the
+      # end of. Jump Boost 128 was tried and does NOT work on 1.21 -- it launched
+      # them instead of pinning them.
+      freeze-duration: 30               # 1.5s
+      cold-ground-speed-amplifier: 1
+      ice-wave-cooldown: 200            # 10s
+      ice-wave-range: 14.0              # blocks travelled
+      ice-wave-speed: 0.9               # blocks per tick
+      ice-wave-width: 2.5               # half-width of the crest
+      ice-wave-damage: 0.0              # control tool by default; raise to make it hurt
+      ice-wave-slowness-duration: 100   # 5s
+      ice-wave-slowness-amplifier: 2
+    enchantments:
+      - "SHARPNESS:3"
+    recipe:
+      - NETHERITE_SWORD
+      - POWDER_SNOW_BUCKET
+      - BLUE_ICE:16
+
+  # --------------------------------------------------------------------------
+  # Titan's Axe -- netherite axe = 10 base damage
+  # Identity: armour attrition. It wins the long fight, not the burst.
+  # --------------------------------------------------------------------------
+  titans-axe:
+    display-name: "§6§lTitan's Axe"
+    material: NETHERITE_AXE
+    custom-model-data: 9
+    power-tier: 3
+    lore:
+      - "§8It does not cut. It ruins."
+      - ""
+      - "§73 charged crits  §f»  §7cracks their armour"
+      - "§7Against a shield  §f»  §7disabled 10s"
+      - "§7Every hit banks Slam charge"
+      - "§7Ability at 100%  §f»  §7slam the ground"
+      - "§8  The closer they are, the more armour breaks."
+    abilities:
+      # Only fully charged swings count, so spam-clicking cannot fish for procs.
+      crit-streak-required: 3
+      crit-streak-window-millis: 4000
+      crit-streak-armour-damage: 25     # durability per armour piece
+      # Vanilla axe shield disable is 100 (5s); this has to beat it.
+      shield-break-duration: 200        # 10s
+      slam-charge-max: 100.0
+      slam-charge-per-hit: 12.0         # ~9 hits to full
+      slam-charge-required: 100.0       # lower to allow weaker early slams
+      slam-cooldown: 100                # 5s between slams, even at full charge
+      slam-radius: 6.0
+      slam-damage: 6.0                  # scaled by distance falloff
+      slam-knockback: 1.6
+      slam-armour-damage: 60            # at the epicentre, falling to 0 at the rim
+    enchantments:
+      - "SHARPNESS:4"
+      - "UNBREAKING:3"
+    recipe:
+      - NETHERITE_AXE
+      - ANCIENT_DEBRIS:8
+      - ANVIL
+
+  # --------------------------------------------------------------------------
+  # Blade of Diminution -- netherite sword = 8 base damage
+  # Identity: size as a debuff. Both halves are offensive.
+  # --------------------------------------------------------------------------
+  blade-of-diminution:
+    display-name: "§d§lBlade of Diminution"
+    material: NETHERITE_SWORD
+    custom-model-data: 10
+    power-tier: 2
+    lore:
+      - "§8Size is only a suggestion."
+      - ""
+      - "§7Held  §f»  §7Speed I"
+      - "§7Ability  §f»  §7shrink who you are aiming at"
+      - "§8  Reach shrinks with them."
+      - "§7On hit  §f»  §715% chance to enlarge them"
+      - "§8  A bigger target is an easier one."
+      - ""
+      - "§7Cooldown  §f»  §712s"
+    abilities:
+      hold-speed-amplifier: 0           # 0 = Speed I
+      # "enemy" shrinks who you aim at -- SCALE drives attack reach, so a shrunken
+      # opponent cannot reach you. Set to "self" to shrink the wielder instead:
+      # a smaller hitbox at the cost of your own reach.
+      diminish-target: enemy
+      diminish-range: 6.0
+      diminish-scale: 0.5               # clamped to 0.1-4.0 in code
+      diminish-duration: 120            # 6s
+      diminish-cooldown: 240            # 12s
+      enlarge-chance: 0.15
+      enlarge-scale: 1.5
+      enlarge-duration: 100             # 5s
+    enchantments:
+      - "SHARPNESS:3"
+    recipe:
+      - NETHERITE_SWORD
+      - ECHO_SHARD:8
+      - AMETHYST_BLOCK:4
+
+  # --------------------------------------------------------------------------
+  # Luminosity -- the mace. Keeps vanilla's fall-damage smash on top of this.
+  # Identity: the flagship. Mobility into a committed, scaling ultimate.
+  # --------------------------------------------------------------------------
+  luminosity:
+    display-name: "§e§lLuminosity"
+    material: MACE
+    custom-model-data: 11
+    power-tier: 4
+    lore:
+      - "§8The last light a thing ever sees."
+      - ""
+      - "§7Sneak + ability  §f»  §7dash §e(2 charges)§7"
+      - "§8  Spacing them keeps one in reserve."
+      - "§7Each hit on a player  §f»  §e+20% §7SuperNova"
+      - "§7Ability  §f»  §7SuperNova, slam the ground"
+      - "§8  Directly beneath you is the worst place to stand."
+      - ""
+      - "§8Usable from 20%, but weaker the emptier it is."
+    abilities:
+      dash-charges: 2
+      # Each charge refills on its own timer, so two spaced dashes never leave you
+      # empty. Draining both adds the penalty on top.
+      dash-recharge: 160                # 8s per charge
+      dash-empty-penalty: 200           # +10s when you burn the last one
+      dash-power: 1.5
+      dash-lift: 0.35
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 20.0     # 5 hits to full
+      # Anti-farm: charge only comes from real damage to untrusted PLAYERS, and the
+      # same victim cannot feed the meter again inside this window.
+      ultimate-victim-cooldown: 60      # 3s
+      supernova-min-charge: 20.0        # one hit's worth is the floor
+      supernova-launch: 0.9             # hop height when cast from standing
+      supernova-slam-velocity: -2.2
+      supernova-max-fall-ticks: 60      # safety net if the landing is never detected
+      supernova-radius: 8.0             # at 100%; scales down with charge
+      supernova-damage: 24.0            # at 100%, directly below; falls off squared
+      supernova-knockback: 2.0
+      # Off by default. This is the one ability that can crater your spawn.
+      supernova-break-blocks: false
+      supernova-block-power: 2.0
+    enchantments:
+      - "DENSITY:5"
+      - "UNBREAKING:3"
+    recipe:
+      - MACE
+      - NETHER_STAR
+      - END_CRYSTAL:4
+
+  # --------------------------------------------------------------------------
+  # Veil of Mimicry -- a book, not a weapon. Deals no damage at all.
+  # Identity: information warfare. Loud to put on, fragile to keep.
+  #
+  # Uses Paper's setPlayerProfile, so no packet library is needed. The wearer
+  # keeps their own UUID; only the name and skin texture are swapped. Note that
+  # player.getName() DOES report the disguise while it is active, so any other
+  # plugin keyed by NAME rather than UUID will see the fake one.
+  # --------------------------------------------------------------------------
+  veil-of-mimicry:
+    display-name: "§5§lVeil of Mimicry"
+    material: BOOK
+    custom-model-data: 12
+    power-tier: 3
+    lore:
+      - "§8Wear a face that is not yours."
+      - ""
+      - "§7Ability  §f»  §7choose any player who has joined"
+      - "§8  Their name, their skin, their chat."
+      - "§8  A fake join line announces them."
+      - ""
+      - "§7The morph fails if anyone sees you do it"
+      - "§7Breaks when you  §f»  §7attack, take a real hit,"
+      - "§7or use the book again"
+      - "§8Light hits may show ??? instead of breaking it."
+    abilities:
+      morph-cooldown: 300              # 15s, spent even on a failed morph
+      # How far away, and across how wide a view cone, another player counts as a
+      # witness. Facing matters: someone with their back turned has not seen you,
+      # which is the difference between fair and seemingly random.
+      witness-range: 24.0
+      witness-fov-degrees: 100.0
+      # Final damage (after armour) that blows the disguise. Below this you only
+      # risk the "???" tell, which is what makes people second-guess a real player.
+      break-damage-threshold: 4.0
+      tell-chance: 0.25
+      tell-duration: 30                # 1.5s
+      # Copying someone who is currently online puts two identical names in the tab
+      # list. This was false at first for that reason, but on any real server the
+      # roster IS mostly the people who play there, so excluding them emptied the
+      # menu completely. Treat the duplicate entry as the counterplay instead:
+      # impersonating someone present is strong, and the tab list is how you spot it.
+      allow-online-targets: true
+    enchantments: []
+    recipe:
+      # Not PLAYER_HEAD: the ritual matches ingredients with isSimilar, and any head you can
+      # actually obtain in survival carries an owner profile, so it would never match a plain
+      # one and the recipe would be uncraftable. A name tag is thematically better anyway.
+      - BOOK
+      - ECHO_SHARD:16
+      - NAME_TAG
+
+
+# ============================================================================
+#  Rituals
+# ============================================================================
+ritual:
+  timer: 900                            # SECONDS (900 = 15 minutes)
+  single-craft-per-weapon: true         # false allows more than one of each
+
+ritual-block-recipe:
+  enabled: true
+  # 3x3 crafting shape. Use ' ' (a space) for an empty slot.
+  shape:
+    - "ODO"
+    - "DND"
+    - "OOO"
+  # Bukkit Material names:
+  # https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+  ingredients:
+    'O': "OBSIDIAN"
+    'D': "DIAMOND"
+    'N': "NETHER_STAR"
+
+
+# ============================================================================
+#  Trust system -- stops your own team eating your abilities
+# ============================================================================
+trust-system:
+  prevent-ability-damage: true
+  prevent-melee-damage: true
+  prevent-projectile-damage: true
+
+
+# ============================================================================
+#  Messages -- '&' colour codes
+# ============================================================================
+messages:
+  prefix: "&6[LegendaryWeapons]&r"
+  cooldown-message: "&cThis ability is on cooldown!"
+
+
+# ----------------------------------------------------------------------------
+#  REMOVED IN 1.1.0
+#
+#  These sections existed but nothing in the plugin ever read them, so editing
+#  them did nothing:
+#
+#    particles:              getParticleCount() was never called
+#    sounds:                 getSound()/getSoundVolume()/getSoundPitch() were
+#                            never called -- replaced by the "audio:" section
+#    global-cooldowns:       never read; each weapon has its own cooldown
+#    messages.no-permission          never used
+#    messages.weapon-crafted         never used
+#    messages.ability-activated      never used
+#    axe-of-zeus.lightning-damage    never read (lightning damage is vanilla)
+#    sword-of-eclipse.combo-damage-multiplier   never read
+#    lost-trident.pulse-particle-count          never read
+#    ender-glaive.return-delay                  never read
+#    ender-glaive.max-charge-multiplier         never read
+#
+#  If you upgraded an existing server, these keys are still sitting in your
+#  config.yml. They are inert and safe to delete.
+#
+#  ALSO NOTE: Bukkit only adds missing keys on upgrade, it never changes keys
+#  you already have. Values retuned in 1.1.x -- material, lore, projectile
+#  speeds, cooldowns -- will keep their OLD values on an existing server.
+#  Delete config.yml and let it regenerate, or edit them by hand.
+# ----------------------------------------------------------------------------

@@ -1,0 +1,6 @@
+{
+    "parent":  "minecraft:item/netherite_axe",
+    "textures":  {
+                     "layer0":  "luminara:item/titans_axe__netherite_axe"
+                 }
+}
