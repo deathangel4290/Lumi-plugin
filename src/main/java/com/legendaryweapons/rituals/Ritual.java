@@ -62,7 +62,7 @@ public class Ritual {
    public Ritual(LegendaryWeapons plugin, UUID playerUUID, Location location, String weaponKey, long startTime, List<ItemStack> consumed) {
       this.plugin = plugin;
       this.playerUUID = playerUUID;
-      this.location = location.getBlock().getLocation();
+      this.location = new Location(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
       this.weaponKey = weaponKey;
       this.startTime = startTime;
       this.consumed = consumed == null ? new ArrayList<>() : new ArrayList<>(consumed);

@@ -1,0 +1,55 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 201,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/fragment_t1"
+        }
+      },
+      {
+        "threshold": 202,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/fragment_t2"
+        }
+      },
+      {
+        "threshold": 203,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/fragment_t3"
+        }
+      },
+      {
+        "threshold": 204,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/fragment_t4"
+        }
+      },
+      {
+        "threshold": 205,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/luminosity_fragment"
+        }
+      },
+      {
+        "threshold": 206,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/amethyst_shard"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/amethyst_shard"
+    }
+  }
+}

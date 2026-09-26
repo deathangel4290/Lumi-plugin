@@ -128,7 +128,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.checkAndUpdateEffects(player));
    }
 
-   @EventHandler(ignoreCancelled = true)
+   // HIGH so the ability keybind (SWAP_HANDS, handled at NORMAL) gets to consume the key first.
+   @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)
    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
       Player player = event.getPlayer();
       if (!this.dualWielding.getOrDefault(player.getUniqueId(), false) && this.isRealEclipse(event.getOffHandItem())) {

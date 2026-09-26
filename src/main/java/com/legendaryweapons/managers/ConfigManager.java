@@ -18,6 +18,7 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 
@@ -44,7 +45,8 @@ public class ConfigManager {
     */
    private void migrateIfOutdated() {
       File file = new File(this.plugin.getDataFolder(), "config.yml");
-      int found = this.plugin.getConfig().getInt("config-version", 1);
+      // Read the file itself: getConfig() falls back to the jar's defaults, which already say CONFIG_VERSION.
+      int found = file.exists() ? YamlConfiguration.loadConfiguration(file).getInt("config-version", 1) : CONFIG_VERSION;
       if (found < CONFIG_VERSION && file.exists()) {
          File backup = new File(this.plugin.getDataFolder(), "config-v" + found + "-backup.yml");
          if (backup.exists()) {

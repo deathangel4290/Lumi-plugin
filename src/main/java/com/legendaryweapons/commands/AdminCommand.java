@@ -67,6 +67,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          }
       } else if (args[0].equalsIgnoreCase("reload")) {
          this.plugin.getConfigManager().reloadConfig();
+         this.plugin.getWeaponManager().reload();
          sender.sendMessage("§aLegendaryWeapons config reloaded.");
          return true;
       } else if (args[0].equalsIgnoreCase("setkills")) {

@@ -65,13 +65,13 @@ public class TutorialManager {
             "§5§lRitual Crafting\n\n§0Welcome, craftsman, to the art of forging Legendary Weapons.\n\nThis guide will walk you through the process of using a Ritual Altar."
          );
          pages.add(
-            "§5§lThe Altar\n\n§0The Ritual Altar is the Enchanting Table you just placed. Right-clicking it opens the crafting interface.\n\nTo begin, you will need to find a recipe for a Legendary Weapon. You can view all available recipes with the §5/recipes §0command."
+            "§5§lThe Altar\n\n§0The Ritual Altar is the block you just placed. Right-clicking it opens the crafting interface.\n\nTo begin, you will need to find a recipe for a Legendary Weapon. You can view all available recipes with the §5/recipes §0command."
          );
          pages.add(
-            "§5§lThe Ritual\n\n§0Once you have a recipe, place the required ingredients into the four slots in the Ritual GUI.\n\nWhen the correct items are placed, click the anvil to begin the ritual. A timer will appear, and you must stay near the altar."
+            "§5§lThe Ritual\n\n§0Once you have a recipe, place the ingredients into the five slots of the altar. The top slot previews what they will forge.\n\nPress Begin Ritual. Everyone on the server sees where the ritual is, so guard the altar."
          );
          pages.add(
-            "§5§lCompletion\n\n§0Once the timer completes, the legendary weapon will be forged and dropped at the altar's location.\n\n§cBe warned:§r §0Each legendary weapon can only be crafted once per world. Choose wisely."
+            "§5§lCompletion\n\n§0When the timer ends the weapon drops at the altar. If the altar is broken first, the ingredients spill out.\n\n§0Weapon Fragments come from bosses, supply drops and events. Four of a tier fuse into the next."
          );
          meta.setPages(pages);
          book.setItemMeta(meta);

@@ -72,20 +72,20 @@ public class ParticleManager {
    /** Same argument order as World#spawnParticle so call sites convert one-to-one. */
    public static void spawn(Particle particle, Location location, int count, double dx, double dy, double dz, double speed) {
       if (instance != null) {
-         instance.emit(particle, location, count, dx, dy, dz, speed, null, false);
+         instance.emit(particle, location, count, dx, dy, dz, speed, null);
       }
    }
 
    public static void spawn(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
       if (instance != null) {
-         instance.emit(particle, location, count, dx, dy, dz, speed, data, false);
+         instance.emit(particle, location, count, dx, dy, dz, speed, data);
       }
    }
 
    /** For persistent, decorative effects (auras, idle altar sparkle). Off unless effects.passive-auras is on. */
    public static void ambient(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
       if (instance != null && instance.passiveEnabled()) {
-         instance.emit(particle, location, count, dx, dy, dz, speed, data, false);
+         instance.emit(particle, location, count, dx, dy, dz, speed, data);
       }
    }
 
@@ -130,16 +130,16 @@ public class ParticleManager {
 
    /** Kept for existing call sites; a burst is just a normal spawn. */
    public void burst(Location location, Particle particle, int count, double dx, double dy, double dz, double speed) {
-      this.emit(particle, location, count, dx, dy, dz, speed, null, false);
+      this.emit(particle, location, count, dx, dy, dz, speed, null);
    }
 
    public <T> void burst(Location location, Particle particle, int count, double dx, double dy, double dz, double speed, T data) {
-      this.emit(particle, location, count, dx, dy, dz, speed, data, false);
+      this.emit(particle, location, count, dx, dy, dz, speed, data);
    }
 
    public void trail(Location location, Particle particle, int count, double dx, double dy, double dz, double speed) {
       if (this.trailEnabled()) {
-         this.emit(particle, location, count, dx, dy, dz, speed, null, false);
+         this.emit(particle, location, count, dx, dy, dz, speed, null);
       }
    }
 
@@ -157,7 +157,7 @@ public class ParticleManager {
       }
    }
 
-   private void emit(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data, boolean ignored) {
+   private void emit(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
       if (this.enabled() && location != null && particle != null) {
          World world = location.getWorld();
          if (world != null) {

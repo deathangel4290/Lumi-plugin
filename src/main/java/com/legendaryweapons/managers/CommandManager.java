@@ -4,6 +4,7 @@ import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.AbilityDispatcher;
 import com.legendaryweapons.commands.AdminCommand;
 import com.legendaryweapons.commands.BindsCommand;
+import com.legendaryweapons.commands.EventCommand;
 import com.legendaryweapons.commands.GiveRitualBlockCommand;
 import com.legendaryweapons.commands.RecipesCommand;
 import com.legendaryweapons.commands.TestingCommand;
@@ -37,9 +38,13 @@ public class CommandManager {
       WeaponGiveGUI weaponGiveGUI = new WeaponGiveGUI(this.plugin);
       TestingCommand testingCommand = new TestingCommand(this.plugin, abilityDispatcher, weaponGiveGUI);
 
-      for (String name : new String[]{"gui", "resetcd", "setkills", "charge"}) {
+      for (String name : new String[]{"gui", "resetcd", "setkills", "charge", "lwtest", "lwfx"}) {
          this.plugin.getCommand(name).setExecutor(testingCommand);
          this.plugin.getCommand(name).setTabCompleter(testingCommand);
       }
+
+      EventCommand eventCommand = new EventCommand(this.plugin);
+      this.plugin.getCommand("lwevent").setExecutor(eventCommand);
+      this.plugin.getCommand("lwevent").setTabCompleter(eventCommand);
    }
 }

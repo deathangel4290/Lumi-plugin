@@ -82,6 +82,11 @@ public class RitualManager implements Listener {
 
    // ------------------------------------------------------------------ persistence
 
+   /** Block-aligned copy of a location. Never touches the world, so it cannot load a chunk. */
+   private static Location blockOf(Location location) {
+      return new Location(location.getWorld(), location.getBlockX(), location.getBlockY(), location.getBlockZ());
+   }
+
    private static String key(Location location) {
       return location.getWorld().getName() + ";" + location.getBlockX() + ";" + location.getBlockY() + ";" + location.getBlockZ();
    }
@@ -296,8 +301,7 @@ public class RitualManager implements Listener {
          }
 
          ItemDisplay core = this.altarCores.get(altar);
-         boolean busy = this.getRitualAtLocation(altar) != null;
-         if (loaded && watched && !busy) {
+         if (loaded && watched && this.getRitualAtLocation(altar) == null) {
             if (core == null || !core.isValid()) {
                core = world.spawn(altar.clone().add(0.5, 1.45, 0.5), ItemDisplay.class, display -> {
                   display.setItemStack(new ItemStack(Material.AMETHYST_CLUSTER));
@@ -324,12 +328,12 @@ public class RitualManager implements Listener {
    // ------------------------------------------------------------------ altars & rituals
 
    public void addRitualBlock(Location location) {
-      this.altars.add(location.getBlock().getLocation());
+      this.altars.add(blockOf(location));
       this.save();
    }
 
    public void removeRitualBlock(Location location) {
-      Location block = location.getBlock().getLocation();
+      Location block = blockOf(location);
       this.altars.remove(block);
       ItemDisplay core = this.altarCores.remove(block);
       if (core != null && core.isValid()) {
@@ -345,7 +349,7 @@ public class RitualManager implements Listener {
    }
 
    public boolean isRitualBlock(Location location) {
-      return this.altars.contains(location.getBlock().getLocation());
+      return this.altars.contains(blockOf(location));
    }
 
    public Set<Location> getAltars() {
@@ -390,7 +394,7 @@ public class RitualManager implements Listener {
    }
 
    public Ritual getRitualAtLocation(Location location) {
-      Location block = location.getBlock().getLocation();
+      Location block = blockOf(location);
 
       for (Ritual ritual : this.activeRituals) {
          if (ritual.getLocation().equals(block)) {

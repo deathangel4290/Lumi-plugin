@@ -2,6 +2,8 @@ name: LegendaryWeapons
 version: ${project.version}
 main: com.legendaryweapons.LegendaryWeapons
 api-version: 1.21
+description: Luminara legendary weapons, rituals, fragments and admin-run events.
+softdepend: [WorldGuard, Towny]
 commands:
   recipes:
     description: Shows the recipes for legendary weapons.
@@ -16,6 +18,9 @@ commands:
     description: Fires the held legendary's ability. Bind this to any key with a client keybind mod such as CommandKeys.
     usage: /wpspark [alt]
     aliases: [spark, wps]
+  lwfx:
+    description: Sets how many legendary weapon particles you see.
+    usage: /lwfx <full|reduced|minimal|off>
   lw:
     description: Admin commands for LegendaryWeapons.
     usage: /lw <subcommand>
@@ -29,16 +34,24 @@ commands:
     usage: /gui
     permission: legendaryweapons.admin
   resetcd:
-    description: Resets all legendary cooldowns and charge pools (testing).
+    description: Resets all legendary cooldowns, dash charges and locks (testing).
     usage: /resetcd [player]
     permission: legendaryweapons.admin
   setkills:
-    description: Sets the kill count on the held kill-based weapon (testing).
-    usage: /setkills <amount> [player]
+    description: Sets the kill count on a kill-based weapon (testing).
+    usage: /setkills <amount> [player] [weapon]
     permission: legendaryweapons.admin
   charge:
-    description: Fills the ultimate meter of the held charged weapon (testing).
-    usage: /charge [percent] [player]
+    description: Fills the ultimate meter of a charged weapon (testing).
+    usage: /charge [percent] [player] [weapon]
+    permission: legendaryweapons.admin
+  lwtest:
+    description: More testing tools (reset effects, finish rituals, fragments).
+    usage: /lwtest <reset|finishrituals|fragments|give>
+    permission: legendaryweapons.admin
+  lwevent:
+    description: Starts and stops the admin-run events.
+    usage: /lwevent <bounty|koth|supplydrop|mostwanted|status|stopall>
     permission: legendaryweapons.admin
   trust:
     description: Trusts a player.
@@ -51,5 +64,8 @@ commands:
     usage: /trustlist
 permissions:
   legendaryweapons.admin:
-    description: Grants access to admin commands.
+    description: Grants access to admin, testing and event commands.
+    default: op
+  legendaryweapons.veil.spy:
+    description: See who is really speaking when a disguised player chats.
     default: op

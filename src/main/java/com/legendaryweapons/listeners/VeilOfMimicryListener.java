@@ -82,6 +82,9 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    public boolean trigger(Player player, boolean secondary) {
       if (!this.isHolding(player)) {
          return false;
+      } else if (this.plugin.getEventManager().isMostWanted(player)) {
+         HudManager.message(player, Component.text("The Most Wanted cannot change faces.", NamedTextColor.RED));
+         return true;
       } else if (this.plugin.getDisguiseManager().isDisguised(player)) {
          this.reveal(player, "You drop the disguise.");
          return true;

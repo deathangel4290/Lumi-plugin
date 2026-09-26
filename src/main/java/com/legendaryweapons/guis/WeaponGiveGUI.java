@@ -28,7 +28,8 @@ public class WeaponGiveGUI implements Listener {
 
    public void open(Player player) {
       List<String> keys = new ArrayList<>(this.plugin.getWeaponManager().getWeaponKeys());
-      int needed = keys.size() + 1;
+      List<ItemStack> extras = com.legendaryweapons.items.CustomItems.get().sampleSet();
+      int needed = keys.size() + 1 + 9;
       int rows = Math.max(1, (int)Math.ceil(needed / 9.0));
       int size = Math.min(54, rows * 9);
       WeaponGiveGUI.Holder holder = new WeaponGiveGUI.Holder();
@@ -40,6 +41,14 @@ public class WeaponGiveGUI implements Listener {
          ItemStack weapon = this.plugin.getWeaponManager().getWeapon(key);
          if (weapon != null && !weapon.getType().isAir() && slot < size - 1) {
             inventory.setItem(slot++, weapon);
+         }
+      }
+
+      int extraSlot = (int)Math.ceil((keys.size() + 1) / 9.0) * 9;
+
+      for (ItemStack extra : extras) {
+         if (extraSlot < size - 1) {
+            inventory.setItem(extraSlot++, extra);
          }
       }
 
