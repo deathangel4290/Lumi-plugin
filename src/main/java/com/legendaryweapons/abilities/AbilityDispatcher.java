@@ -23,6 +23,10 @@ public class AbilityDispatcher {
       this.weaponManager = plugin.getWeaponManager();
       this.trustManager = plugin.getTrustManager();
       this.configManager = plugin.getConfigManager();
+      plugin.getHudManager().register(player -> {
+         WeaponAbility ability = this.get(this.heldWeaponKey(player));
+         return ability == null ? null : ability.hud(player);
+      });
    }
 
    public void register(WeaponAbility ability) {

@@ -4,133 +4,194 @@ import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
 import com.legendaryweapons.LegendaryWeapons;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Display.Billboard;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
+import org.bukkit.util.Transformation;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
+/**
+ * Swaps a player's name and skin using Paper's profile API. The player keeps their own UUID, so
+ * bans, permissions, inventories and every UUID-keyed log stay attached to the real account.
+ *
+ * Fixes over 1.1:
+ *   - The disguised profile was built with Bukkit.createProfile(ownUuid, fakeName). For a UUID
+ *     that is online, Paper returns THAT player's live profile -- real name and all -- so the
+ *     name never changed and only the skin (sometimes) did. createProfileExact is used now.
+ *   - Skins came from a by-name Mojang lookup, which fails on rate limits and offline-mode
+ *     servers. Textures are now taken from the target if online, then from the skin cached when
+ *     they last joined (see PlayerRosterManager), and only then looked up by UUID.
+ *   - A floating name tag is shown above the disguised player and the vanilla tag is hidden via a
+ *     scoreboard team, so the name above their head is guaranteed to be the disguise.
+ */
 public class DisguiseManager {
+   public static final String TEAM_NAME = "lw_disguise";
    private final LegendaryWeapons plugin;
-   private final Map<UUID, DisguiseManager.Disguise> active = new HashMap<>();
-   private final Map<String, PlayerProfile> profileCache = new HashMap<>();
+   private final Map<UUID, Disguise> active = new HashMap<>();
+   private final Map<UUID, TextDisplay> nametags = new HashMap<>();
+   private final Set<UUID> tagged = new HashSet<>();
 
    public DisguiseManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
+      (new BukkitRunnable() {
+         public void run() {
+            DisguiseManager.this.followTick();
+         }
+      }).runTaskTimer(plugin, 1L, 1L);
+   }
+
+   public record Disguise(String realName, String fakeName, Set<ProfileProperty> realProperties, Component realDisplayName, Component realListName) {
    }
 
    public boolean isDisguised(Player player) {
       return this.active.containsKey(player.getUniqueId());
    }
 
-   public DisguiseManager.Disguise disguiseOf(Player player) {
+   public Disguise disguiseOf(Player player) {
       return this.active.get(player.getUniqueId());
    }
 
    public String fakeNameOf(Player player) {
-      DisguiseManager.Disguise disguise = this.active.get(player.getUniqueId());
+      Disguise disguise = this.active.get(player.getUniqueId());
       return disguise == null ? null : disguise.fakeName();
    }
 
-   public void fetchProfile(final String targetName, final Consumer<PlayerProfile> callback) {
-      PlayerProfile cached = this.profileCache.get(targetName.toLowerCase());
+   public String realNameOf(Player player) {
+      Disguise disguise = this.active.get(player.getUniqueId());
+      return disguise == null ? player.getName() : disguise.realName();
+   }
+
+   public static boolean isValidName(String name) {
+      return name != null && name.matches("[A-Za-z0-9_]{1,16}");
+   }
+
+   private static Set<ProfileProperty> textures(Collection<ProfileProperty> properties) {
+      Set<ProfileProperty> out = new HashSet<>();
+      if (properties != null) {
+         for (ProfileProperty property : properties) {
+            if ("textures".equals(property.getName())) {
+               out.add(property);
+            }
+         }
+      }
+
+      return out;
+   }
+
+   /**
+    * Resolve the skin for a target. The callback always runs on the main thread and receives the
+    * textures property (possibly empty when nothing could be found).
+    */
+   public void fetchTextures(final UUID targetId, final String targetName, final Consumer<Set<ProfileProperty>> callback) {
+      Player online = targetId == null ? null : Bukkit.getPlayer(targetId);
+      if (online != null) {
+         Disguise theirs = this.active.get(online.getUniqueId());
+         Set<ProfileProperty> live = textures(theirs != null ? theirs.realProperties() : online.getPlayerProfile().getProperties());
+         if (!live.isEmpty()) {
+            callback.accept(live);
+            return;
+         }
+      }
+
+      ProfileProperty cached = targetId == null ? null : this.plugin.getPlayerRosterManager().cachedTextures(targetId);
       if (cached != null) {
-         callback.accept(cached);
+         callback.accept(Set.of(cached));
       } else {
          (new BukkitRunnable() {
             public void run() {
-               PlayerProfile profile = Bukkit.createProfile(targetName);
+               Set<ProfileProperty> found = new HashSet<>();
 
-               boolean ok;
                try {
-                  ok = profile.completeFromCache(true, true);
-                  if (!ok || !profile.hasTextures()) {
-                     ok = profile.complete(true);
+                  PlayerProfile profile = targetId != null ? Bukkit.createProfileExact(targetId, targetName) : Bukkit.createProfile(targetName);
+                  if (profile.complete(true)) {
+                     found.addAll(DisguiseManager.textures(profile.getProperties()));
                   }
-               } catch (Exception var4) {
-                  DisguiseManager.this.plugin.getLogger().warning("Profile lookup failed for " + targetName + ": " + var4.getMessage());
-                  ok = false;
+
+                  if (found.isEmpty() && targetId != null) {
+                     PlayerProfile byName = Bukkit.createProfile(targetName);
+                     if (byName.complete(true)) {
+                        found.addAll(DisguiseManager.textures(byName.getProperties()));
+                     }
+                  }
+               } catch (Exception var3) {
+                  DisguiseManager.this.plugin.getLogger().warning("Skin lookup failed for " + targetName + ": " + var3.getMessage());
                }
 
-               final PlayerProfile resolved = ok ? profile : null;
-               (new BukkitRunnable() {
-                  public void run() {
-                     if (resolved != null) {
-                        DisguiseManager.this.profileCache.put(targetName.toLowerCase(), resolved);
-                     }
-
-                     callback.accept(resolved);
+               DisguiseManager.this.plugin.getServer().getScheduler().runTask(DisguiseManager.this.plugin, () -> {
+                  if (!found.isEmpty() && targetId != null) {
+                     DisguiseManager.this.plugin.getPlayerRosterManager().cacheTextures(targetId, found.iterator().next());
                   }
-               }).runTask(DisguiseManager.this.plugin);
+
+                  callback.accept(found);
+               });
             }
          }).runTaskAsynchronously(this.plugin);
       }
    }
 
-   public boolean apply(Player player, String fakeName, PlayerProfile targetProfile) {
-      if (this.isDisguised(player)) {
+   /**
+    * Apply a disguise. With empty textures the player shows the default skin for their UUID,
+    * which the Most Wanted event uses on purpose to stay anonymous.
+    */
+   public boolean apply(Player player, String fakeName, Collection<ProfileProperty> textures) {
+      if (this.isDisguised(player) || !isValidName(fakeName)) {
          return false;
-      } else if (targetProfile != null && targetProfile.hasTextures()) {
+      } else {
+         // If the real owner of that name is online, hiding "their" vanilla tag would hide both of
+         // them; fall back to vanilla tags for this disguise so the two look identical.
+         Player namesake = Bukkit.getPlayerExact(fakeName);
+         boolean customTag = this.customNametags() && (namesake == null || namesake.equals(player));
          PlayerProfile current = player.getPlayerProfile();
-         DisguiseManager.Disguise record = new DisguiseManager.Disguise(
-            player.getName(), fakeName, new HashSet<>(current.getProperties()), player.displayName(), player.playerListName()
-         );
+         Disguise record = new Disguise(player.getName(), fakeName, new HashSet<>(current.getProperties()), player.displayName(), player.playerListName());
          this.active.put(player.getUniqueId(), record);
-         PlayerProfile disguised = Bukkit.createProfile(player.getUniqueId(), fakeName);
-         disguised.setProperties(targetProfile.getProperties());
+         PlayerProfile disguised = Bukkit.createProfileExact(player.getUniqueId(), fakeName);
+         disguised.setProperties(textures(textures));
          player.setPlayerProfile(disguised);
          player.displayName(Component.text(fakeName));
          player.playerListName(Component.text(fakeName));
-         this.refreshFor(player);
+         if (customTag) {
+            this.tagged.add(player.getUniqueId());
+            this.hideVanillaTag(fakeName, true);
+            this.spawnNametag(player, fakeName);
+         }
+
          return true;
-      } else {
-         return false;
       }
    }
 
-   public DisguiseManager.Disguise remove(Player player) {
-      DisguiseManager.Disguise record = this.active.remove(player.getUniqueId());
+   public Disguise remove(Player player) {
+      Disguise record = this.active.remove(player.getUniqueId());
+      this.removeNametag(player.getUniqueId());
       if (record == null) {
          return null;
       } else {
-         PlayerProfile restored = Bukkit.createProfile(player.getUniqueId(), record.realName());
+         if (this.tagged.remove(player.getUniqueId())) {
+            this.hideVanillaTag(record.fakeName(), false);
+         }
+
+         PlayerProfile restored = Bukkit.createProfileExact(player.getUniqueId(), record.realName());
          restored.setProperties(record.realProperties());
          player.setPlayerProfile(restored);
          player.displayName(record.realDisplayName());
          player.playerListName(record.realListName());
-         this.refreshFor(player);
          return record;
       }
-   }
-
-   private void refreshFor(final Player player) {
-      final List<UUID> viewers = new ArrayList<>();
-
-      for (Player viewer : Bukkit.getOnlinePlayers()) {
-         if (!viewer.equals(player)) {
-            viewers.add(viewer.getUniqueId());
-            viewer.hidePlayer(this.plugin, player);
-         }
-      }
-
-      (new BukkitRunnable() {
-         public void run() {
-            if (player.isOnline()) {
-               for (UUID id : viewers) {
-                  Player viewerx = Bukkit.getPlayer(id);
-                  if (viewerx != null && viewerx.isOnline()) {
-                     viewerx.showPlayer(DisguiseManager.this.plugin, player);
-                  }
-               }
-            }
-         }
-      }).runTaskLater(this.plugin, 3L);
    }
 
    public void removeAll() {
@@ -140,10 +201,113 @@ public class DisguiseManager {
             this.remove(player);
          } else {
             this.active.remove(id);
+            this.tagged.remove(id);
+            this.removeNametag(id);
          }
       }
    }
 
-   public record Disguise(String realName, String fakeName, Set<ProfileProperty> realProperties, Component realDisplayName, Component realListName) {
+   // ------------------------------------------------------------------ name tags
+
+   private boolean customNametags() {
+      return this.plugin.getConfig().getBoolean("weapons.veil-of-mimicry.abilities.custom-nametag", true);
+   }
+
+   private void hideVanillaTag(String entry, boolean hide) {
+      {
+         this.hideOn(Bukkit.getScoreboardManager().getMainScoreboard(), entry, hide);
+
+         for (Player online : Bukkit.getOnlinePlayers()) {
+            Scoreboard board = online.getScoreboard();
+            if (board != Bukkit.getScoreboardManager().getMainScoreboard()) {
+               this.hideOn(board, entry, hide);
+            }
+         }
+      }
+   }
+
+   private void hideOn(Scoreboard board, String entry, boolean hide) {
+      Team team = board.getTeam(TEAM_NAME);
+      if (team == null) {
+         if (!hide) {
+            return;
+         }
+
+         team = board.registerNewTeam(TEAM_NAME);
+         team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+      }
+
+      if (hide) {
+         team.addEntry(entry);
+      } else {
+         team.removeEntry(entry);
+      }
+   }
+
+   /** Event scoreboards call this so disguised names stay hidden for players looking at them. */
+   public void syncTeamTo(Scoreboard board) {
+      for (Map.Entry<UUID, Disguise> entry : this.active.entrySet()) {
+         if (this.tagged.contains(entry.getKey())) {
+            this.hideOn(board, entry.getValue().fakeName(), true);
+         }
+      }
+   }
+
+   private void spawnNametag(Player player, String name) {
+      {
+         this.removeNametag(player.getUniqueId());
+         Location at = this.tagLocation(player);
+         TextDisplay tag = at.getWorld().spawn(at, TextDisplay.class, display -> {
+            display.text(Component.text(name, NamedTextColor.WHITE));
+            display.setBillboard(Billboard.CENTER);
+            display.setSeeThrough(true);
+            display.setShadowed(false);
+            display.setDefaultBackground(true);
+            display.setPersistent(false);
+            display.setTeleportDuration(2);
+            display.setViewRange(0.5F);
+            display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.0F, 1.0F, 1.0F), new Quaternionf()));
+         });
+         player.hideEntity(this.plugin, tag);
+         this.nametags.put(player.getUniqueId(), tag);
+      }
+   }
+
+   private Location tagLocation(Player player) {
+      Location loc = player.getLocation();
+      return loc.add(0.0, player.getHeight() + (player.isSneaking() ? 0.2 : 0.35), 0.0);
+   }
+
+   private void removeNametag(UUID id) {
+      TextDisplay tag = this.nametags.remove(id);
+      if (tag != null && tag.isValid()) {
+         tag.remove();
+      }
+   }
+
+   /**
+    * Tags follow by teleport (smoothed client-side by teleport interpolation) rather than riding
+    * the player as a passenger: players carrying passengers cannot be teleported by other plugins.
+    */
+   private void followTick() {
+      for (Map.Entry<UUID, Disguise> entry : this.active.entrySet()) {
+         Player player = Bukkit.getPlayer(entry.getKey());
+         TextDisplay tag = this.nametags.get(entry.getKey());
+         if (player != null && player.isOnline() && this.tagged.contains(entry.getKey())) {
+            if (tag == null || !tag.isValid() || !tag.getWorld().equals(player.getWorld())) {
+               this.spawnNametag(player, entry.getValue().fakeName());
+            } else if (player.isDead()) {
+               tag.setViewRange(0.0F);
+            } else {
+               tag.setViewRange(0.5F);
+               tag.setSeeThrough(!player.isSneaking());
+               tag.teleport(this.tagLocation(player));
+            }
+         }
+      }
+   }
+
+   public boolean isNametag(Entity entity) {
+      return entity instanceof TextDisplay && this.nametags.containsValue(entity);
    }
 }

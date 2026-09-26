@@ -70,8 +70,7 @@ public class WeaponGiveGUI implements Listener {
                if (clicked != null && !clicked.getType().isAir()) {
                   ItemStack give = clicked.clone();
                   player.getInventory().addItem(new ItemStack[]{give}).values().forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
-                  player.sendActionBar(
-                     Component.text("Received ", NamedTextColor.GRAY)
+                  com.legendaryweapons.managers.HudManager.message(player, Component.text("Received ", NamedTextColor.GRAY)
                         .append(
                            (Component)(give.hasItemMeta() && give.getItemMeta().hasDisplayName()
                               ? give.getItemMeta().displayName()

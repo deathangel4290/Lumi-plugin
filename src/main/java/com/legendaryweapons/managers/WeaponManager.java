@@ -2,7 +2,7 @@ package com.legendaryweapons.managers;
 
 import com.legendaryweapons.LegendaryWeapons;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,11 +17,20 @@ import org.bukkit.persistence.PersistentDataType;
 public class WeaponManager {
    private final LegendaryWeapons plugin;
    private final ConfigManager configManager;
-   private final Map<String, ItemStack> legendaryWeapons = new HashMap<>();
+   private final Map<String, ItemStack> legendaryWeapons = new LinkedHashMap<>();
+   private final NamespacedKey revisionKey;
+   private final NamespacedKey splitKey;
 
    public WeaponManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
       this.configManager = plugin.getConfigManager();
+      this.revisionKey = new NamespacedKey(plugin, "lore-revision");
+      this.splitKey = new NamespacedKey(plugin, "eclipse-split-sword");
+      this.loadWeapons();
+   }
+
+   public void reload() {
+      this.legendaryWeapons.clear();
       this.loadWeapons();
    }
 
@@ -68,10 +77,55 @@ public class WeaponManager {
          enchantments.forEach((enchant, level) -> meta.addEnchant(enchant, level, true));
          NamespacedKey key = new NamespacedKey(this.plugin, "legendary-weapon");
          meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, weaponKey);
+         meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, this.revision(weaponKey));
          weapon.setItemMeta(meta);
       }
 
       return weapon;
+   }
+
+   /** A fingerprint of the configured name, lore and model; items carrying an older one get refreshed. */
+   private int revision(String weaponKey) {
+      return (this.configManager.getWeaponDisplayName(weaponKey)
+            + this.configManager.getWeaponLore(weaponKey)
+            + this.configManager.getWeaponCustomModelData(weaponKey)
+            + this.configManager.getWeaponPowerTier(weaponKey))
+         .hashCode();
+   }
+
+   /**
+    * Brings an existing legendary's name, lore and model up to date with the config, so balance
+    * changes show up on weapons players already own. Enchantments, durability and anything else
+    * a player added are left alone. Returns true if the item changed.
+    */
+   public boolean refresh(ItemStack item) {
+      if (!this.isLegendaryWeapon(item)) {
+         return false;
+      } else {
+         ItemMeta meta = item.getItemMeta();
+         if (meta.getPersistentDataContainer().has(this.splitKey, PersistentDataType.BYTE)) {
+            return false;
+         } else {
+            String weaponKey = this.getWeaponKey(item);
+            if (!this.legendaryWeapons.containsKey(weaponKey)) {
+               return false;
+            } else {
+               int current = this.revision(weaponKey);
+               Integer stored = meta.getPersistentDataContainer().get(this.revisionKey, PersistentDataType.INTEGER);
+               if (stored != null && stored == current) {
+                  return false;
+               } else {
+                  ItemMeta fresh = this.legendaryWeapons.get(weaponKey).getItemMeta();
+                  meta.setDisplayName(fresh.getDisplayName());
+                  meta.setLore(fresh.getLore());
+                  meta.setCustomModelDataComponent(fresh.getCustomModelDataComponent());
+                  meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, current);
+                  item.setItemMeta(meta);
+                  return true;
+               }
+            }
+         }
+      }
    }
 
    public ItemStack getWeapon(String weaponKey) {

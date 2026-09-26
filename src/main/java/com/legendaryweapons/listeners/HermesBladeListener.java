@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.AbstractWeaponListener;
 import com.legendaryweapons.abilities.KillTrackedWeapon;
@@ -36,6 +37,11 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
    @Override
    public String weaponKey() {
       return "hermes-blade";
+   }
+
+   @Override
+   public net.kyori.adventure.text.Component hud(Player player) {
+      return com.legendaryweapons.managers.HudManager.cooldown("Dash", this.cooldownLeft(player, DASH_COOLDOWN_KEY)).append(net.kyori.adventure.text.Component.text("  Kills " + this.getKillCount(player), net.kyori.adventure.text.format.NamedTextColor.GRAY));
    }
 
    @Override
@@ -77,7 +83,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
          int forTwo = this.abilityInt("kills-for-speed-2", 2);
          if (count == forOne || count == forTwo) {
             int tier = count >= forTwo ? 2 : 1;
-            killer.sendActionBar(Component.text("Swiftness " + tier, NamedTextColor.WHITE));
+            com.legendaryweapons.managers.HudManager.message(killer, Component.text("Swiftness " + tier, NamedTextColor.WHITE));
             this.plugin.getSoundManager().self(killer, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7F, 1.7F);
          }
       }
@@ -94,6 +100,9 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
    public boolean trigger(Player player, boolean secondary) {
       if (!this.isHolding(player)) {
          return false;
+      } else if (this.plugin.getDashTracker().isLocked(player)) {
+         com.legendaryweapons.managers.HudManager.message(player, Component.text("Your dash is chained down!", NamedTextColor.RED));
+         return true;
       } else if (!this.tryCooldown(player, "hermes-dash", this.abilityLong("dash-cooldown", 100L))) {
          return true;
       } else {
@@ -112,6 +121,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       Vector direction = player.getLocation().getDirection().setY(0.0).normalize().multiply(power);
       direction.setY(lift);
       player.setVelocity(direction);
+      this.plugin.getDashTracker().markDashing(player, duration + 4L);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 0.6F, 1.6F);
       final Set<UUID> alreadyHit = new HashSet<>();
       (new BukkitRunnable() {
@@ -120,18 +130,15 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
             public void run() {
                if (this.ticks++ < duration && player.isOnline()) {
                   Location loc = player.getLocation();
-                  loc.getWorld().spawnParticle(Particle.CLOUD, loc, 4, 0.2, 0.1, 0.2, 0.01);
+                  ParticleManager.spawn(Particle.CLOUD, loc, 4, 0.2, 0.1, 0.2, 0.01);
 
                   for (Entity nearby : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
                      if (nearby instanceof Player target
                         && !target.equals(player)
                         && alreadyHit.add(target.getUniqueId())
-                        && (
-                           !HermesBladeListener.this.plugin.getTrustManager().isTrusted(player, target)
-                              || !HermesBladeListener.this.plugin.getConfigManager().isPreventAbilityDamage()
-                        )) {
+                        && HermesBladeListener.this.canAffect(player, target)) {
                         target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowDuration, slowAmplifier, true, false));
-                        target.getWorld().spawnParticle(Particle.CRIT, target.getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.4, 0.3, 0.05);
+                        ParticleManager.spawn(Particle.CRIT, target.getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.4, 0.3, 0.05);
                         HermesBladeListener.this.plugin.getSoundManager().world(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.5F, 1.5F);
                      }
                   }

@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.KillTrackedWeapon;
 import com.legendaryweapons.managers.WeaponManager;
@@ -25,6 +26,15 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.entity.ItemSpawnEvent;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import com.legendaryweapons.managers.HudManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -34,6 +44,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
+   // Split swords are recognised by this PDC flag only. The old code also matched on the display
+   // name containing "Sword", which any renamed item could spoof.
    private final LegendaryWeapons plugin;
    private final WeaponManager weaponManager;
    private final HashMap<UUID, Integer> killTracker = new HashMap<>();
@@ -44,6 +56,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    private final HashMap<UUID, BukkitRunnable> dualWieldEffects = new HashMap<>();
    private final HashMap<UUID, Boolean> hasSwordInHand = new HashMap<>();
    private final HashMap<UUID, Double> grantedHealth = new HashMap<>();
+   private final HashMap<UUID, Integer> mainSlot = new HashMap<>();
    private final NamespacedKey splitSwordKey;
    private static final double DEFAULT_MAX_HEALTH = 20.0;
    private static final String DUAL_WIELD_COOLDOWN_KEY = "eclipse-dual-wield";
@@ -76,31 +89,157 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    }
 
    private boolean isSplitSword(ItemStack item) {
-      return item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(this.splitSwordKey, PersistentDataType.BYTE);
+      return item != null && !item.getType().isAir() && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(this.splitSwordKey, PersistentDataType.BYTE);
    }
 
+   private boolean isEclipse(ItemStack item) {
+      return this.weaponManager.isLegendaryWeapon(item) && "sword-of-eclipse".equals(this.weaponManager.getWeaponKey(item));
+   }
+
+   /** The real sword, not one of the temporary Light/Dark halves. */
+   private boolean isRealEclipse(ItemStack item) {
+      return this.isEclipse(item) && !this.isSplitSword(item);
+   }
+
+   /** Main hand only. The sword has never done anything from the off-hand, and treating it as held there is what let it break. */
    private boolean isHoldingSwordOfEclipse(Player player) {
-      ItemStack mainHand = player.getInventory().getItemInMainHand();
-      ItemStack offHand = player.getInventory().getItemInOffHand();
-      boolean mainHandIsSword = this.weaponManager.isLegendaryWeapon(mainHand) && "sword-of-eclipse".equals(this.weaponManager.getWeaponKey(mainHand));
-      boolean offHandIsSword = this.weaponManager.isLegendaryWeapon(offHand) && "sword-of-eclipse".equals(this.weaponManager.getWeaponKey(offHand));
-      boolean mainHandIsDualSword = mainHand.hasItemMeta()
-         && (mainHand.getItemMeta().getDisplayName().contains("Light Sword") || mainHand.getItemMeta().getDisplayName().contains("Dark Sword"));
-      boolean offHandIsDualSword = offHand.hasItemMeta()
-         && (offHand.getItemMeta().getDisplayName().contains("Light Sword") || offHand.getItemMeta().getDisplayName().contains("Dark Sword"));
-      return mainHandIsSword || offHandIsSword || mainHandIsDualSword || offHandIsDualSword;
+      return this.isEclipse(player.getInventory().getItemInMainHand());
+   }
+
+   @Override
+   public Component hud(Player player) {
+      ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse");
+      int kills = this.killTracker.getOrDefault(player.getUniqueId(), 0);
+      int perStage = abilities == null ? 3 : Math.max(1, abilities.getInt("kills-per-stage", 3));
+      int stage = Math.min(4, kills / perStage + 1);
+      Component line = Component.text("Stage " + stage + "/4", NamedTextColor.LIGHT_PURPLE).append(Component.text("  Kills " + kills, NamedTextColor.GRAY));
+      if (this.dualWielding.getOrDefault(player.getUniqueId(), false)) {
+         return line.append(Component.text("  SPLIT", NamedTextColor.WHITE));
+      } else if (kills < perStage * 3) {
+         return line.append(Component.text("  Split at " + perStage * 3, NamedTextColor.DARK_GRAY));
+      } else {
+         return line.append(Component.text("  ")).append(HudManager.cooldown("Split", this.plugin.getCooldownManager().getRemainingSeconds(player, "eclipse-dual-wield")));
+      }
    }
 
    @EventHandler
    public void onPlayerItemHeld(PlayerItemHeldEvent event) {
       Player player = event.getPlayer();
-      this.checkAndUpdateEffects(player);
+      this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.checkAndUpdateEffects(player));
    }
 
-   @EventHandler
+   @EventHandler(ignoreCancelled = true)
    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
       Player player = event.getPlayer();
-      this.checkAndUpdateEffects(player);
+      if (!this.dualWielding.getOrDefault(player.getUniqueId(), false) && this.isRealEclipse(event.getOffHandItem())) {
+         event.setCancelled(true);
+         HudManager.message(player, Component.text("The Sword of Eclipse must be wielded in your main hand.", NamedTextColor.LIGHT_PURPLE));
+      } else {
+         this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.checkAndUpdateEffects(player));
+      }
+   }
+
+   /**
+    * Split swords are full copies of the legendary. They must never leave the player's hands, or
+    * one of them survives the split ending and the sword is duplicated.
+    */
+   @EventHandler(ignoreCancelled = true)
+   public void onInventoryClick(InventoryClickEvent event) {
+      if (event.getWhoClicked() instanceof Player player) {
+         boolean splitInvolved = this.isSplitSword(event.getCurrentItem()) || this.isSplitSword(event.getCursor());
+         if (!splitInvolved && event.getClick() == ClickType.NUMBER_KEY && event.getHotbarButton() >= 0) {
+            splitInvolved = this.isSplitSword(player.getInventory().getItem(event.getHotbarButton()));
+         }
+
+         if (!splitInvolved && event.getClick() == ClickType.SWAP_OFFHAND) {
+            splitInvolved = this.isSplitSword(player.getInventory().getItemInOffHand());
+         }
+
+         if (splitInvolved) {
+            event.setCancelled(true);
+            HudManager.message(player, Component.text("The split blades cannot be moved.", NamedTextColor.LIGHT_PURPLE));
+         } else {
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.guardOffhand(player));
+         }
+      }
+   }
+
+   @EventHandler(ignoreCancelled = true)
+   public void onInventoryDrag(InventoryDragEvent event) {
+      if (event.getWhoClicked() instanceof Player player) {
+         if (this.isSplitSword(event.getOldCursor())) {
+            event.setCancelled(true);
+         } else {
+            this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.guardOffhand(player));
+         }
+      }
+   }
+
+   @EventHandler(ignoreCancelled = true)
+   public void onDrop(PlayerDropItemEvent event) {
+      if (this.isSplitSword(event.getItemDrop().getItemStack())) {
+         event.setCancelled(true);
+      }
+   }
+
+   /** Anything that still slips a split blade into the world (dispensers, plugins) is deleted. */
+   @EventHandler(ignoreCancelled = true)
+   public void onItemSpawn(ItemSpawnEvent event) {
+      if (this.isSplitSword(event.getEntity().getItemStack())) {
+         event.setCancelled(true);
+      }
+   }
+
+   /** Catch-all for every other route into the off-hand slot: put the sword back in the inventory. */
+   private void guardOffhand(Player player) {
+      if (player.isOnline() && !this.dualWielding.getOrDefault(player.getUniqueId(), false)) {
+         ItemStack off = player.getInventory().getItemInOffHand();
+         if (this.isRealEclipse(off)) {
+            player.getInventory().setItemInOffHand(null);
+            player.getInventory().addItem(new ItemStack[]{off}).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+            HudManager.message(player, Component.text("The Sword of Eclipse must be wielded in your main hand.", NamedTextColor.LIGHT_PURPLE));
+         }
+
+         this.checkAndUpdateEffects(player);
+      }
+   }
+
+   /** Split blades left behind by a crash or restart mid-split become one real sword again. */
+   @EventHandler
+   public void onJoin(PlayerJoinEvent event) {
+      Player player = event.getPlayer();
+      if (this.stripSplitSwords(player) > 0) {
+         player.getInventory().addItem(new ItemStack[]{this.weaponManager.getWeapon("sword-of-eclipse")}).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+      }
+
+      this.guardOffhand(player);
+   }
+
+   private int stripSplitSwords(Player player) {
+      int removed = 0;
+      ItemStack[] contents = player.getInventory().getContents();
+
+      for (int i = 0; i < contents.length; i++) {
+         if (this.isSplitSword(contents[i])) {
+            player.getInventory().setItem(i, null);
+            removed++;
+         }
+      }
+
+      if (this.isSplitSword(player.getItemOnCursor())) {
+         player.setItemOnCursor(null);
+         removed++;
+      }
+
+      return removed;
+   }
+
+   public void cleanup() {
+      for (Player player : this.plugin.getServer().getOnlinePlayers()) {
+         if (this.dualWielding.getOrDefault(player.getUniqueId(), false)) {
+            this.deactivateDualWield(player);
+         }
+      }
    }
 
    @EventHandler
@@ -211,6 +350,11 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    }
 
    private void fixDualWieldDrops(PlayerDeathEvent event) {
+      if (event.getKeepInventory()) {
+         // Nothing drops; deactivateDualWield() restores the sword and off-hand into the kept inventory.
+         return;
+      }
+
       UUID uuid = event.getEntity().getUniqueId();
       List<ItemStack> drops = event.getDrops();
       boolean droppedSplitSword = drops.removeIf(this::isSplitSword);
@@ -292,10 +436,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                this.createComboEffects(damager, victim.getLocation(), combo);
                ItemStack mainHand = damager.getInventory().getItemInMainHand();
                ItemStack offHand = damager.getInventory().getItemInOffHand();
-               if (mainHand.hasItemMeta()
-                  && offHand.hasItemMeta()
-                  && mainHand.getItemMeta().getDisplayName().contains("Sword")
-                  && offHand.getItemMeta().getDisplayName().contains("Sword")) {
+               if (this.isSplitSword(mainHand) && this.isSplitSword(offHand)) {
                   damager.getInventory().setItemInMainHand(offHand);
                   damager.getInventory().setItemInOffHand(mainHand);
                   this.createSwordSwapEffect(damager);
@@ -341,7 +482,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                   switch (stage) {
                      case 2:
                         if (this.ticks % 15 == 0) {
-                           world.spawnParticle(Particle.END_ROD, playerLoc, 2, 0.5, 0.5, 0.5, 0.05);
+                           ParticleManager.spawn(Particle.END_ROD, playerLoc, 2, 0.5, 0.5, 0.5, 0.05);
                         }
                         break;
                      case 3:
@@ -377,9 +518,9 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double radians = Math.toRadians(angle);
          Vector point = new Vector(Math.cos(radians) * radius, Math.sin(radians) * radius * 0.5, Math.sin(radians) * radius);
          Location auraPoint = center.clone().add(point);
-         world.spawnParticle(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.5F));
+         ParticleManager.spawn(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.5F));
          if (stage >= 3) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, auraPoint, 1, 0.05, 0.05, 0.05, 0.02);
+            ParticleManager.spawn(Particle.ELECTRIC_SPARK, auraPoint, 1, 0.05, 0.05, 0.05, 0.02);
          }
       }
    }
@@ -394,7 +535,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             double x = Math.cos(angle) * radius;
             double z = Math.sin(angle) * radius;
             Location ringPoint = center.clone().add(x, 0.1, z);
-            world.spawnParticle(Particle.DUST, ringPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.0F));
+            ParticleManager.spawn(Particle.DUST, ringPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.0F));
          }
       }
    }
@@ -411,8 +552,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             double x = Math.cos(angle) * radius;
             double z = Math.sin(angle) * radius;
             Location orbitPoint = center.clone().add(x, 1.0, z);
-            world.spawnParticle(Particle.FIREWORK, orbitPoint, 1, 0.0, 0.0, 0.0, 0.05);
-            world.spawnParticle(Particle.END_ROD, orbitPoint, 1, 0.0, 0.0, 0.0, 0.0);
+            ParticleManager.spawn(Particle.FIREWORK, orbitPoint, 1, 0.0, 0.0, 0.0, 0.05);
+            ParticleManager.spawn(Particle.END_ROD, orbitPoint, 1, 0.0, 0.0, 0.0, 0.0);
          }
       }
    }
@@ -430,7 +571,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             double z = Math.sin(angle) * radius;
             Location eclipsePoint = center.clone().add(x, 0.8, z);
             Color particleColor = i == 0 ? Color.WHITE : Color.BLACK;
-            world.spawnParticle(Particle.DUST, eclipsePoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(particleColor, 2.0F));
+            ParticleManager.spawn(Particle.DUST, eclipsePoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(particleColor, 2.0F));
          }
       }
    }
@@ -438,7 +579,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    private void createSoulAbsorptionEffect(final Location deathLoc, Player killer, int kills) {
       World world = deathLoc.getWorld();
 
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 2; i++) {
          final int layer = i;
          (new BukkitRunnable() {
             public void run() {
@@ -455,7 +596,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          this.createStageUpEffect(killer.getLocation(), kills / killsPerStage + 1);
       }
 
-      this.plugin.getSoundManager().world(deathLoc, Sound.BLOCK_BEACON_ACTIVATE, 0.8F, 1.2F);
+      this.plugin.getSoundManager().world(deathLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 0.8F);
    }
 
    private void createCosmicVortex(Location center, double radius) {
@@ -467,9 +608,9 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(radians) * radius;
          double z = Math.sin(radians) * radius;
          Location vortexPoint = center.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.SOUL, vortexPoint, 1, 0.0, 0.1, 0.0, 0.1);
-         world.spawnParticle(Particle.FIREWORK, vortexPoint, 1, 0.05, 0.05, 0.05, 0.05);
-         world.spawnParticle(Particle.DUST, vortexPoint, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(138, 43, 226), 1.2F));
+         ParticleManager.spawn(Particle.SOUL, vortexPoint, 1, 0.0, 0.1, 0.0, 0.1);
+         ParticleManager.spawn(Particle.FIREWORK, vortexPoint, 1, 0.05, 0.05, 0.05, 0.05);
+         ParticleManager.spawn(Particle.DUST, vortexPoint, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(138, 43, 226), 1.2F));
       }
    }
 
@@ -477,16 +618,16 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       World world = start.getWorld();
       Vector direction = end.toVector().subtract(start.toVector());
       double distance = start.distance(end);
-      int steps = (int)(distance * 10.0);
+      int steps = (int)(distance * 3.0);
 
       for (int i = 0; i <= steps; i++) {
          double ratio = (double)i / steps;
          Location point = start.clone().add(direction.clone().multiply(ratio));
-         world.spawnParticle(Particle.SOUL, point, 1, 0.1, 0.1, 0.1, 0.05);
+         ParticleManager.spawn(Particle.SOUL, point, 1, 0.1, 0.1, 0.1, 0.05);
          Color streamColor = i % 2 == 0 ? Color.WHITE : Color.BLACK;
-         world.spawnParticle(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(streamColor, 1.5F));
+         ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(streamColor, 1.5F));
          if (i % 3 == 0) {
-            world.spawnParticle(Particle.ELECTRIC_SPARK, point, 1, 0.05, 0.05, 0.05, 0.02);
+            ParticleManager.spawn(Particle.ELECTRIC_SPARK, point, 1, 0.05, 0.05, 0.05, 0.02);
          }
       }
    }
@@ -500,13 +641,13 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location killPoint = center.clone().add(x, 2.0, z);
-         world.spawnParticle(Particle.HAPPY_VILLAGER, killPoint, 2, 0.1, 0.1, 0.1, 0.05);
+         ParticleManager.spawn(Particle.HAPPY_VILLAGER, killPoint, 2, 0.1, 0.1, 0.1, 0.05);
       }
    }
 
    private void createStageUpEffect(final Location center, final int stage) {
       World world = center.getWorld();
-      world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 1.0, 1.0, 1.0, 0.0);
+      ParticleManager.spawn(Particle.END_ROD, center.clone().add(0.0, 1.0, 0.0), 16, 0.6, 0.8, 0.6, 0.05);
 
       for (int i = 0; i < 3; i++) {
          final int ring = i;
@@ -518,11 +659,6 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          }).runTaskLater(this.plugin, ring * 5L);
       }
 
-      for (Player nearby : world.getPlayers()) {
-         if (nearby.getLocation().distance(center) < 10.0) {
-            nearby.spawnParticle(Particle.TOTEM_OF_UNDYING, nearby.getEyeLocation(), 40, 0.5, 0.6, 0.5, 0.35);
-         }
-      }
 
       this.plugin.getSoundManager().world(center, Sound.ENTITY_PLAYER_LEVELUP, 0.9F, 0.7F);
    }
@@ -536,8 +672,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location ringPoint = center.clone().add(x, 1.0, z);
-         world.spawnParticle(Particle.FIREWORK, ringPoint, 3, 0.2, 0.2, 0.2, 0.1);
-         world.spawnParticle(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(stageColor, 2.0F));
+         ParticleManager.spawn(Particle.FIREWORK, ringPoint, 3, 0.2, 0.2, 0.2, 0.1);
+         ParticleManager.spawn(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(stageColor, 2.0F));
       }
    }
 
@@ -546,9 +682,9 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       Location damagerLoc = damager.getLocation();
       Location victimLoc = victim.getLocation();
       this.createCosmicBeam(damagerLoc, victimLoc, stage);
-      world.spawnParticle(Particle.SWEEP_ATTACK, victimLoc, 5, 0.5, 0.5, 0.5, 0.1);
+      ParticleManager.spawn(Particle.SWEEP_ATTACK, victimLoc, 5, 0.5, 0.5, 0.5, 0.1);
       Color impactColor = this.getStageColor(stage);
-      world.spawnParticle(Particle.DUST, victimLoc, 10, 0.3, 0.3, 0.3, 0.0, new DustOptions(impactColor, 1.5F));
+      ParticleManager.spawn(Particle.DUST, victimLoc, 10, 0.3, 0.3, 0.3, 0.0, new DustOptions(impactColor, 1.5F));
       this.plugin.getSoundManager().hit(victimLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.6F, 1.2F);
       if (stage >= 3) {
          this.plugin.getSoundManager().hit(victimLoc, Sound.BLOCK_BEACON_POWER_SELECT, 0.4F, 1.5F);
@@ -559,27 +695,27 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       World world = start.getWorld();
       Vector direction = end.toVector().subtract(start.toVector());
       double distance = start.distance(end);
-      int steps = (int)(distance * 8.0);
+      int steps = (int)(distance * 3.0);
 
       for (int i = 0; i <= steps; i++) {
          double ratio = (double)i / steps;
          Location point = start.clone().add(direction.clone().multiply(ratio));
          Color beamColor = this.getStageColor(stage);
-         world.spawnParticle(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(beamColor, 1.2F));
+         ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(beamColor, 1.2F));
          if (i % 2 == 0) {
-            world.spawnParticle(Particle.FIREWORK, point, 1, 0.05, 0.05, 0.05, 0.03);
+            ParticleManager.spawn(Particle.FIREWORK, point, 1, 0.05, 0.05, 0.05, 0.03);
          }
 
          if (stage >= 3 && i % 4 == 0) {
-            world.spawnParticle(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.0);
+            ParticleManager.spawn(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.0);
          }
       }
    }
 
    private void createBlindnessEffect(Location location) {
       World world = location.getWorld();
-      world.spawnParticle(Particle.SQUID_INK, location, 20, 1.0, 1.0, 1.0, 0.1);
-      world.spawnParticle(Particle.LARGE_SMOKE, location, 10, 0.8, 0.8, 0.8, 0.05);
+      ParticleManager.spawn(Particle.SQUID_INK, location.clone().add(0.0, 0.3, 0.0), 6, 0.5, 0.3, 0.5, 0.02);
+      ParticleManager.spawn(Particle.LARGE_SMOKE, location, 10, 0.8, 0.8, 0.8, 0.05);
       this.plugin.getSoundManager().world(location, Sound.ENTITY_WITHER_SHOOT, 0.6F, 1.5F);
    }
 
@@ -587,7 +723,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       World world = player.getWorld();
       Location playerLoc = player.getLocation();
       Location comboLoc = playerLoc.clone().add(0.0, 2.2, 0.0);
-      world.spawnParticle(Particle.ANGRY_VILLAGER, comboLoc, combo, 0.3, 0.1, 0.3, 0.0);
+      
       if (combo >= 3) {
          this.createComboBurst(playerLoc, combo);
       }
@@ -604,7 +740,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * distance;
          double z = Math.sin(angle) * distance;
          Location burstPoint = center.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.FIREWORK, burstPoint, 2, 0.1, 0.1, 0.1, 0.1);
+         ParticleManager.spawn(Particle.FIREWORK, burstPoint, 2, 0.1, 0.1, 0.1, 0.1);
       }
    }
 
@@ -612,20 +748,19 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       World world = start.getWorld();
       Vector direction = end.toVector().subtract(start.toVector());
       double distance = start.distance(end);
-      int steps = (int)(distance * 6.0);
+      int steps = (int)(distance * 2.0);
 
       for (int i = 0; i <= steps; i++) {
          double ratio = (double)i / steps;
          Location point = start.clone().add(direction.clone().multiply(ratio));
          Color trailColor = combo % 2 == 0 ? Color.WHITE : Color.BLACK;
-         world.spawnParticle(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(trailColor, 1.0F));
+         ParticleManager.spawn(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(trailColor, 1.0F));
       }
    }
 
    private void createSwordSwapEffect(Player player) {
       World world = player.getWorld();
       Location playerLoc = player.getLocation();
-      world.spawnParticle(Particle.FLASH, playerLoc, 1, 0.0, 0.0, 0.0, 0.0);
 
       for (int i = 0; i < 8; i++) {
          double angle = i * 3.141592653589793 / 4.0;
@@ -633,7 +768,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * distance;
          double z = Math.sin(angle) * distance;
          Location wavePoint = playerLoc.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.SWEEP_ATTACK, wavePoint, 1, 0.0, 0.0, 0.0, 0.0);
+         ParticleManager.spawn(Particle.SWEEP_ATTACK, wavePoint, 1, 0.0, 0.0, 0.0, 0.0);
       }
 
       this.plugin.getSoundManager().self(player, Sound.ITEM_ARMOR_EQUIP_NETHERITE, 0.8F, 1.5F);
@@ -654,7 +789,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                   double x = Math.cos(angle) * radius;
                   double z = Math.sin(angle) * radius;
                   Location healPoint = playerLoc.clone().add(x, 0.5, z);
-                  world.spawnParticle(Particle.HEART, healPoint, 1, 0.1, 0.1, 0.1, 0.0);
+                  ParticleManager.spawn(Particle.HEART, healPoint, 1, 0.1, 0.1, 0.1, 0.0);
                }
             }
          }).runTaskLater(this.plugin, ring * 3L);
@@ -694,7 +829,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                         double z = Math.sin(angle) * radius;
                         Location auraPoint = playerLoc.clone().add(x, 0.8, z);
                         Color auraColor = i == 0 ? Color.WHITE : Color.BLACK;
-                        world.spawnParticle(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(auraColor, 1.8F));
+                        ParticleManager.spawn(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(auraColor, 1.8F));
                      }
                   }
 
@@ -717,7 +852,9 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    private void activateDualWield(final Player player) {
       final UUID uuid = player.getUniqueId();
       this.dualWielding.put(uuid, true);
-      this.offhandCache.put(uuid, player.getInventory().getItemInOffHand());
+      this.mainSlot.put(uuid, player.getInventory().getHeldItemSlot());
+      ItemStack previousOffhand = player.getInventory().getItemInOffHand();
+      this.offhandCache.put(uuid, previousOffhand == null || previousOffhand.getType().isAir() ? null : previousOffhand.clone());
       ItemStack lightSword = this.weaponManager.getWeapon("sword-of-eclipse").clone();
       ItemMeta lightMeta = lightSword.getItemMeta();
       lightMeta.setDisplayName("§f§lLight Sword");
@@ -753,11 +890,26 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             this.dualWieldEffects.remove(uuid);
          }
 
-         player.getInventory().setItemInMainHand(this.weaponManager.getWeapon("sword-of-eclipse"));
-         if (this.offhandCache.containsKey(uuid)) {
-            player.getInventory().setItemInOffHand(this.offhandCache.remove(uuid));
+         // Remove BOTH halves wherever they ended up, then give back exactly one real sword and the
+         // old off-hand item -- into their old slots when those are free, never over another item.
+         this.stripSplitSwords(player);
+         ItemStack sword = this.weaponManager.getWeapon("sword-of-eclipse");
+         Integer slot = this.mainSlot.remove(uuid);
+         ItemStack inSlot = slot == null ? null : player.getInventory().getItem(slot);
+         if (slot != null && (inSlot == null || inSlot.getType().isAir())) {
+            player.getInventory().setItem(slot, sword);
          } else {
-            player.getInventory().setItemInOffHand(null);
+            player.getInventory().addItem(new ItemStack[]{sword}).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+         }
+
+         ItemStack cached = this.offhandCache.remove(uuid);
+         if (cached != null) {
+            ItemStack off = player.getInventory().getItemInOffHand();
+            if (off == null || off.getType().isAir()) {
+               player.getInventory().setItemInOffHand(cached);
+            } else {
+               player.getInventory().addItem(new ItemStack[]{cached}).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
+            }
          }
 
          this.comboTracker.remove(uuid);
@@ -770,7 +922,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
 
    private void createDualWieldActivation(Location center) {
       World world = center.getWorld();
-      world.spawnParticle(Particle.EXPLOSION_EMITTER, center, 1, 1.5, 1.5, 1.5, 0.0);
+      
 
       for (int i = 0; i < 2; i++) {
          Color explosionColor = i == 0 ? Color.WHITE : Color.BLACK;
@@ -778,11 +930,11 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          for (int j = 0; j < 20; j++) {
             Vector dir = new Vector((Math.random() - 0.5) * 2.0, (Math.random() - 0.5) * 2.0, (Math.random() - 0.5) * 2.0).normalize().multiply(2.0);
             Location explosionPoint = center.clone().add(dir);
-            world.spawnParticle(Particle.DUST, explosionPoint, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(explosionColor, 2.0F));
+            ParticleManager.spawn(Particle.DUST, explosionPoint, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(explosionColor, 2.0F));
          }
       }
 
-      this.plugin.getSoundManager().world(center, Sound.ITEM_TOTEM_USE, 0.8F, 0.9F);
+      this.plugin.getSoundManager().world(center, Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 0.9F, 1.3F);
    }
 
    private void createEclipseSymbol(Location center) {
@@ -794,10 +946,10 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location symbolPoint = center.clone().add(x, 0.0, z);
-         world.spawnParticle(Particle.END_ROD, symbolPoint, 1, 0.0, 0.0, 0.0, 0.0);
+         ParticleManager.spawn(Particle.END_ROD, symbolPoint, 1, 0.0, 0.0, 0.0, 0.0);
       }
 
-      world.spawnParticle(Particle.DUST, center, 3, 0.2, 0.2, 0.2, 0.0, new DustOptions(Color.BLACK, 2.0F));
+      ParticleManager.spawn(Particle.DUST, center, 3, 0.2, 0.2, 0.2, 0.0, new DustOptions(Color.BLACK, 2.0F));
    }
 
    private void createDualWieldDeactivation(final Location center) {
@@ -815,13 +967,13 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                   double z = Math.sin(angle) * radius;
                   Location implosionPoint = center.clone().add(x, 0.5, z);
                   Vector direction = center.toVector().subtract(implosionPoint.toVector()).normalize().multiply(0.3);
-                  world.spawnParticle(Particle.LARGE_SMOKE, implosionPoint, 1, direction.getX(), direction.getY(), direction.getZ(), 0.05);
+                  ParticleManager.spawn(Particle.LARGE_SMOKE, implosionPoint, 1, direction.getX(), direction.getY(), direction.getZ(), 0.05);
                }
             }
          }).runTaskLater(this.plugin, layer * 2L);
       }
 
-      this.plugin.getSoundManager().world(center, Sound.BLOCK_BEACON_DEACTIVATE, 0.7F, 1.0F);
+      this.plugin.getSoundManager().world(center, Sound.BLOCK_RESPAWN_ANCHOR_DEPLETE, 0.7F, 1.2F);
    }
 
    private Color getStageColor(int stage) {

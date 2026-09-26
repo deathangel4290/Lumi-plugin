@@ -1,9 +1,17 @@
 package com.legendaryweapons.rituals;
 
 import com.legendaryweapons.LegendaryWeapons;
+import com.legendaryweapons.managers.ParticleManager;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -11,102 +19,350 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.Particle.DustOptions;
-import org.bukkit.boss.BarColor;
-import org.bukkit.boss.BarFlag;
-import org.bukkit.boss.BarStyle;
-import org.bukkit.boss.BossBar;
-import org.bukkit.entity.EntityType;
+import org.bukkit.World.Environment;
+import org.bukkit.entity.Display.Billboard;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Display.Billboard;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
+/**
+ * One running ritual.
+ *
+ * Everyone online gets their own boss bar, so it can speak to where THEY are:
+ *   - same dimension: distance and a direction arrow relative to where they are facing,
+ *   - Overworld <-> Nether: the ritual's coordinates converted into their dimension (x/8 or x*8),
+ *     so you can walk (or portal) straight to it,
+ *   - anywhere else: which dimension it is in.
+ * Bars are added for players who join mid-ritual and follow them between dimensions.
+ */
 public class Ritual {
+   private static final String[] ARROWS = new String[]{"⬆", "⬈", "➡", "⬊", "⬇", "⬋", "⬅", "⬉"};
    private final LegendaryWeapons plugin;
    private final UUID playerUUID;
    private final Location location;
    private final String weaponKey;
+   private final long startTime;
+   private final int duration;
+   private final List<ItemStack> consumed;
+   private final World world;
+   private final Map<UUID, BossBar> bars = new HashMap<>();
    private final BukkitTask task;
    private final BukkitTask particleTask;
-   private final BossBar bossBar;
-   private final int duration;
-   private final long startTime;
    private int secondsRemaining;
    private ItemDisplay floatingItem;
-   private final World world;
-   private static final Color COLOR_PRIMARY = Color.fromRGB(138, 43, 226);
-   private static final Color COLOR_SECONDARY = Color.fromRGB(75, 0, 130);
-   private static final Color COLOR_HELIX_1 = Color.fromRGB(173, 216, 230);
-   private static final Color COLOR_HELIX_2 = Color.fromRGB(221, 160, 221);
-   private static final int BEAM_HEIGHT = 20;
    private int lastMilestone = 0;
+   private boolean finished = false;
 
-   public Ritual(LegendaryWeapons plugin, UUID playerUUID, Location location, String weaponKey, final long startTime) {
+   public Ritual(LegendaryWeapons plugin, UUID playerUUID, Location location, String weaponKey, long startTime, List<ItemStack> consumed) {
       this.plugin = plugin;
       this.playerUUID = playerUUID;
-      this.location = location;
+      this.location = location.getBlock().getLocation();
       this.weaponKey = weaponKey;
       this.startTime = startTime;
-      this.duration = plugin.getConfigManager().getRitualTimer();
-      this.world = location.getWorld();
-      long elapsedSeconds = (System.currentTimeMillis() - this.startTime) / 1000L;
-      this.secondsRemaining = this.duration - (int)elapsedSeconds;
+      this.consumed = consumed == null ? new ArrayList<>() : new ArrayList<>(consumed);
+      this.duration = Math.max(1, plugin.getConfigManager().getRitualTimer());
+      this.world = this.location.getWorld();
+      this.secondsRemaining = this.duration - (int)((System.currentTimeMillis() - startTime) / 1000L);
       this.createFloatingItem();
-      this.bossBar = plugin.getServer().createBossBar(this.buildBossBarTitle(), BarColor.PURPLE, BarStyle.SOLID, new BarFlag[0]);
+      this.particleTask = (new BukkitRunnable() {
+         double time = 0.0;
 
-      for (Player online : plugin.getServer().getOnlinePlayers()) {
-         this.bossBar.addPlayer(online);
-      }
-
-      this.particleTask = this.startParticleEffects();
-      this.task = (new BukkitRunnable() {
          public void run() {
-            long elapsedSecondsx = (System.currentTimeMillis() - startTime) / 1000L;
-            Ritual.this.secondsRemaining = Ritual.this.duration - (int)elapsedSecondsx;
+            this.time += 0.2;
+            Ritual.this.drawEffects(this.time);
+         }
+      }).runTaskTimer(plugin, 0L, 4L);
+      this.task = (new BukkitRunnable() {
+         int ticks = 0;
+
+         public void run() {
+            Ritual.this.secondsRemaining = Ritual.this.duration - (int)((System.currentTimeMillis() - Ritual.this.startTime) / 1000L);
             if (Ritual.this.secondsRemaining <= 0) {
                Ritual.this.complete();
-               this.cancel();
             } else {
-               Ritual.this.updateBossBar();
+               Ritual.this.updateBars();
+               if (this.ticks++ % 2 == 0) {
+                  Ritual.this.milestones();
+               }
             }
          }
-      }).runTaskTimer(plugin, 20L, 20L);
+      }).runTaskTimer(plugin, 1L, 10L);
+      this.updateBars();
    }
 
-   private void createFloatingItem() {
-      Location spawnLocation = this.location.clone().add(0.5, 1.4, 0.5);
-      ItemStack weaponStack = this.plugin.getWeaponManager().getWeapon(this.weaponKey);
-      if (weaponStack == null || weaponStack.getType() == Material.AIR) {
-         weaponStack = new ItemStack(Material.BARRIER);
-         this.plugin.getLogger().warning("Invalid weaponKey for ritual: " + this.weaponKey);
+   // ------------------------------------------------------------------ boss bars
+
+   private void updateBars() {
+      float progress = (float)Math.max(0.0, Math.min(1.0, (double)this.secondsRemaining / this.duration));
+
+      for (Player viewer : Bukkit.getOnlinePlayers()) {
+         BossBar bar = this.bars.get(viewer.getUniqueId());
+         Component title = this.titleFor(viewer);
+         if (bar == null) {
+            bar = BossBar.bossBar(title, progress, BossBar.Color.PURPLE, BossBar.Overlay.NOTCHED_10);
+            this.bars.put(viewer.getUniqueId(), bar);
+            viewer.showBossBar(bar);
+         } else {
+            bar.name(title);
+            bar.progress(progress);
+         }
       }
 
-      this.floatingItem = (ItemDisplay)this.world.spawnEntity(spawnLocation, EntityType.ITEM_DISPLAY);
-      this.floatingItem.setItemStack(weaponStack);
-      this.floatingItem.setPersistent(false);
-      this.floatingItem.setInvulnerable(true);
-      this.floatingItem.setBillboard(Billboard.FIXED);
-      this.floatingItem.setInterpolationDuration(2);
-      this.floatingItem.setCustomNameVisible(true);
-      this.floatingItem.customName(Component.text(this.displayName(), NamedTextColor.GOLD));
-      Transformation transformation = this.floatingItem.getTransformation();
-      this.floatingItem
-         .setTransformation(
-            new Transformation(
-               transformation.getTranslation(), transformation.getLeftRotation(), new Vector3f(1.35F, 1.35F, 1.35F), transformation.getRightRotation()
-            )
-         );
+      this.bars.entrySet().removeIf(entry -> Bukkit.getPlayer(entry.getKey()) == null);
    }
+
+   /** Called on join so the bar appears immediately rather than on the next refresh. */
+   public void showTo(Player player) {
+      if (!this.finished) {
+         this.updateBars();
+      }
+   }
+
+   public void hideFrom(Player player) {
+      BossBar bar = this.bars.remove(player.getUniqueId());
+      if (bar != null) {
+         player.hideBossBar(bar);
+      }
+   }
+
+   private Component titleFor(Player viewer) {
+      Component title = Component.text("✦ ", NamedTextColor.LIGHT_PURPLE)
+         .append(LegacyComponentSerializer.legacySection().deserialize(this.displayName()).decoration(TextDecoration.BOLD, true))
+         .append(Component.text("  " + this.getFormattedTimeRemaining(), NamedTextColor.WHITE))
+         .append(Component.text("  |  ", NamedTextColor.DARK_PURPLE))
+         .append(Component.text(dimensionName(this.world) + " ", dimensionColour(this.world)))
+         .append(Component.text(this.location.getBlockX() + ", " + this.location.getBlockY() + ", " + this.location.getBlockZ(), NamedTextColor.WHITE));
+      World viewerWorld = viewer.getWorld();
+      if (viewerWorld.equals(this.world)) {
+         Location centre = this.location.clone().add(0.5, 0.0, 0.5);
+         double distance = viewer.getLocation().distance(centre);
+         return title.append(Component.text("  |  ", NamedTextColor.DARK_PURPLE))
+            .append(Component.text((int)Math.round(distance) + "m " + arrowTowards(viewer.getLocation(), centre), NamedTextColor.YELLOW));
+      } else {
+         double scale = portalScale(this.world, viewerWorld);
+         if (scale > 0.0) {
+            int x = (int)Math.floor(this.location.getBlockX() * scale);
+            int z = (int)Math.floor(this.location.getBlockZ() * scale);
+            return title.append(Component.text("  |  ", NamedTextColor.DARK_PURPLE))
+               .append(Component.text("your " + dimensionName(viewerWorld) + ": ", NamedTextColor.GRAY))
+               .append(Component.text(x + ", " + z, NamedTextColor.YELLOW));
+         } else {
+            return title;
+         }
+      }
+   }
+
+   /** Overworld to Nether divides by 8, Nether to Overworld multiplies. 0 when there is no mapping. */
+   private static double portalScale(World from, World to) {
+      Environment a = from.getEnvironment();
+      Environment b = to.getEnvironment();
+      if (a == Environment.NORMAL && b == Environment.NETHER) {
+         return 0.125;
+      } else {
+         return a == Environment.NETHER && b == Environment.NORMAL ? 8.0 : 0.0;
+      }
+   }
+
+   private static String arrowTowards(Location from, Location to) {
+      Vector delta = to.toVector().subtract(from.toVector());
+      if (delta.getX() * delta.getX() + delta.getZ() * delta.getZ() < 4.0) {
+         return "●";
+      } else {
+         double targetYaw = Math.toDegrees(Math.atan2(-delta.getX(), delta.getZ()));
+         double relative = ((targetYaw - from.getYaw()) % 360.0 + 360.0) % 360.0;
+         return ARROWS[(int)Math.round(relative / 45.0) % 8];
+      }
+   }
+
+   public static String dimensionName(World world) {
+      if (world == null) {
+         return "Unknown";
+      } else {
+         return switch (world.getEnvironment()) {
+            case NETHER -> "Nether";
+            case THE_END -> "The End";
+            case NORMAL -> "Overworld";
+            default -> world.getName();
+         };
+      }
+   }
+
+   public static NamedTextColor dimensionColour(World world) {
+      if (world == null) {
+         return NamedTextColor.GRAY;
+      } else {
+         return switch (world.getEnvironment()) {
+            case NETHER -> NamedTextColor.RED;
+            case THE_END -> NamedTextColor.LIGHT_PURPLE;
+            case NORMAL -> NamedTextColor.GREEN;
+            default -> NamedTextColor.GRAY;
+         };
+      }
+   }
+
+   // ------------------------------------------------------------------ visuals
+
+   private void createFloatingItem() {
+      Location spawnLocation = this.location.clone().add(0.5, 1.5, 0.5);
+      ItemStack weaponStack = this.plugin.getWeaponManager().getWeapon(this.weaponKey);
+      if (weaponStack == null || weaponStack.getType().isAir()) {
+         weaponStack = new ItemStack(Material.BARRIER);
+      }
+
+      final ItemStack shown = weaponStack;
+      this.floatingItem = this.world.spawn(spawnLocation, ItemDisplay.class, display -> {
+         display.setItemStack(shown);
+         display.setPersistent(false);
+         display.setInvulnerable(true);
+         display.setBillboard(Billboard.FIXED);
+         display.setInterpolationDuration(4);
+         display.setCustomNameVisible(true);
+         display.customName(LegacyComponentSerializer.legacySection().deserialize(this.displayName()));
+         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.2F, 1.2F, 1.2F), new Quaternionf()));
+      });
+   }
+
+   private Color[] theme() {
+      return switch (this.weaponKey) {
+         case "scythe-of-diablo" -> new Color[]{Color.fromRGB(220, 20, 60), Color.fromRGB(90, 0, 12)};
+         case "ender-glaive" -> new Color[]{Color.fromRGB(150, 60, 235), Color.fromRGB(60, 0, 95)};
+         case "axe-of-zeus" -> new Color[]{Color.fromRGB(120, 230, 255), Color.fromRGB(255, 255, 255)};
+         case "sword-of-eclipse" -> new Color[]{Color.fromRGB(255, 120, 230), Color.fromRGB(28, 28, 40)};
+         case "hellstorm" -> new Color[]{Color.fromRGB(255, 165, 40), Color.fromRGB(190, 45, 10)};
+         case "lost-trident-of-atlantis" -> new Color[]{Color.fromRGB(60, 220, 220), Color.fromRGB(20, 90, 145)};
+         case "chiones-blade" -> new Color[]{Color.fromRGB(170, 230, 255), Color.fromRGB(60, 130, 220)};
+         case "luminosity" -> new Color[]{Color.fromRGB(255, 220, 90), Color.fromRGB(255, 255, 220)};
+         case "titans-axe" -> new Color[]{Color.fromRGB(200, 170, 110), Color.fromRGB(90, 70, 40)};
+         default -> new Color[]{Color.fromRGB(138, 43, 226), Color.fromRGB(75, 0, 130)};
+      };
+   }
+
+   private double progress() {
+      return Math.max(0.0, Math.min(1.0, 1.0 - (double)this.secondsRemaining / this.duration));
+   }
+
+   /**
+    * A rune ring on the floor, a two-strand helix and a thin beacon column. The column is tall on
+    * purpose -- it is how people find the altar -- but it is a handful of points, not a wall.
+    */
+   private void drawEffects(double time) {
+      if (this.world != null && this.world.isChunkLoaded(this.location.getBlockX() >> 4, this.location.getBlockZ() >> 4)) {
+         double progress = this.progress();
+         Color[] theme = this.theme();
+         Location centre = this.location.clone().add(0.5, 0.1, 0.5);
+         double radius = 1.6 - progress * 0.4;
+
+         for (int i = 0; i < 10; i++) {
+            double angle = Math.PI * 2.0 / 10.0 * i + time * 0.5;
+            ParticleManager.spawn(Particle.DUST, centre.clone().add(Math.cos(angle) * radius, 0.05, Math.sin(angle) * radius), 1, 0.0, 0.0, 0.0, 0.0,
+               new Particle.DustOptions(i % 2 == 0 ? theme[0] : theme[1], 1.1F));
+         }
+
+         for (double y = 0.2; y < 2.6; y += 0.45) {
+            double r = 0.7 * (1.0 - y / 3.0) + 0.15;
+            double angle = y * (1.5 + progress * 1.5) + time;
+            ParticleManager.spawn(Particle.DUST, centre.clone().add(Math.cos(angle) * r, y, Math.sin(angle) * r), 1, 0.0, 0.0, 0.0, 0.0, new Particle.DustOptions(theme[0], 0.9F));
+            ParticleManager.spawn(Particle.DUST, centre.clone().add(-Math.cos(angle) * r, y, -Math.sin(angle) * r), 1, 0.0, 0.0, 0.0, 0.0, new Particle.DustOptions(theme[1], 0.9F));
+         }
+
+         ParticleManager.spawn(Particle.END_ROD, centre.clone().add(0.0, 3.0 + Math.random() * 25.0, 0.0), 1, 0.05, 0.0, 0.05, 0.0);
+         if (this.floatingItem != null && this.floatingItem.isValid()) {
+            float spin = (float)(time * (0.6 + progress * 1.5));
+            this.floatingItem.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time) * 0.1), 0.0F), new Quaternionf().rotateY(spin), new Vector3f(1.2F, 1.2F, 1.2F), new Quaternionf()));
+         }
+      }
+   }
+
+   private void milestones() {
+      int milestone = (int)(this.progress() * 4.0);
+      if (milestone > this.lastMilestone && milestone < 4) {
+         this.lastMilestone = milestone;
+         Location centre = this.location.clone().add(0.5, 0.5, 0.5);
+         this.plugin.getSoundManager().world(centre, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 0.7F + milestone * 0.2F);
+         ParticleManager.spawn(Particle.END_ROD, centre, 16, 1.5, 0.2, 1.5, 0.02);
+      }
+   }
+
+   // ------------------------------------------------------------------ lifecycle
+
+   public void complete() {
+      if (!this.finished) {
+         this.finished = true;
+         Location centre = this.location.clone().add(0.5, 1.0, 0.5);
+         Player player = this.getPlayer();
+         if (player != null && player.isOnline()) {
+            player.sendMessage(Component.text("The ritual for ", NamedTextColor.GREEN)
+               .append(LegacyComponentSerializer.legacySection().deserialize(this.displayName()))
+               .append(Component.text(" is complete!", NamedTextColor.GREEN)));
+         }
+
+         Bukkit.broadcast(LegacyComponentSerializer.legacySection().deserialize(this.displayName())
+            .append(Component.text(" has been forged in the " + dimensionName(this.world) + ".", NamedTextColor.LIGHT_PURPLE)));
+         this.plugin.getSoundManager().world(centre, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8F, 1.0F);
+         ParticleManager.spawn(Particle.FIREWORK, centre, 60, 1.2, 1.2, 1.2, 0.2);
+         ParticleManager.spawn(Particle.TOTEM_OF_UNDYING, centre, 30, 0.8, 1.0, 0.8, 0.2);
+         this.world.dropItemNaturally(this.location.clone().add(0.5, 1.2, 0.5), this.plugin.getWeaponManager().getWeapon(this.weaponKey));
+         this.plugin.getRitualManager().removeRitual(this, true);
+         this.cleanup();
+      }
+   }
+
+   /** The altar was broken mid-ritual: the ingredients spill out and the weapon may be forged again. */
+   public void cancel() {
+      if (!this.finished) {
+         this.finished = true;
+         Location centre = this.location.clone().add(0.5, 1.0, 0.5);
+         this.plugin.getSoundManager().world(centre, Sound.BLOCK_FIRE_EXTINGUISH, 0.8F, 1.0F);
+         ParticleManager.spawn(Particle.LARGE_SMOKE, centre, 20, 0.5, 0.5, 0.5, 0.05);
+
+         for (ItemStack item : this.consumed) {
+            if (item != null && !item.getType().isAir()) {
+               this.world.dropItemNaturally(centre, item);
+            }
+         }
+
+         Bukkit.broadcast(Component.text("The ritual of ", NamedTextColor.RED)
+            .append(LegacyComponentSerializer.legacySection().deserialize(this.displayName()))
+            .append(Component.text(" was broken!", NamedTextColor.RED)));
+         this.plugin.getRitualManager().removeRitual(this, false);
+         this.cleanup();
+      }
+   }
+
+   /** Server shutdown: stop quietly, the ritual resumes from rituals.yml on the next start. */
+   public void suspend() {
+      this.finished = true;
+      this.cleanup();
+   }
+
+   private void cleanup() {
+      this.task.cancel();
+      this.particleTask.cancel();
+
+      for (Map.Entry<UUID, BossBar> entry : this.bars.entrySet()) {
+         Player viewer = Bukkit.getPlayer(entry.getKey());
+         if (viewer != null) {
+            viewer.hideBossBar(entry.getValue());
+         }
+      }
+
+      this.bars.clear();
+      if (this.floatingItem != null && this.floatingItem.isValid()) {
+         this.floatingItem.remove();
+      }
+   }
+
+   // ------------------------------------------------------------------ accessors
 
    public String displayName() {
       String configured = this.plugin.getConfigManager().getWeaponDisplayName(this.weaponKey);
-      return configured != null && !configured.isBlank() ? configured : this.formatWeaponKey(this.weaponKey);
+      return configured != null && !configured.isBlank() ? configured : RitualRecipes.prettify(this.weaponKey.replace('-', '_'));
    }
 
    public String getDisplayName() {
@@ -118,282 +374,8 @@ public class Ritual {
    }
 
    public String getFormattedTimeRemaining() {
-      return this.formatTime(Math.max(0, this.secondsRemaining));
-   }
-
-   private double progress() {
-      return this.duration <= 0 ? 1.0 : Math.max(0.0, Math.min(1.0, 1.0 - (double)this.secondsRemaining / this.duration));
-   }
-
-   private Color[] themeColours() {
-      String var1 = this.weaponKey;
-
-      return switch (var1) {
-         case "scythe-of-diablo" -> new Color[]{Color.fromRGB(220, 20, 60), Color.fromRGB(90, 0, 12)};
-         case "ender-glaive" -> new Color[]{Color.fromRGB(150, 60, 235), Color.fromRGB(60, 0, 95)};
-         case "axe-of-zeus" -> new Color[]{Color.fromRGB(120, 230, 255), Color.fromRGB(255, 255, 255)};
-         case "sword-of-eclipse" -> new Color[]{Color.fromRGB(255, 120, 230), Color.fromRGB(28, 28, 40)};
-         case "hellstorm" -> new Color[]{Color.fromRGB(255, 165, 40), Color.fromRGB(190, 45, 10)};
-         case "lost-trident-of-atlantis" -> new Color[]{Color.fromRGB(60, 220, 220), Color.fromRGB(20, 90, 145)};
-         default -> new Color[]{COLOR_PRIMARY, COLOR_SECONDARY};
-      };
-   }
-
-   private BukkitTask startParticleEffects() {
-      return (new BukkitRunnable() {
-         double time = 0.0;
-         final Location center = Ritual.this.location.clone().add(0.5, 0.1, 0.5);
-
-         public void run() {
-            this.time += 0.15;
-            double progress = Ritual.this.progress();
-            Ritual.this.updateFloatingItem(this.time, progress);
-            Ritual.this.drawRuneRing(this.center, this.time, progress);
-            Ritual.this.drawHelixCoil(this.center, this.time, progress);
-            Ritual.this.drawBeacon(this.center, progress);
-            if (Math.random() < 0.1 + progress * 0.25) {
-               Ritual.this.spawnAmbientSparks(this.center, progress);
-            }
-         }
-      }).runTaskTimer(this.plugin, 0L, 2L);
-   }
-
-   private void drawRuneRing(Location center, double time, double progress) {
-      Color[] theme = this.themeColours();
-      int points = 16;
-      double radius = 1.7 - progress * 0.5;
-      float size = (float)(1.0 + progress * 0.8);
-
-      for (int i = 0; i < points; i++) {
-         double angle = 6.283185307179586 / points * i + time * 0.5;
-         Location loc = center.clone().add(Math.cos(angle) * radius, 0.05, Math.sin(angle) * radius);
-         this.world.spawnParticle(Particle.DUST, loc, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(i % 4 == 0 ? theme[1] : theme[0], size));
-      }
-   }
-
-   private void drawHelixCoil(Location center, double time, double progress) {
-      Color[] theme = this.themeColours();
-      double height = 3.5;
-      double yStep = 0.25;
-      double frequency = 1.5 + progress * 1.5;
-      float size = (float)(0.8 + progress * 0.5);
-
-      for (double y = 0.0; y < height; y += yStep) {
-         double radius = 0.9 * (1.0 - y / height) + 0.15;
-         double angle = y * frequency + time;
-         this.world
-            .spawnParticle(
-               Particle.DUST, center.clone().add(Math.cos(angle) * radius, y, Math.sin(angle) * radius), 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(theme[0], size)
-            );
-         double opposite = angle + 3.141592653589793;
-         this.world
-            .spawnParticle(
-               Particle.DUST,
-               center.clone().add(Math.cos(opposite) * radius, y, Math.sin(opposite) * radius),
-               1,
-               0.0,
-               0.0,
-               0.0,
-               0.0,
-               new DustOptions(theme[1], size)
-            );
-      }
-   }
-
-   private void drawBeacon(Location center, double progress) {
-      int motes = 2 + (int)(progress * 4.0);
-
-      for (int i = 0; i < motes; i++) {
-         Location loc = center.clone().add((Math.random() - 0.5) * 0.3, Math.random() * 20.0, (Math.random() - 0.5) * 0.3);
-         this.world.spawnParticle(Particle.END_ROD, loc, 1, 0.0, 0.0, 0.0, 0.0);
-      }
-   }
-
-   private void spawnAmbientSparks(Location center, double progress) {
-      int sparks = 2 + (int)(progress * 3.0);
-
-      for (int i = 0; i < sparks; i++) {
-         double spread = 6.0 - progress * 2.5;
-         Location sparkLoc = center.clone().add((Math.random() - 0.5) * spread, Math.random() * 4.0, (Math.random() - 0.5) * spread);
-         this.world.spawnParticle(Particle.ELECTRIC_SPARK, sparkLoc, 1, 0.0, 0.0, 0.0, 0.0);
-         if (Math.random() < 0.5) {
-            this.world.spawnParticle(Particle.GLOW, sparkLoc, 1, 0.0, 0.0, 0.0, 0.0);
-         }
-      }
-   }
-
-   private void playMilestonePulse() {
-      final Location center = this.location.clone().add(0.5, 0.3, 0.5);
-      final Color[] theme = this.themeColours();
-      this.plugin.getSoundManager().world(center, Sound.BLOCK_BEACON_POWER_SELECT, 0.8F, 0.7F + (float)this.progress() * 0.7F);
-      (new BukkitRunnable() {
-         double radius = 0.4;
-
-         public void run() {
-            if (this.radius > 4.5) {
-               this.cancel();
-            } else {
-               for (int i = 0; i < 24; i++) {
-                  double angle = 0.2617993877991494 * i;
-                  Location loc = center.clone().add(Math.cos(angle) * this.radius, 0.0, Math.sin(angle) * this.radius);
-                  Ritual.this.world.spawnParticle(Particle.DUST, loc, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(theme[0], 1.3F));
-               }
-
-               this.radius += 0.45;
-            }
-         }
-      }).runTaskTimer(this.plugin, 0L, 1L);
-   }
-
-   private void updateFloatingItem(double time, double progress) {
-      if (this.floatingItem != null && this.floatingItem.isValid()) {
-         double bob = Math.sin(time * 1.6) * 0.12;
-         float spin = (float)(time * (1.0 + progress * 2.0));
-         Transformation transformation = this.floatingItem.getTransformation();
-         this.floatingItem
-            .setTransformation(
-               new Transformation(
-                  new Vector3f(0.0F, (float)bob, 0.0F), new Quaternionf().rotateY(spin), transformation.getScale(), transformation.getRightRotation()
-               )
-            );
-         if (Math.random() < 0.1) {
-            this.world.spawnParticle(Particle.GLOW, this.floatingItem.getLocation().clone().add(0.0, 0.2, 0.0), 3, 0.2, 0.2, 0.2, 0.0);
-         }
-      }
-   }
-
-   private String buildBossBarTitle() {
-      int x = this.location.getBlockX();
-      int y = this.location.getBlockY();
-      int z = this.location.getBlockZ();
-      return "§d§lRitual of "
-         + this.formatWeaponKey(this.weaponKey)
-         + " §5| §f"
-         + this.formatTime(Math.max(0, this.secondsRemaining))
-         + " §5| "
-         + this.dimensionLabel()
-         + " §f"
-         + x
-         + ", "
-         + y
-         + ", "
-         + z;
-   }
-
-   private String dimensionLabel() {
-      if (this.world == null) {
-         return "§7Unknown";
-      } else {
-         return switch (this.world.getEnvironment()) {
-            case NETHER -> "§cNether";
-            case THE_END -> "§5The End";
-            case NORMAL -> "§aOverworld";
-            default -> "§7" + this.world.getName();
-         };
-      }
-   }
-
-   public void showTo(Player player) {
-      if (player != null && !this.bossBar.getPlayers().contains(player)) {
-         this.bossBar.addPlayer(player);
-      }
-   }
-
-   private void updateBossBar() {
-      this.bossBar.setTitle(this.buildBossBarTitle());
-      this.bossBar.setProgress(Math.max(0.0, Math.min(1.0, (double)this.secondsRemaining / this.duration)));
-
-      for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-         if (!this.bossBar.getPlayers().contains(player)) {
-            this.bossBar.addPlayer(player);
-         }
-      }
-
-      int milestone = (int)(this.progress() * 4.0);
-      if (milestone > this.lastMilestone && milestone < 4) {
-         this.lastMilestone = milestone;
-         this.playMilestonePulse();
-      }
-
-      double remaining = (double)this.secondsRemaining / this.duration;
-      if (remaining < 0.2) {
-         Location center = this.location.clone().add(0.5, 1.0, 0.5);
-         this.world.spawnParticle(Particle.FIREWORK, center, 10, 0.5, 0.5, 0.5, 0.1);
-         this.world.spawnParticle(Particle.GLOW_SQUID_INK, center, 5, 0.3, 0.3, 0.3, 0.05);
-      }
-   }
-
-   public void complete() {
-      Location center = this.location.clone().add(0.5, 1.0, 0.5);
-      Color[] theme = this.themeColours();
-      Player player = this.getPlayer();
-      if (player != null && player.isOnline()) {
-         player.sendMessage("§aThe ritual for the " + this.formatWeaponKey(this.weaponKey) + " is complete!");
-      }
-
-      this.plugin.getSoundManager().world(center, Sound.BLOCK_BEACON_ACTIVATE, 1.0F, 0.9F);
-
-      for (int i = 0; i < 90; i++) {
-         double angle = Math.random() * 3.141592653589793 * 2.0;
-         double radius = Math.random() * 2.2;
-         Location burst = center.clone().add(radius * Math.cos(angle), Math.random() * 3.0, radius * Math.sin(angle));
-         this.world.spawnParticle(Particle.DUST, burst, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(Math.random() < 0.5 ? theme[0] : theme[1], 2.0F));
-      }
-
-      this.world.spawnParticle(Particle.FIREWORK, center, 160, 2.0, 2.0, 2.0, 0.5);
-      this.world.spawnParticle(Particle.GLOW, center, 80, 1.5, 1.5, 1.5, 0.3);
-      this.world.spawnParticle(Particle.TOTEM_OF_UNDYING, center, 50, 1.0, 1.0, 1.0, 0.2);
-      ItemStack weapon = this.plugin.getWeaponManager().getWeapon(this.weaponKey);
-      this.world.dropItemNaturally(this.location.clone().add(0.0, 1.0, 0.0), weapon);
-      this.plugin.getRitualManager().removeRitual(this);
-      this.cleanup();
-   }
-
-   public void cancel() {
-      this.plugin.getRitualManager().removeRitual(this);
-      Location center = this.location.clone().add(0.5, 1.0, 0.5);
-      this.plugin.getSoundManager().world(center, Sound.BLOCK_FIRE_EXTINGUISH, 0.8F, 1.0F);
-      this.world.spawnParticle(Particle.LARGE_SMOKE, center, 30, 0.5, 0.5, 0.5, 0.1);
-      this.world.spawnParticle(Particle.ASH, center, 20, 1.0, 1.0, 1.0, 0.05);
-      this.cleanup();
-   }
-
-   private void cleanup() {
-      if (this.task != null) {
-         this.task.cancel();
-      }
-
-      if (this.particleTask != null) {
-         this.particleTask.cancel();
-      }
-
-      this.bossBar.removeAll();
-      if (this.floatingItem != null && this.floatingItem.isValid()) {
-         this.floatingItem.remove();
-      }
-   }
-
-   private String formatWeaponKey(String key) {
-      if (key != null && !key.isEmpty()) {
-         String[] words = key.split("-");
-         StringBuilder formattedName = new StringBuilder();
-
-         for (String word : words) {
-            if (!word.isEmpty()) {
-               formattedName.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1)).append(" ");
-            }
-         }
-
-         return formattedName.toString().trim();
-      } else {
-         return "Unknown Weapon";
-      }
-   }
-
-   private String formatTime(int seconds) {
-      int minutes = seconds / 60;
-      int remainingSeconds = seconds % 60;
-      return String.format("%02d:%02d", minutes, remainingSeconds);
+      int seconds = Math.max(0, this.secondsRemaining);
+      return String.format("%02d:%02d", seconds / 60, seconds % 60);
    }
 
    public Player getPlayer() {
@@ -416,7 +398,11 @@ public class Ritual {
       return this.weaponKey;
    }
 
-   public boolean isRitualLocation(Location checkLoc) {
-      return checkLoc.getWorld().equals(this.location.getWorld()) && checkLoc.distance(this.location) <= 3.0;
+   public List<ItemStack> getConsumed() {
+      return this.consumed;
+   }
+
+   public boolean isRitualLocation(Location check) {
+      return check.getWorld() != null && check.getWorld().equals(this.world) && check.distance(this.location) <= 3.0;
    }
 }

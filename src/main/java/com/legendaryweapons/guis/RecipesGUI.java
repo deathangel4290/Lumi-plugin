@@ -1,117 +1,109 @@
 package com.legendaryweapons.guis;
 
 import com.legendaryweapons.LegendaryWeapons;
-import com.legendaryweapons.managers.ConfigManager;
-import com.legendaryweapons.managers.WeaponManager;
 import com.legendaryweapons.rituals.RitualBlock;
+import com.legendaryweapons.rituals.RitualRecipes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * The recipe book. Built fresh on every open so it always reflects the live config, whether
+ * fragments are required, and which one-per-server legendaries have already been forged.
+ */
 public class RecipesGUI {
    private final LegendaryWeapons plugin;
-   private final ConfigManager configManager;
-   private final WeaponManager weaponManager;
-   private Inventory recipesInventory;
 
    public RecipesGUI(LegendaryWeapons plugin) {
       this.plugin = plugin;
-      this.configManager = plugin.getConfigManager();
-      this.weaponManager = plugin.getWeaponManager();
-      this.createRecipesInventory();
    }
 
-   private void createRecipesInventory() {
-      int size = 54;
-      String title = "Legendary Weapon Recipes";
-      this.recipesInventory = Bukkit.createInventory(null, size, title);
-      ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-      ItemMeta borderMeta = border.getItemMeta();
-      if (borderMeta != null) {
-         borderMeta.setDisplayName(" ");
-         border.setItemMeta(borderMeta);
-      }
+   public static final class Holder implements InventoryHolder {
+      private Inventory inventory;
 
-      for (int i = 0; i < size; i++) {
+      @NotNull
+      public Inventory getInventory() {
+         return this.inventory;
+      }
+   }
+
+   private static Component line(String text, NamedTextColor colour) {
+      return Component.text(text, colour).decoration(TextDecoration.ITALIC, false);
+   }
+
+   public void open(@NotNull Player player) {
+      Holder holder = new Holder();
+      Inventory inventory = Bukkit.createInventory(holder, 54, Component.text("Legendary Recipes", NamedTextColor.DARK_PURPLE));
+      holder.inventory = inventory;
+      ItemStack border = RitualGUI.named(Material.PURPLE_STAINED_GLASS_PANE, Component.text(" "), List.of());
+
+      for (int i = 0; i < 54; i++) {
          if (i < 9 || i > 44 || i % 9 == 0 || i % 9 == 8) {
-            this.recipesInventory.setItem(i, border);
+            inventory.setItem(i, border);
          }
       }
 
       int slot = 10;
-      if (this.configManager.isRitualBlockRecipeEnabled()) {
-         ItemStack ritualBlockItem = RitualBlock.getRitualBlockItem();
-         ItemMeta ritualMeta = ritualBlockItem.getItemMeta();
-         if (ritualMeta != null) {
-            List<String> lore = ritualMeta.getLore();
-            lore.add(" ");
-            lore.add("§eCrafting Recipe:");
-            List<String> shape = this.configManager.getRitualBlockRecipeShape();
-            if (shape.size() == 3) {
-               lore.add("§7  " + shape.get(0));
-               lore.add("§7  " + shape.get(1));
-               lore.add("§7  " + shape.get(2));
-            }
+      if (this.plugin.getConfigManager().isRitualBlockRecipeEnabled()) {
+         ItemStack altar = RitualBlock.getRitualBlockItem();
+         List<Component> lore = new ArrayList<>();
+         lore.add(line("Crafting table recipe:", NamedTextColor.YELLOW));
 
-            lore.add(" ");
-            lore.add("§eIngredients:");
-            Map<Character, Material> ingredients = this.configManager.getRitualBlockRecipeIngredients();
-
-            for (Entry<Character, Material> entry : ingredients.entrySet()) {
-               lore.add("§7" + entry.getKey() + " = " + this.formatMaterialName(entry.getValue()));
-            }
-
-            ritualMeta.setLore(lore);
-            ritualBlockItem.setItemMeta(ritualMeta);
+         for (String row : this.plugin.getConfigManager().getRitualBlockRecipeShape()) {
+            lore.add(line("  " + row, NamedTextColor.GRAY));
          }
 
-         this.recipesInventory.setItem(slot, ritualBlockItem);
-         slot++;
+         for (Map.Entry<Character, Material> entry : this.plugin.getConfigManager().getRitualBlockRecipeIngredients().entrySet()) {
+            lore.add(line(entry.getKey() + " = " + RitualRecipes.prettify(entry.getValue().name()), NamedTextColor.GRAY));
+         }
+
+         altar.editMeta(meta -> meta.lore(lore));
+         inventory.setItem(slot++, altar);
       }
 
-      for (String weaponKey : this.weaponManager.getWeaponKeys()) {
+      for (String weaponKey : this.plugin.getWeaponManager().getWeaponKeys()) {
          if (slot > 43) {
             break;
          }
 
-         ItemStack weaponDisplay = this.weaponManager.getWeapon(weaponKey);
-         ItemMeta weaponMeta = weaponDisplay.getItemMeta();
-         if (weaponMeta != null) {
-            List<String> lore = weaponMeta.getLore();
-            lore.add(" ");
-            lore.add("§eRecipe Ingredients:");
+         ItemStack display = this.plugin.getWeaponManager().getWeapon(weaponKey);
+         List<RitualRecipes.Entry> entries = this.plugin.getRitualRecipes().entries(weaponKey);
+         boolean forged = this.plugin.getConfigManager().isSingleCraft() && this.plugin.getRitualManager().isCrafted(weaponKey);
+         display.editMeta(meta -> {
+            List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
+            lore.add(Component.empty());
+            lore.add(line("Ritual ingredients:", NamedTextColor.YELLOW));
 
-            for (ItemStack ingredient : this.configManager.getWeaponRecipe(weaponKey)) {
-               lore.add("§7- " + ingredient.getAmount() + "x " + this.formatMaterialName(ingredient.getType()));
+            for (RitualRecipes.Entry entry : entries) {
+               lore.add(line(" - " + entry.describe(), entry.customId() != null ? NamedTextColor.AQUA : NamedTextColor.GRAY));
             }
 
-            weaponMeta.setLore(lore);
-            weaponDisplay.setItemMeta(weaponMeta);
-         }
-
-         this.recipesInventory.setItem(slot, weaponDisplay);
+            lore.add(Component.empty());
+            lore.add(forged ? line("Already forged on this server", NamedTextColor.RED) : line("Not yet forged", NamedTextColor.GREEN));
+            meta.lore(lore);
+         });
+         inventory.setItem(slot, display);
          if (++slot % 9 == 8) {
             slot += 2;
          }
       }
-   }
 
-   private String formatMaterialName(Material material) {
-      return material.toString().toLowerCase().replace('_', ' ');
-   }
-
-   public void open(@NotNull Player player) {
-      player.openInventory(this.recipesInventory);
-   }
-
-   public Inventory getInventory() {
-      return this.recipesInventory;
+      inventory.setItem(49, RitualGUI.named(Material.AMETHYST_SHARD, Component.text("Weapon fragments", NamedTextColor.AQUA), List.of(
+         line("Dropped by bosses, found in supply drops,", NamedTextColor.GRAY),
+         line("and won from events.", NamedTextColor.GRAY),
+         line(this.plugin.getRitualRecipes().fusionCost() + " of one tier fuse into the next at the altar.", NamedTextColor.GRAY),
+         line("Luminosity Fragments come only from events.", NamedTextColor.GOLD)
+      )));
+      player.openInventory(inventory);
    }
 }

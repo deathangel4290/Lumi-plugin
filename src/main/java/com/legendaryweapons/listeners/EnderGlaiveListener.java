@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.WeaponAbility;
 import com.legendaryweapons.managers.WeaponManager;
@@ -41,6 +42,11 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
    @Override
    public String weaponKey() {
       return "ender-glaive";
+   }
+
+   @Override
+   public net.kyori.adventure.text.Component hud(Player player) {
+      return com.legendaryweapons.managers.HudManager.cooldown("Pearl", this.plugin.getCooldownManager().getRemainingSeconds(player, PEARL_COOLDOWN_KEY));
    }
 
    @Override
@@ -128,21 +134,20 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                }
 
                if (!this.announcedFull) {
-                  player.sendActionBar(
-                     Component.text("Spear Pearl ", NamedTextColor.DARK_PURPLE)
+                  com.legendaryweapons.managers.HudManager.message(player, Component.text("Spear Pearl ", NamedTextColor.DARK_PURPLE)
                         .append(Component.text((int)(progress * 100.0) + "%", NamedTextColor.LIGHT_PURPLE))
                   );
                }
 
                if (progress >= 1.0 && !this.announcedFull) {
                   this.announcedFull = true;
-                  player.sendActionBar(Component.text("Spear Pearl ready", NamedTextColor.LIGHT_PURPLE));
+                  com.legendaryweapons.managers.HudManager.message(player, Component.text("Spear Pearl ready", NamedTextColor.LIGHT_PURPLE));
                   EnderGlaiveListener.this.plugin.getSoundManager().self(player, Sound.BLOCK_BEACON_POWER_SELECT, 0.7F, 1.6F);
-                  player.getWorld().spawnParticle(Particle.END_ROD, loc, 25, 0.4, 0.4, 0.4, 0.06);
+                  ParticleManager.spawn(Particle.END_ROD, loc, 25, 0.4, 0.4, 0.4, 0.06);
                }
 
                if (this.ticks % 20 == 0) {
-                  EnderGlaiveListener.this.plugin.getSoundManager().ambient(loc, Sound.BLOCK_BEACON_AMBIENT, 0.4F, 1.5F);
+                  EnderGlaiveListener.this.plugin.getSoundManager().ambient(loc, Sound.ENTITY_ENDER_PEARL_THROW, 0.4F, 1.5F);
                }
 
                this.ticks++;
@@ -188,8 +193,8 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                this.cancel();
             } else if (owner != null && owner.isOnline()) {
                Location pearlLoc = pearlEntity.getLocation();
-               pearlLoc.getWorld().spawnParticle(Particle.PORTAL, pearlLoc, 3, 0.1, 0.1, 0.1, 0.01);
-               pearlLoc.getWorld().spawnParticle(Particle.REVERSE_PORTAL, pearlLoc, 1, 0.1, 0.1, 0.1, 0.01);
+               ParticleManager.spawn(Particle.PORTAL, pearlLoc, 3, 0.1, 0.1, 0.1, 0.01);
+               ParticleManager.spawn(Particle.REVERSE_PORTAL, pearlLoc, 1, 0.1, 0.1, 0.1, 0.01);
             } else {
                pearlEntity.remove();
                this.cancel();
@@ -217,7 +222,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                EnderGlaiveListener.this.returnGlaiveToPlayer(trident.getUniqueId());
                this.cancel();
             } else if (!trident.isOnGround() && !trident.isInBlock()) {
-               trident.getWorld().spawnParticle(Particle.REVERSE_PORTAL, trident.getLocation(), 1, 0.1, 0.1, 0.1, 0.005);
+               ParticleManager.spawn(Particle.REVERSE_PORTAL, trident.getLocation(), 1, 0.1, 0.1, 0.1, 0.005);
             } else {
                (new BukkitRunnable() {
                   public void run() {
@@ -239,12 +244,12 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
             HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack[]{glaiveItem});
             if (leftover.isEmpty()) {
                this.plugin.getSoundManager().self(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1.2F);
-               player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation().add(0.0, 1.0, 0.0), 10, 0.5, 0.5, 0.5, 0.1);
+               ParticleManager.spawn(Particle.PORTAL, player.getLocation().add(0.0, 1.0, 0.0), 10, 0.5, 0.5, 0.5, 0.1);
             } else {
                player.getWorld().dropItem(player.getLocation(), glaiveItem);
                this.plugin.getSoundManager().self(player, Sound.ENTITY_ITEM_PICKUP, 0.5F, 1.0F);
-               player.sendActionBar(Component.text("Ender Glaive dropped - inventory full", NamedTextColor.LIGHT_PURPLE));
-               player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
+               com.legendaryweapons.managers.HudManager.message(player, Component.text("Ender Glaive dropped - inventory full", NamedTextColor.LIGHT_PURPLE));
+               ParticleManager.spawn(Particle.PORTAL, player.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
             }
          }
 
@@ -264,7 +269,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
          if (trident.getPersistentDataContainer().has(this.glaiveKey, PersistentDataType.BYTE)) {
             Location hitLoc = trident.getLocation();
             this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_ENDERMAN_HURT, 0.5F, 1.2F);
-            hitLoc.getWorld().spawnParticle(Particle.PORTAL, hitLoc, 10, 0.5, 0.5, 0.5, 0.1);
+            ParticleManager.spawn(Particle.PORTAL, hitLoc, 10, 0.5, 0.5, 0.5, 0.1);
             (new BukkitRunnable() {
                public void run() {
                   EnderGlaiveListener.this.returnGlaiveToPlayer(trident.getUniqueId());
@@ -281,7 +286,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
             if (this.weaponManager.isLegendaryWeapon(mainHand) && "ender-glaive".equals(this.weaponManager.getWeaponKey(mainHand))) {
                Location hitLoc = event.getEntity().getLocation();
                this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6F, 1.0F);
-               hitLoc.getWorld().spawnParticle(Particle.PORTAL, hitLoc, 20, 1.0, 1.0, 1.0, 0.2);
+               ParticleManager.spawn(Particle.PORTAL, hitLoc, 20, 1.0, 1.0, 1.0, 0.2);
             }
          }
       }
@@ -329,7 +334,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
             this.plugin.getSoundManager().hit(event.getEntity().getLocation(), Sound.ENTITY_ENDERMAN_HURT, 0.5F, 1.2F);
             if (Math.random() < 0.1) {
                Location loc = event.getEntity().getLocation();
-               loc.getWorld().spawnParticle(Particle.PORTAL, loc, 5, 0.5, 0.5, 0.5, 0.1);
+               ParticleManager.spawn(Particle.PORTAL, loc, 5, 0.5, 0.5, 0.5, 0.1);
             }
          }
       }

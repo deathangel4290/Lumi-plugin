@@ -4,6 +4,7 @@ import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.managers.WeaponManager;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -50,6 +51,14 @@ public abstract class AbstractWeaponListener implements Listener, WeaponAbility 
 
    protected boolean isFullSwing(Player player) {
       return player.getAttackCooldown() > 0.9F;
+   }
+
+   protected boolean canAffect(Player source, Entity target) {
+      return this.plugin.getProtectionManager().canAffect(source, target);
+   }
+
+   protected double cooldownLeft(Player player, String cooldownKey) {
+      return this.plugin.getCooldownManager().getRemainingSeconds(player, cooldownKey);
    }
 
    protected boolean tryCooldown(Player player, String cooldownKey, long ticks) {

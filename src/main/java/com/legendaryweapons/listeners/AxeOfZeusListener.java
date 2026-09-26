@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.WeaponAbility;
 import com.legendaryweapons.managers.WeaponManager;
@@ -45,6 +46,11 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    @Override
    public String weaponKey() {
       return "axe-of-zeus";
+   }
+
+   @Override
+   public net.kyori.adventure.text.Component hud(Player player) {
+      return com.legendaryweapons.managers.HudManager.cooldown("Throw", this.plugin.getCooldownManager().getRemainingSeconds(player, COOLDOWN_KEY));
    }
 
    @Override
@@ -182,7 +188,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                      axe.teleport(facing);
                      this.spin = this.spin + spinPerTick;
                      AxeOfZeusListener.this.orientAxe((ItemDisplay)axe, this.spin);
-                     axe.getWorld().spawnParticle(Particle.CRIT, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
+                     ParticleManager.spawn(Particle.CRIT, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
                   }
                } else {
                   axe.remove();
@@ -203,7 +209,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       Location hitLoc = axe.getLocation();
       hitLoc.getWorld().strikeLightningEffect(hitLoc);
       this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.7F, 1.2F);
-      if (hitEntity != null) {
+      if (hitEntity != null && this.plugin.getProtectionManager().canAffect(owner, hitEntity)) {
          hitEntity.damage(this.ability("throw-damage", 8.0), owner);
          int stunDuration = this.abilityInt("throw-stun-duration", 40);
          int weaknessDuration = this.abilityInt("throw-weakness-duration", 100);
@@ -264,7 +270,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                   axe.teleport(facing);
                   this.spin = this.spin + spinPerTick;
                   AxeOfZeusListener.this.orientAxe((ItemDisplay)axe, this.spin);
-                  axe.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
+                  ParticleManager.spawn(Particle.ELECTRIC_SPARK, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
                }
             } else {
                axe.remove();
@@ -283,7 +289,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
          Map<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack[]{axe});
          if (!leftover.isEmpty()) {
             player.getWorld().dropItem(player.getLocation(), leftover.get(0));
-            player.sendActionBar(Component.text("Axe of Zeus dropped - inventory full", NamedTextColor.YELLOW));
+            com.legendaryweapons.managers.HudManager.message(player, Component.text("Axe of Zeus dropped - inventory full", NamedTextColor.YELLOW));
          }
 
          this.plugin.getSoundManager().self(player, Sound.ITEM_TRIDENT_RETURN, 0.6F, 1.2F);
@@ -306,12 +312,12 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    }
 
    private void handleMeleeAttack(Player damager, EntityDamageByEntityEvent event) {
-      if (!(damager.getAttackCooldown() <= 0.9F)) {
+      if (!(damager.getAttackCooldown() <= 0.9F) && !event.isCancelled() && this.plugin.getProtectionManager().canAffect(damager, event.getEntity())) {
          if (event.getEntity() instanceof LivingEntity victim && Math.random() < this.ability("melee-lightning-chance", 0.1)) {
             Location loc = victim.getLocation();
             loc.getWorld().strikeLightningEffect(loc);
             this.plugin.getSoundManager().world(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5F, 1.5F);
-            loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 20, 1.0, 1.0, 1.0, 0.1);
+            ParticleManager.spawn(Particle.ELECTRIC_SPARK, loc, 20, 1.0, 1.0, 1.0, 0.1);
             victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, this.abilityInt("melee-stun-duration", 20), 2, true, false));
             victim.setVelocity(new Vector(0.0, 0.3, 0.0));
          }

@@ -1,7 +1,10 @@
 package com.legendaryweapons.rituals;
 
 import com.legendaryweapons.LegendaryWeapons;
-import java.util.Arrays;
+import java.util.List;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -9,14 +12,21 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 public class RitualBlock {
+   private static NamespacedKey key() {
+      return new NamespacedKey(LegendaryWeapons.getPlugin(LegendaryWeapons.class), "ritual-block");
+   }
+
    public static ItemStack getRitualBlockItem() {
       ItemStack item = new ItemStack(Material.ENCHANTING_TABLE);
       ItemMeta meta = item.getItemMeta();
       if (meta != null) {
-         meta.setDisplayName("§5Ritual Block");
-         meta.setLore(Arrays.asList("§7Place this block to begin a", "§7legendary ritual."));
-         NamespacedKey key = new NamespacedKey(LegendaryWeapons.getPlugin(LegendaryWeapons.class), "ritual-block");
-         meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte)1);
+         meta.displayName(Component.text("✦ Ritual Altar ✦", NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+         meta.lore(List.of(
+            Component.text("Place it, then right-click to forge", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("a legendary weapon.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+         ));
+         meta.setEnchantmentGlintOverride(true);
+         meta.getPersistentDataContainer().set(key(), PersistentDataType.BYTE, (byte)1);
          item.setItemMeta(meta);
       }
 
@@ -24,11 +34,6 @@ public class RitualBlock {
    }
 
    public static boolean isRitualBlock(ItemStack item) {
-      if (item != null && item.hasItemMeta()) {
-         NamespacedKey key = new NamespacedKey(LegendaryWeapons.getPlugin(LegendaryWeapons.class), "ritual-block");
-         return item.getItemMeta().getPersistentDataContainer().has(key, PersistentDataType.BYTE);
-      } else {
-         return false;
-      }
+      return item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(key(), PersistentDataType.BYTE);
    }
 }

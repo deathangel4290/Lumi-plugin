@@ -1,5 +1,7 @@
 package com.legendaryweapons.guis;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.legendaryweapons.LegendaryWeapons;
 import java.util.ArrayList;
 import java.util.List;
@@ -108,7 +110,7 @@ public class VeilGUI implements Listener {
                   (TextComponent)Component.text(all.size() + " seen players", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                   (TextComponent)Component.text("Page " + (clamped + 1) + " of " + pages, NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false),
                   Component.empty(),
-                  (TextComponent)Component.text("The morph fails if anyone sees you.", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
+                  (TextComponent)Component.text("The morph fails if anyone within 20 blocks sees you.", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
                )
             );
          }
@@ -121,7 +123,15 @@ public class VeilGUI implements Listener {
       ItemStack head = new ItemStack(Material.PLAYER_HEAD);
       SkullMeta meta = (SkullMeta)head.getItemMeta();
       if (meta != null) {
-         meta.setOwningPlayer(Bukkit.getOfflinePlayer(id));
+         ProfileProperty skin = this.plugin.getPlayerRosterManager().cachedTextures(id);
+         if (skin != null) {
+            PlayerProfile profile = Bukkit.createProfileExact(id, name);
+            profile.setProperty(skin);
+            meta.setPlayerProfile(profile);
+         } else {
+            meta.setOwningPlayer(Bukkit.getOfflinePlayer(id));
+         }
+
          meta.displayName(Component.text(name, NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
          meta.lore(List.of((TextComponent)Component.text("Click to wear this face", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)));
          head.setItemMeta(meta);

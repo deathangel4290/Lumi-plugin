@@ -1,6 +1,7 @@
 package com.legendaryweapons.managers;
 
 import com.legendaryweapons.LegendaryWeapons;
+import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,6 +9,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -22,11 +25,41 @@ public class ConfigManager {
    private final LegendaryWeapons plugin;
    private FileConfiguration config;
 
+   /** Bump when shipped defaults change enough that an old config.yml would misrepresent the plugin. */
+   public static final int CONFIG_VERSION = 2;
+   private static final Pattern PLACEHOLDER = Pattern.compile("\\{(s|n|h|pct|x):([a-z0-9-]+)}");
+
    public ConfigManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
       this.plugin.saveDefaultConfig();
+      this.migrateIfOutdated();
       this.config = plugin.getConfig();
       this.loadDefaults();
+   }
+
+   /**
+    * Bukkit only ever ADDS missing keys, so a server that ran 1.1 keeps every old balance value,
+    * lore line and recipe forever. When the file predates CONFIG_VERSION it is moved aside to
+    * config-v<old>-backup.yml and the new defaults are written in its place.
+    */
+   private void migrateIfOutdated() {
+      File file = new File(this.plugin.getDataFolder(), "config.yml");
+      int found = this.plugin.getConfig().getInt("config-version", 1);
+      if (found < CONFIG_VERSION && file.exists()) {
+         File backup = new File(this.plugin.getDataFolder(), "config-v" + found + "-backup.yml");
+         if (backup.exists()) {
+            backup.delete();
+         }
+
+         if (file.renameTo(backup)) {
+            this.plugin.saveDefaultConfig();
+            this.plugin.reloadConfig();
+            this.plugin.getLogger().warning("config.yml was from an older version (" + found + "); it was saved as " + backup.getName()
+               + " and replaced with the " + CONFIG_VERSION + " defaults. Re-apply any custom edits from the backup.");
+         } else {
+            this.plugin.getLogger().severe("config.yml is outdated but could not be backed up; keeping it. Delete it to get the new defaults.");
+         }
+      }
    }
 
    public void loadDefaults() {
@@ -49,7 +82,23 @@ public class ConfigManager {
    }
 
    public boolean isSingleCraft() {
-      return this.config.getBoolean("ritual.single-craft-per-weapon", true);
+      return this.config.getBoolean("acquisition.single-craft-per-weapon", this.config.getBoolean("ritual.single-craft-per-weapon", true));
+   }
+
+   public boolean isRitualCraftingEnabled() {
+      return this.config.getBoolean("acquisition.ritual-crafting", true);
+   }
+
+   public boolean areFragmentsRequired() {
+      return this.config.getBoolean("acquisition.require-fragments", true);
+   }
+
+   public boolean isFragmentFusionEnabled() {
+      return this.config.getBoolean("acquisition.fragment-fusion", true);
+   }
+
+   public FileConfiguration raw() {
+      return this.config;
    }
 
    public String getMessage(String key, boolean withPrefix) {
@@ -82,11 +131,56 @@ public class ConfigManager {
    }
 
    public List<String> getWeaponLore(String weaponKey) {
+      ConfigurationSection abilities = this.getWeaponAbilities(weaponKey);
       return this.config
          .getStringList("weapons." + weaponKey + ".lore")
          .stream()
-         .map(line -> ChatColor.translateAlternateColorCodes('&', line))
+         .map(line -> ChatColor.translateAlternateColorCodes('&', fillPlaceholders(line, abilities)))
          .collect(Collectors.toList());
+   }
+
+   /**
+    * Lore reads its numbers from the abilities section so the two can never drift apart:
+    *   {s:key}   ticks as seconds      200  -> 10s
+    *   {n:key}   plain number          6.0  -> 6
+    *   {h:key}   damage as hearts      8.0  -> 4
+    *   {pct:key} fraction as percent   0.15 -> 15%
+    *   {x:key}   multiplier            1.35 -> 1.35x
+    */
+   public static String fillPlaceholders(String line, ConfigurationSection abilities) {
+      if (abilities == null || line.indexOf('{') < 0) {
+         return line;
+      } else {
+         Matcher matcher = PLACEHOLDER.matcher(line);
+         StringBuilder out = new StringBuilder();
+
+         while (matcher.find()) {
+            String key = matcher.group(2);
+            String replacement;
+            if (!abilities.contains(key)) {
+               replacement = "?";
+            } else {
+               double value = abilities.getDouble(key);
+
+               replacement = switch (matcher.group(1)) {
+                  case "s" -> number(value / 20.0) + "s";
+                  case "h" -> number(value / 2.0);
+                  case "pct" -> number(value * 100.0) + "%";
+                  case "x" -> number(value) + "x";
+                  default -> number(value);
+               };
+            }
+
+            matcher.appendReplacement(out, Matcher.quoteReplacement(replacement));
+         }
+
+         matcher.appendTail(out);
+         return out.toString();
+      }
+   }
+
+   private static String number(double value) {
+      return value == Math.rint(value) ? String.valueOf((long)value) : String.valueOf(Math.round(value * 100.0) / 100.0);
    }
 
    public int getWeaponCustomModelData(String weaponKey) {
@@ -129,25 +223,6 @@ public class ConfigManager {
       }
 
       return enchantments;
-   }
-
-   public List<ItemStack> getWeaponRecipe(String weaponKey) {
-      return this.config.getStringList("weapons." + weaponKey + ".recipe").stream().map(itemString -> {
-         String[] parts = itemString.split(":");
-         int amount = 1;
-
-         try {
-            Material material = Material.valueOf(parts[0].toUpperCase());
-            if (parts.length > 1) {
-               amount = Integer.parseInt(parts[1]);
-            }
-
-            return new ItemStack(material, amount);
-         } catch (IllegalArgumentException var6) {
-            this.plugin.getLogger().warning("Invalid material in recipe for " + weaponKey + ": " + parts[0]);
-            return null;
-         }
-      }).filter(item -> item != null).collect(Collectors.toList());
    }
 
    public boolean isRitualBlockRecipeEnabled() {

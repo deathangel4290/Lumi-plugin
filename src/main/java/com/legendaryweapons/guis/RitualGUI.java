@@ -1,75 +1,147 @@
 package com.legendaryweapons.guis;
 
 import com.legendaryweapons.LegendaryWeapons;
+import com.legendaryweapons.items.CustomItems;
+import com.legendaryweapons.rituals.RitualRecipes;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * The altar menu (5 rows):
+ *
+ *   row 0  . . . . [info] . . . .
+ *   row 1  . . . . [preview]. . . .
+ *   row 2  . . [in][in][in][in][in] . .
+ *   row 3  . . . . [begin] . . . .
+ *   row 4  . . . . [recipes] . . . .
+ *
+ * Up to five ingredients. The preview shows the weapon the current items would forge (or the
+ * fragment they would fuse into), so players see what they are about to commit to.
+ */
 public class RitualGUI implements InventoryHolder {
+   public static final int[] INGREDIENT_SLOTS = new int[]{20, 21, 22, 23, 24};
+   public static final int PREVIEW_SLOT = 13;
+   public static final int BUTTON_SLOT = 31;
+   public static final int RECIPES_SLOT = 40;
+   public static final int INFO_SLOT = 4;
    private final LegendaryWeapons plugin;
    private final Inventory inventory;
+   private final Location altar;
 
-   public RitualGUI(LegendaryWeapons plugin) {
+   public RitualGUI(LegendaryWeapons plugin, Location altar) {
       this.plugin = plugin;
-      int size = 27;
-      String title = "Ritual of Legendary Crafting";
-      this.inventory = Bukkit.createInventory(this, size, title);
+      this.altar = altar;
+      this.inventory = Bukkit.createInventory(this, 45, Component.text("✦ Luminara Ritual Altar ✦", NamedTextColor.DARK_PURPLE));
+   }
+
+   public Location getAltar() {
+      return this.altar;
+   }
+
+   public static boolean isIngredientSlot(int slot) {
+      for (int s : INGREDIENT_SLOTS) {
+         if (s == slot) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   static ItemStack named(Material material, Component name, List<Component> lore) {
+      ItemStack item = new ItemStack(material);
+      item.editMeta(meta -> {
+         meta.displayName(name.decoration(TextDecoration.ITALIC, false));
+         meta.lore(lore);
+      });
+      return item;
+   }
+
+   static Component line(String text, NamedTextColor colour) {
+      return Component.text(text, colour).decoration(TextDecoration.ITALIC, false);
    }
 
    public void setup() {
-      ItemStack border = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-      ItemMeta borderMeta = border.getItemMeta();
-      if (borderMeta != null) {
-         borderMeta.setDisplayName(" ");
-         border.setItemMeta(borderMeta);
-      }
+      ItemStack filler = named(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "), List.of());
+      ItemStack accent = named(Material.PURPLE_STAINED_GLASS_PANE, Component.text(" "), List.of());
 
       for (int i = 0; i < this.inventory.getSize(); i++) {
-         this.inventory.setItem(i, border);
+         int row = i / 9;
+         int col = i % 9;
+         this.inventory.setItem(i, row == 0 || row == 4 || col == 0 || col == 8 ? accent : filler);
       }
 
-      this.inventory.setItem(11, new ItemStack(Material.AIR));
-      this.inventory.setItem(13, new ItemStack(Material.AIR));
-      this.inventory.setItem(15, new ItemStack(Material.AIR));
+      for (int slot : INGREDIENT_SLOTS) {
+         this.inventory.setItem(slot, null);
+      }
+
+      this.inventory.setItem(INFO_SLOT, named(Material.WRITTEN_BOOK, Component.text("How rituals work", NamedTextColor.LIGHT_PURPLE), List.of(
+         line("Place a recipe's ingredients in the", NamedTextColor.GRAY),
+         line("five slots below, then press Begin.", NamedTextColor.GRAY),
+         Component.empty(),
+         line("The ritual takes " + this.plugin.getConfigManager().getRitualTimer() / 60 + " minutes and everyone", NamedTextColor.GRAY),
+         line("on the server sees where it is.", NamedTextColor.GRAY),
+         line("Breaking the altar ends it and spills", NamedTextColor.DARK_GRAY),
+         line("the ingredients.", NamedTextColor.DARK_GRAY),
+         Component.empty(),
+         line(this.plugin.getRitualRecipes().fusionCost() + " fragments of one tier fuse into the next.", NamedTextColor.AQUA)
+      )));
+      this.inventory.setItem(RECIPES_SLOT, named(Material.BOOK, Component.text("Recipe book", NamedTextColor.YELLOW), List.of(line("Click to view every recipe.", NamedTextColor.GRAY))));
+      this.update(null);
    }
 
-   public void update(Player player) {
+   public List<ItemStack> ingredients() {
       List<ItemStack> items = new ArrayList<>();
-      items.add(this.inventory.getItem(11));
-      items.add(this.inventory.getItem(13));
-      items.add(this.inventory.getItem(15));
-      String weaponKey = this.plugin.getRitualManager().getWeaponKeyFromRecipe(items);
-      ItemStack resultItem;
-      ItemMeta resultMeta;
-      if (weaponKey != null) {
-         resultItem = new ItemStack(Material.ANVIL);
-         resultMeta = resultItem.getItemMeta();
-         if (resultMeta != null) {
-            resultMeta.setDisplayName("§aBegin Ritual");
-            resultMeta.setLore(Collections.singletonList("§7You are about to craft the " + weaponKey));
+
+      for (int slot : INGREDIENT_SLOTS) {
+         items.add(this.inventory.getItem(slot));
+      }
+
+      return items;
+   }
+
+   public void update(Player viewer) {
+      List<ItemStack> items = this.ingredients();
+      RitualRecipes recipes = this.plugin.getRitualRecipes();
+      RitualRecipes.Match match = recipes.match(items);
+      int fusion = match == null ? recipes.fusionTier(items) : 0;
+      if (match != null) {
+         ItemStack preview = this.plugin.getWeaponManager().getWeapon(match.weaponKey());
+         this.inventory.setItem(PREVIEW_SLOT, preview);
+         boolean taken = this.plugin.getConfigManager().isSingleCraft() && this.plugin.getRitualManager().isCrafted(match.weaponKey());
+         if (taken) {
+            this.inventory.setItem(BUTTON_SLOT, named(Material.BARRIER, Component.text("Already forged", NamedTextColor.RED), List.of(line("Each legendary can only exist once.", NamedTextColor.GRAY))));
+         } else if (this.plugin.getRitualManager().getRitualAtLocation(this.altar) != null) {
+            this.inventory.setItem(BUTTON_SLOT, named(Material.BARRIER, Component.text("Altar busy", NamedTextColor.RED), List.of()));
+         } else {
+            this.inventory.setItem(BUTTON_SLOT, named(Material.ANVIL, Component.text("Begin Ritual", NamedTextColor.GREEN), List.of(
+               line("Takes " + this.plugin.getConfigManager().getRitualTimer() / 60 + " minutes.", NamedTextColor.GRAY),
+               line("Extra items are handed back.", NamedTextColor.DARK_GRAY)
+            )));
          }
+      } else if (fusion > 0) {
+         this.inventory.setItem(PREVIEW_SLOT, CustomItems.get().create(CustomItems.fragmentId(fusion + 1), 1));
+         this.inventory.setItem(BUTTON_SLOT, named(Material.SMITHING_TABLE, Component.text("Fuse fragments", NamedTextColor.AQUA), List.of(
+            line("Costs " + recipes.fusionCost() + " fragments. Instant.", NamedTextColor.GRAY)
+         )));
       } else {
-         resultItem = new ItemStack(Material.BARRIER);
-         resultMeta = resultItem.getItemMeta();
-         if (resultMeta != null) {
-            resultMeta.setDisplayName("§cInvalid Recipe");
-            resultMeta.setLore(Collections.singletonList("§7The items do not form a valid recipe."));
-         }
+         boolean empty = items.stream().allMatch(item -> item == null || item.getType().isAir());
+         this.inventory.setItem(PREVIEW_SLOT, named(Material.ENDER_EYE, Component.text(empty ? "Place ingredients" : "No matching recipe", empty ? NamedTextColor.GRAY : NamedTextColor.RED), List.of(
+            line("Check the recipe book below.", NamedTextColor.DARK_GRAY)
+         )));
+         this.inventory.setItem(BUTTON_SLOT, named(Material.BARRIER, Component.text("Invalid recipe", NamedTextColor.RED), List.of()));
       }
-
-      if (resultItem != null) {
-         resultItem.setItemMeta(resultMeta);
-      }
-
-      this.inventory.setItem(22, resultItem);
    }
 
    @NotNull

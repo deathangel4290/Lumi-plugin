@@ -3,8 +3,14 @@ package com.legendaryweapons.listeners;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.AbstractWeaponListener;
 import com.legendaryweapons.abilities.ChargedWeapon;
+import com.legendaryweapons.managers.HudManager;
+import com.legendaryweapons.managers.ParticleManager;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,21 +20,42 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
+/**
+ * Titan's Axe -- wins the long fight by wrecking armour.
+ *
+ * Anti-spam: Slam charge only comes from full-swing hits on players (not mobs, so it cannot be
+ * farmed on a zombie), the same victim can only feed it every half second, it drains out of
+ * combat, a slam has a visible and audible wind-up, and it goes on a 30s cooldown.
+ */
 public class TitansAxeListener extends AbstractWeaponListener implements ChargedWeapon {
-   private static final String WEAPON_KEY = "titans-axe";
    private static final String CHARGE_KEY = "titans-slam";
    private static final String CRIT_COMBO_KEY = "titans-crits";
    private static final String SLAM_COOLDOWN_KEY = "titans-slam-cd";
+   private final Map<UUID, Long> lastChargeFromVictim = new HashMap<>();
+   private final Set<UUID> windingUp = new HashSet<>();
 
    public TitansAxeListener(LegendaryWeapons plugin) {
       super(plugin);
+      (new BukkitRunnable() {
+         public void run() {
+            long delay = TitansAxeListener.this.abilityLong("charge-drain-delay", 200L) * 50L;
+            double perSecond = TitansAxeListener.this.ability("charge-drain-per-second", 2.0);
+
+            for (Player player : TitansAxeListener.this.plugin.getServer().getOnlinePlayers()) {
+               TitansAxeListener.this.plugin.getChargeMeter().drain(player, CHARGE_KEY, delay, perSecond, TitansAxeListener.this.max());
+            }
+         }
+      }).runTaskTimer(plugin, 20L, 20L);
    }
 
    @Override
@@ -36,42 +63,71 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
       return "titans-axe";
    }
 
+   private double max() {
+      return Math.max(1.0, this.ability("slam-charge-max", 100.0));
+   }
+
    @Override
    public void setChargeFraction(Player player, double fraction) {
-      double max = this.ability("slam-charge-max", 100.0);
-      this.plugin.getChargeMeter().set(player, "titans-slam", fraction * max, max);
+      this.plugin.getChargeMeter().set(player, CHARGE_KEY, fraction * this.max(), this.max());
+      this.plugin.getChargeMeter().markCombat(player);
    }
 
    @Override
    public double getChargeFraction(Player player) {
-      double max = this.ability("slam-charge-max", 100.0);
-      return max <= 0.0 ? 0.0 : this.plugin.getChargeMeter().get(player, "titans-slam") / max;
+      return this.plugin.getChargeMeter().get(player, CHARGE_KEY) / this.max();
+   }
+
+   @Override
+   public Component hud(Player player) {
+      double cooldown = this.cooldownLeft(player, SLAM_COOLDOWN_KEY);
+      Component meter = HudManager.meter("Slam", this.getChargeFraction(player), NamedTextColor.GOLD);
+      return cooldown > 0.0 ? meter.append(Component.text("  cooldown " + HudManager.seconds(cooldown), NamedTextColor.RED)) : meter;
    }
 
    @EventHandler
+   public void onQuit(PlayerQuitEvent event) {
+      this.lastChargeFromVictim.remove(event.getPlayer().getUniqueId());
+      this.windingUp.remove(event.getPlayer().getUniqueId());
+   }
+
+   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Player attacker && this.isHolding(attacker)) {
-         if (event.getEntity() instanceof LivingEntity victim) {
-            if (this.isFullSwing(attacker)) {
-               double max = this.ability("slam-charge-max", 100.0);
-               double gain = this.ability("slam-charge-per-hit", 12.0);
-               double charge = this.plugin.getChargeMeter().add(attacker, "titans-slam", gain, max);
-               this.plugin.getChargeMeter().showActionBar(attacker, "Slam", "titans-slam", max, NamedTextColor.GOLD);
-               if (charge >= max) {
-                  this.plugin.getSoundManager().self(attacker, Sound.BLOCK_ANVIL_LAND, 0.5F, 1.8F);
+         if (event.getEntity() instanceof LivingEntity victim && this.isFullSwing(attacker)) {
+            boolean mobsCount = this.abilities() != null && this.abilities().getBoolean("charge-from-mobs", false);
+            if (victim instanceof Player || mobsCount) {
+               long now = System.currentTimeMillis();
+               Long last = this.lastChargeFromVictim.get(victim.getUniqueId());
+               if (last == null || now - last >= this.abilityLong("charge-victim-cooldown", 10L) * 50L) {
+                  this.lastChargeFromVictim.put(victim.getUniqueId(), now);
+                  double before = this.plugin.getChargeMeter().get(attacker, CHARGE_KEY);
+                  double charge = this.plugin.getChargeMeter().add(attacker, CHARGE_KEY, this.ability("slam-charge-per-hit", 10.0), this.max());
+                  if (charge >= this.max() && before < this.max()) {
+                     this.plugin.getSoundManager().self(attacker, Sound.BLOCK_ANVIL_LAND, 0.5F, 1.8F);
+                     HudManager.message(attacker, Component.text("Slam ready", NamedTextColor.GOLD));
+                  }
                }
+            }
 
+            if (victim instanceof Player && this.canAffect(attacker, victim)) {
                int needed = this.abilityInt("crit-streak-required", 3);
-               int streak = this.plugin.getComboTracker().hit(attacker, "titans-crits", this.abilityLong("crit-streak-window-millis", 4000L));
+               int streak = this.plugin.getComboTracker().hit(attacker, CRIT_COMBO_KEY, this.abilityLong("crit-streak-window-millis", 4000L));
                if (streak >= needed) {
-                  this.plugin.getComboTracker().reset(attacker, "titans-crits");
-                  this.damageArmour(victim, this.abilityInt("crit-streak-armour-damage", 25), attacker);
+                  this.plugin.getComboTracker().reset(attacker, CRIT_COMBO_KEY);
+                  this.damageArmour(victim, this.abilityInt("crit-streak-armour-damage", 15), attacker);
                }
+            }
 
-               if (victim instanceof Player blocking && blocking.isBlocking()) {
-                  blocking.setCooldown(Material.SHIELD, this.abilityInt("shield-break-duration", 200));
-                  this.plugin.getSoundManager().world(blocking.getLocation(), Sound.ITEM_SHIELD_BREAK, 0.7F, 0.8F);
-               }
+            if (victim instanceof Player blocking && blocking.isBlocking()) {
+               final int disable = this.abilityInt("shield-break-duration", 160);
+               // One tick later so vanilla's own 5s axe disable cannot overwrite the longer one.
+               this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+                  if (blocking.isOnline()) {
+                     blocking.setCooldown(Material.SHIELD, disable);
+                  }
+               }, 1L);
+               this.plugin.getSoundManager().world(blocking.getLocation(), Sound.ITEM_SHIELD_BREAK, 0.7F, 0.8F);
             }
          }
       }
@@ -92,7 +148,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                   int updated = damageable.getDamage() + amount;
                   if (updated >= max) {
                      armour[i] = null;
-                     target.getWorld().playSound(target.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.8F, 1.0F);
+                     this.plugin.getSoundManager().world(target.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.8F, 1.0F);
                   } else {
                      damageable.setDamage(updated);
                      piece.setItemMeta(meta);
@@ -106,9 +162,9 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
          if (any) {
             equipment.setArmorContents(armour);
             Location loc = target.getLocation().add(0.0, 1.0, 0.0);
-            loc.getWorld().spawnParticle(Particle.CRIT, loc, 20, 0.4, 0.5, 0.4, 0.1);
-            this.plugin.getSoundManager().world(loc, Sound.ENTITY_ITEM_BREAK, 0.5F, 0.7F);
-            source.sendActionBar(Component.text("Armour cracked", NamedTextColor.GOLD));
+            ParticleManager.spawn(Particle.CRIT, loc, 12, 0.4, 0.5, 0.4, 0.1);
+            this.plugin.getSoundManager().world(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.5F, 1.4F);
+            HudManager.message(source, Component.text("Armour cracked (-" + amount + " durability)", NamedTextColor.GOLD));
          }
       }
    }
@@ -117,50 +173,79 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
    public boolean trigger(Player player, boolean secondary) {
       if (!this.isHolding(player)) {
          return false;
-      } else if (this.plugin.getCooldownManager().isOnCooldown(player, "titans-slam-cd")) {
-         this.plugin.getCooldownManager().notifyOnCooldown(player, "titans-slam-cd");
+      } else if (this.windingUp.contains(player.getUniqueId())) {
+         return true;
+      } else if (this.plugin.getCooldownManager().isOnCooldown(player, SLAM_COOLDOWN_KEY)) {
+         this.plugin.getCooldownManager().notifyOnCooldown(player, SLAM_COOLDOWN_KEY);
          return true;
       } else {
-         double max = this.ability("slam-charge-max", 100.0);
          double required = this.ability("slam-charge-required", 100.0);
-         double charge = this.plugin.getChargeMeter().get(player, "titans-slam");
+         double charge = this.plugin.getChargeMeter().get(player, CHARGE_KEY);
          if (charge < required) {
-            player.sendActionBar(
-               ((TextComponent)Component.text("Slam ", NamedTextColor.GRAY)
-                     .append(Component.text((int)Math.round(charge / max * 100.0) + "%", NamedTextColor.GOLD)))
+            HudManager.message(
+               player,
+               Component.text("Slam ", NamedTextColor.GRAY)
+                  .append(Component.text((int)Math.round(charge / this.max() * 100.0) + "%", NamedTextColor.GOLD))
                   .append(Component.text(" - not ready", NamedTextColor.GRAY))
             );
-            return true;
          } else {
-            this.plugin.getChargeMeter().consume(player, "titans-slam");
-            this.plugin.getCooldownManager().setWithItemFeedback(player, "titans-slam-cd", this.abilityLong("slam-cooldown", 100L), this.weaponMaterial());
-            this.slam(player);
-            return true;
+            this.plugin.getChargeMeter().consume(player, CHARGE_KEY);
+            this.plugin.getCooldownManager().setWithItemFeedback(player, SLAM_COOLDOWN_KEY, this.abilityLong("slam-cooldown", 600L), this.weaponMaterial());
+            this.windUp(player);
          }
+
+         return true;
       }
+   }
+
+   /** The tell: the axe is raised with a grinding charge-up and the ground ring closes in. */
+   private void windUp(final Player player) {
+      final int ticks = Math.max(0, this.abilityInt("slam-windup", 12));
+      final double radius = this.ability("slam-radius", 6.0);
+      final UUID id = player.getUniqueId();
+      this.windingUp.add(id);
+      this.plugin.getSoundManager().world(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 1.0F, 0.6F);
+      this.plugin.getSoundManager().world(player.getLocation(), Sound.BLOCK_ANVIL_PLACE, 0.6F, 0.5F);
+      (new BukkitRunnable() {
+         int elapsed = 0;
+
+         public void run() {
+            if (!player.isOnline() || player.isDead() || !TitansAxeListener.this.isHolding(player)) {
+               TitansAxeListener.this.windingUp.remove(id);
+               HudManager.message(player, Component.text("Slam interrupted", NamedTextColor.GRAY));
+               this.cancel();
+            } else if (this.elapsed++ >= ticks) {
+               TitansAxeListener.this.windingUp.remove(id);
+               this.cancel();
+               TitansAxeListener.this.slam(player);
+            } else if (this.elapsed % 3 == 0) {
+               double r = radius * (1.0 - (double)this.elapsed / (ticks + 1));
+               Location centre = player.getLocation().add(0.0, 0.1, 0.0);
+
+               for (int i = 0; i < 16; i++) {
+                  double angle = Math.PI * 2.0 * i / 16.0;
+                  ParticleManager.spawn(Particle.BLOCK, centre.clone().add(Math.cos(angle) * r, 0.0, Math.sin(angle) * r), 1, 0.0, 0.0, 0.0, 0.0, Material.DEEPSLATE.createBlockData());
+               }
+            }
+         }
+      }).runTaskTimer(this.plugin, 1L, 1L);
    }
 
    private void slam(Player player) {
       double radius = this.ability("slam-radius", 6.0);
       double knockback = this.ability("slam-knockback", 1.6);
       double damage = this.ability("slam-damage", 6.0);
-      int armourDamage = this.abilityInt("slam-armour-damage", 60);
+      int armourDamage = this.abilityInt("slam-armour-damage", 40);
       Location centre = player.getLocation();
-      centre.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, centre, 1, 0.0, 0.0, 0.0, 0.0);
-      centre.getWorld().spawnParticle(Particle.BLOCK, centre, 80, radius / 2.0, 0.2, radius / 2.0, 0.2, Material.DEEPSLATE.createBlockData());
-      this.plugin.getSoundManager().world(centre, Sound.ENTITY_GENERIC_EXPLODE, 0.9F, 0.5F);
+      ParticleManager.spawn(Particle.EXPLOSION, centre, 2, 0.5, 0.1, 0.5, 0.0);
+      ParticleManager.spawn(Particle.BLOCK, centre, 40, radius / 2.0, 0.2, radius / 2.0, 0.2, Material.DEEPSLATE.createBlockData());
+      this.plugin.getSoundManager().world(centre, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0F, 0.6F);
 
       for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0, radius)) {
-         if (nearby instanceof LivingEntity living
-            && !nearby.equals(player)
-            && !(
-               nearby instanceof Player target
-                  && this.plugin.getTrustManager().isTrusted(player, target)
-                  && this.plugin.getConfigManager().isPreventAbilityDamage()
-            )) {
+         if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {
             double distance = nearby.getLocation().distance(centre);
             double falloff = Math.max(0.0, 1.0 - distance / radius);
-            if (damage > 0.0) {
+            if (damage > 0.0 && falloff > 0.0) {
                living.damage(damage * falloff, player);
             }
 

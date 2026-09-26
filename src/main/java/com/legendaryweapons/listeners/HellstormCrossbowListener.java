@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.managers.WeaponManager;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import org.bukkit.World;
 import org.bukkit.Particle.DustOptions;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Arrow;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.AbstractArrow.PickupStatus;
 import org.bukkit.event.EventHandler;
@@ -36,6 +38,12 @@ public class HellstormCrossbowListener implements Listener {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
       this.explosiveKey = new NamespacedKey(plugin, "hellstorm-explosive");
+      plugin.getHudManager().register(player -> {
+         ItemStack held = player.getInventory().getItemInMainHand();
+         return this.weaponManager.isLegendaryWeapon(held) && WEAPON_KEY.equals(this.weaponManager.getWeaponKey(held))
+            ? com.legendaryweapons.managers.HudManager.cooldown("Volley", plugin.getCooldownManager().getRemainingSeconds(player, WEAPON_KEY))
+            : null;
+      });
    }
 
    private HellstormCrossbowListener.Settings settings() {
@@ -97,10 +105,10 @@ public class HellstormCrossbowListener implements Listener {
             if (arrow != null && arrow.isValid() && !arrow.isOnGround()) {
                Location arrowLoc = arrow.getLocation();
                World world = arrow.getWorld();
-               world.spawnParticle(Particle.SMOKE, arrowLoc, 1, 0.1, 0.1, 0.1, 0.01);
+               ParticleManager.spawn(Particle.SMOKE, arrowLoc, 1, 0.1, 0.1, 0.1, 0.01);
                if (isExplosive) {
-                  world.spawnParticle(Particle.DUST, arrowLoc, 6, 0.35, 0.35, 0.35, 0.0, new DustOptions(Color.RED, 3.0F));
-                  world.spawnParticle(Particle.FLAME, arrowLoc, 4, 0.2, 0.2, 0.2, 0.01);
+                  ParticleManager.spawn(Particle.DUST, arrowLoc, 6, 0.35, 0.35, 0.35, 0.0, new DustOptions(Color.RED, 3.0F));
+                  ParticleManager.spawn(Particle.FLAME, arrowLoc, 4, 0.2, 0.2, 0.2, 0.01);
                }
             } else {
                HellstormCrossbowListener.this.arrowEffects.remove(arrowId);
@@ -126,8 +134,12 @@ public class HellstormCrossbowListener implements Listener {
             final Location explosionLoc = arrow.getLocation();
             (new BukkitRunnable() {
                public void run() {
-                  arrow.getWorld().createExplosion(explosionLoc, power, true, true);
-                  arrow.getWorld().spawnParticle(Particle.EXPLOSION_EMITTER, explosionLoc, 2, 0.0, 0.0, 0.0, 0.0);
+                  Entity source = arrow.getShooter() instanceof Entity shooterEntity ? shooterEntity : arrow;
+                  boolean breakBlocks = !(arrow.getShooter() instanceof Player shooter)
+                     || HellstormCrossbowListener.this.plugin.getProtectionManager().canBuild(shooter, explosionLoc);
+                  // With a source entity, protection plugins filter the explosion per region.
+                  arrow.getWorld().createExplosion(explosionLoc, power, true, breakBlocks, source);
+                  ParticleManager.spawn(Particle.EXPLOSION_EMITTER, explosionLoc, 2, 0.0, 0.0, 0.0, 0.0);
                   HellstormCrossbowListener.this.plugin.getSoundManager().world(explosionLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0F, 0.8F);
                   arrow.remove();
                }

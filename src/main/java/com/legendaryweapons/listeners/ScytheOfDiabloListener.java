@@ -1,5 +1,6 @@
 package com.legendaryweapons.listeners;
 
+import com.legendaryweapons.managers.ParticleManager;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.managers.WeaponManager;
 import java.util.HashMap;
@@ -36,6 +37,16 @@ public class ScytheOfDiabloListener implements Listener {
    public ScytheOfDiabloListener(LegendaryWeapons plugin) {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
+      plugin.getHudManager().register(player -> {
+         ItemStack held = player.getInventory().getItemInMainHand();
+         if (this.weaponManager.isLegendaryWeapon(held) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(held))) {
+            int required = plugin.getConfig().getInt("weapons.scythe-of-diablo.abilities.combo-hits-required", 5);
+            return net.kyori.adventure.text.Component.text("Combo ", net.kyori.adventure.text.format.NamedTextColor.GRAY)
+               .append(net.kyori.adventure.text.Component.text(Math.min(this.comboMap.getOrDefault(player.getUniqueId(), 0), required) + "/" + required, net.kyori.adventure.text.format.NamedTextColor.RED));
+         } else {
+            return null;
+         }
+      });
    }
 
    @EventHandler
@@ -44,7 +55,7 @@ public class ScytheOfDiabloListener implements Listener {
       Player killer = killed.getKiller();
       if (killer != null) {
          ItemStack weapon = killer.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(weapon) && this.weaponManager.getWeaponKey(weapon).equals("scythe-of-diablo")) {
+         if (this.weaponManager.isLegendaryWeapon(weapon) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(weapon))) {
             AttributeInstance maxHealth = killer.getAttribute(Attribute.MAX_HEALTH);
             killer.setHealth(maxHealth != null ? maxHealth.getValue() : 20.0);
             this.createSoulAbsorptionEffect(killed.getLocation(), killer);
@@ -58,7 +69,7 @@ public class ScytheOfDiabloListener implements Listener {
          Player damager = (Player)event.getDamager();
          LivingEntity victim = (LivingEntity)event.getEntity();
          ItemStack weapon = damager.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(weapon) && this.weaponManager.getWeaponKey(weapon).equals("scythe-of-diablo")) {
+         if (this.weaponManager.isLegendaryWeapon(weapon) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(weapon))) {
             ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("scythe-of-diablo");
             long currentTime = System.currentTimeMillis();
             if (this.lastHitMap.containsKey(damager.getUniqueId())) {
@@ -117,14 +128,14 @@ public class ScytheOfDiabloListener implements Listener {
    private void createAttackEffects(Location damagerLoc, Location victimLoc) {
       World world = damagerLoc.getWorld();
       this.createEnergyBeam(damagerLoc, victimLoc);
-      world.spawnParticle(Particle.BLOCK, victimLoc, 15, 0.5, 0.5, 0.5, 0.1, Material.GRAVEL.createBlockData());
-      world.spawnParticle(Particle.DAMAGE_INDICATOR, victimLoc, 5, 0.3, 0.3, 0.3, 0.0);
-      world.spawnParticle(Particle.SQUID_INK, victimLoc, 10, 1.0, 1.0, 1.0, 0.05);
+      ParticleManager.spawn(Particle.BLOCK, victimLoc, 15, 0.5, 0.5, 0.5, 0.1, Material.GRAVEL.createBlockData());
+      ParticleManager.spawn(Particle.DAMAGE_INDICATOR, victimLoc, 5, 0.3, 0.3, 0.3, 0.0);
+      
 
       for (int i = 0; i < 3; i++) {
          Vector direction = damagerLoc.toVector().subtract(victimLoc.toVector()).normalize();
          Location soulLoc = victimLoc.clone().add((Math.random() - 0.5) * 0.5, Math.random() * 1.0, (Math.random() - 0.5) * 0.5);
-         world.spawnParticle(Particle.SOUL, soulLoc, 1, direction.getX() * 0.1, direction.getY() * 0.1, direction.getZ() * 0.1, 0.1);
+         ParticleManager.spawn(Particle.SOUL, soulLoc, 1, direction.getX() * 0.1, direction.getY() * 0.1, direction.getZ() * 0.1, 0.1);
       }
    }
 
@@ -132,30 +143,30 @@ public class ScytheOfDiabloListener implements Listener {
       World world = start.getWorld();
       Vector direction = end.toVector().subtract(start.toVector());
       double distance = start.distance(end);
-      int steps = (int)(distance * 10.0);
+      int steps = (int)(distance * 3.0);
 
       for (int i = 0; i <= steps; i++) {
          double ratio = (double)i / steps;
          Location point = start.clone().add(direction.clone().multiply(ratio));
-         world.spawnParticle(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(Color.fromRGB(75, 0, 130), 1.5F));
+         ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(Color.fromRGB(75, 0, 130), 1.5F));
          if (i % 3 == 0) {
-            world.spawnParticle(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.RED, 0.8F));
+            ParticleManager.spawn(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.RED, 0.8F));
          }
 
          if (i % 7 == 0) {
-            world.spawnParticle(Particle.SOUL_FIRE_FLAME, point, 1, 0.05, 0.05, 0.05, 0.0);
+            ParticleManager.spawn(Particle.SOUL_FIRE_FLAME, point, 1, 0.05, 0.05, 0.05, 0.0);
          }
       }
    }
 
    private void createBackstabEffects(final Location victimLoc) {
       World world = victimLoc.getWorld();
-      world.spawnParticle(Particle.EXPLOSION_EMITTER, victimLoc, 1, 0.5, 0.5, 0.5, 0.0);
+      ParticleManager.spawn(Particle.CRIT, victimLoc.clone().add(0.0, 1.0, 0.0), 12, 0.3, 0.4, 0.3, 0.2);
 
-      for (int i = 0; i < 20; i++) {
+      for (int i = 0; i < 6; i++) {
          Vector bloodDir = new Vector((Math.random() - 0.5) * 2.0, Math.random() * 1.5, (Math.random() - 0.5) * 2.0).normalize();
          Location bloodLoc = victimLoc.clone().add(bloodDir.multiply(0.5));
-         world.spawnParticle(Particle.BLOCK, bloodLoc, 3, 0.2, 0.2, 0.2, 0.1, Material.GRAVEL.createBlockData());
+         ParticleManager.spawn(Particle.BLOCK, bloodLoc, 3, 0.2, 0.2, 0.2, 0.1, Material.GRAVEL.createBlockData());
       }
 
       for (int i = 0; i < 3; i++) {
@@ -190,8 +201,8 @@ public class ScytheOfDiabloListener implements Listener {
                   double x = Math.cos(angle) * radius;
                   double z = Math.sin(angle) * radius;
                   Location wavePoint = damagerLoc.clone().add(x, 0.5, z);
-                  world.spawnParticle(Particle.SWEEP_ATTACK, wavePoint, 1, 0.0, 0.0, 0.0, 0.0);
-                  world.spawnParticle(Particle.LARGE_SMOKE, wavePoint, 1, 0.1, 0.1, 0.1, 0.05);
+                  ParticleManager.spawn(Particle.SWEEP_ATTACK, wavePoint, 1, 0.0, 0.0, 0.0, 0.0);
+                  ParticleManager.spawn(Particle.LARGE_SMOKE, wavePoint, 1, 0.1, 0.1, 0.1, 0.05);
                }
             }
          }).runTaskLater(this.plugin, wave * 3L);
@@ -202,7 +213,7 @@ public class ScytheOfDiabloListener implements Listener {
          double distance = 3.0;
          Vector dir = new Vector(Math.cos(angle) * distance, 0.0, Math.sin(angle) * distance);
          Location crackLoc = damagerLoc.clone().add(dir);
-         world.spawnParticle(Particle.BLOCK, crackLoc, 5, 0.5, 0.1, 0.5, 0.0, Material.OBSIDIAN.createBlockData());
+         ParticleManager.spawn(Particle.BLOCK, crackLoc, 5, 0.5, 0.1, 0.5, 0.0, Material.OBSIDIAN.createBlockData());
       }
    }
 
@@ -210,7 +221,7 @@ public class ScytheOfDiabloListener implements Listener {
       World world = damager.getWorld();
       Location damagerLoc = damager.getLocation();
       Location textLoc = damagerLoc.clone().add(0.0, 2.5, 0.0);
-      world.spawnParticle(Particle.ANGRY_VILLAGER, textLoc, combo, 0.2, 0.1, 0.2, 0.0);
+      
       double auraSize = 0.5 + combo * 0.1;
 
       for (int i = 0; i < combo; i++) {
@@ -219,14 +230,14 @@ public class ScytheOfDiabloListener implements Listener {
          Vector point = new Vector(Math.cos(radians) * auraSize, Math.sin(radians) * auraSize * 0.5, Math.sin(radians) * auraSize);
          Location auraPoint = damagerLoc.clone().add(point);
          Color auraColor = this.getComboColor(combo);
-         world.spawnParticle(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(auraColor, 1.0F));
+         ParticleManager.spawn(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(auraColor, 1.0F));
       }
 
       if (combo > 1) {
          for (int i = 0; i < Math.min(combo, 5); i++) {
             Vector direction = damagerLoc.toVector().subtract(victimLoc.toVector()).normalize();
             Location numLoc = victimLoc.clone().add((Math.random() - 0.5) * 1.0, Math.random() * 1.5, (Math.random() - 0.5) * 1.0);
-            world.spawnParticle(Particle.ENCHANT, numLoc, 1, direction.getX() * 0.2, direction.getY() * 0.2, direction.getZ() * 0.2, 1.0);
+            ParticleManager.spawn(Particle.ENCHANT, numLoc, 1, direction.getX() * 0.2, direction.getY() * 0.2, direction.getZ() * 0.2, 1.0);
          }
       }
    }
@@ -234,7 +245,7 @@ public class ScytheOfDiabloListener implements Listener {
    private void createComboCompletionEffects(Player damager, Location victimLoc) {
       World world = damager.getWorld();
       final Location damagerLoc = damager.getLocation();
-      world.spawnParticle(Particle.EXPLOSION_EMITTER, damagerLoc, 1, 1.0, 1.0, 1.0, 0.0);
+      
 
       for (int i = 0; i < 3; i++) {
          final int layer = i;
@@ -260,7 +271,7 @@ public class ScytheOfDiabloListener implements Listener {
    private void createSoulAbsorptionEffect(final Location deathLoc, final Player killer) {
       World world = deathLoc.getWorld();
 
-      for (int i = 0; i < 5; i++) {
+      for (int i = 0; i < 2; i++) {
          final int layer = i;
          (new BukkitRunnable() {
             public void run() {
@@ -271,7 +282,7 @@ public class ScytheOfDiabloListener implements Listener {
       }
 
       this.createSoulStream(deathLoc, killer.getLocation());
-      world.spawnParticle(Particle.EXPLOSION_EMITTER, killer.getLocation(), 2, 1.0, 1.0, 1.0, 0.0);
+      
 
       for (int i = 0; i < 3; i++) {
          final int healLayer = i;
@@ -295,8 +306,8 @@ public class ScytheOfDiabloListener implements Listener {
          double x = Math.cos(radians) * radius;
          double z = Math.sin(radians) * radius;
          Location vortexPoint = center.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.SOUL, vortexPoint, 1, 0.0, 0.1, 0.0, 0.1);
-         world.spawnParticle(Particle.SOUL_FIRE_FLAME, vortexPoint, 1, 0.05, 0.05, 0.05, 0.0);
+         ParticleManager.spawn(Particle.SOUL, vortexPoint, 1, 0.0, 0.1, 0.0, 0.1);
+         ParticleManager.spawn(Particle.SOUL_FIRE_FLAME, vortexPoint, 1, 0.05, 0.05, 0.05, 0.0);
       }
    }
 
@@ -304,14 +315,14 @@ public class ScytheOfDiabloListener implements Listener {
       World world = start.getWorld();
       Vector direction = end.toVector().subtract(start.toVector());
       double distance = start.distance(end);
-      int steps = (int)(distance * 8.0);
+      int steps = (int)(distance * 3.0);
 
       for (int i = 0; i <= steps; i++) {
          double ratio = (double)i / steps;
          Location point = start.clone().add(direction.clone().multiply(ratio));
-         world.spawnParticle(Particle.SOUL, point, 2, 0.1, 0.1, 0.1, 0.05);
+         ParticleManager.spawn(Particle.SOUL, point, 2, 0.1, 0.1, 0.1, 0.05);
          if (i % 3 == 0) {
-            world.spawnParticle(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(Color.fromRGB(50, 0, 100), 1.0F));
+            ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(Color.fromRGB(50, 0, 100), 1.0F));
          }
       }
    }
@@ -324,8 +335,8 @@ public class ScytheOfDiabloListener implements Listener {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location ringPoint = center.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(30, 0, 60), 1.5F));
-         world.spawnParticle(Particle.LARGE_SMOKE, ringPoint, 1, 0.0, 0.0, 0.0, 0.05);
+         ParticleManager.spawn(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(30, 0, 60), 1.5F));
+         ParticleManager.spawn(Particle.LARGE_SMOKE, ringPoint, 1, 0.0, 0.0, 0.0, 0.05);
       }
    }
 
@@ -334,8 +345,8 @@ public class ScytheOfDiabloListener implements Listener {
 
       for (double y = 0.0; y <= height; y += 0.5) {
          Location pillarPoint = base.clone().add(0.0, y, 0.0);
-         world.spawnParticle(Particle.FLAME, pillarPoint, 1, 0.1, 0.1, 0.1, 0.02);
-         world.spawnParticle(Particle.SMOKE, pillarPoint, 1, 0.1, 0.1, 0.1, 0.01);
+         ParticleManager.spawn(Particle.FLAME, pillarPoint, 1, 0.1, 0.1, 0.1, 0.02);
+         ParticleManager.spawn(Particle.SMOKE, pillarPoint, 1, 0.1, 0.1, 0.1, 0.01);
       }
    }
 
@@ -347,8 +358,8 @@ public class ScytheOfDiabloListener implements Listener {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location ringPoint = center.clone().add(x, 0.5, z);
-         world.spawnParticle(Particle.HEART, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
-         world.spawnParticle(Particle.HAPPY_VILLAGER, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
+         ParticleManager.spawn(Particle.HEART, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
+         ParticleManager.spawn(Particle.HAPPY_VILLAGER, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
       }
    }
 

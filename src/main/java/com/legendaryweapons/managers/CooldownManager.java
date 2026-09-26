@@ -113,7 +113,8 @@ public class CooldownManager {
    public void notifyOnCooldown(Player player, String abilityKey) {
       String message = this.plugin.getConfigManager().getMessage("cooldown-message", false);
       double seconds = this.getRemainingSeconds(player, abilityKey);
-      player.sendActionBar(
+      HudManager.message(
+         player,
          LegacyComponentSerializer.legacySection()
             .deserialize(message)
             .append(Component.text(" (" + String.format("%.1f", seconds) + "s)", NamedTextColor.GRAY))

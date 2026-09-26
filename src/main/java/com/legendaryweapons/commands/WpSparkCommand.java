@@ -35,7 +35,7 @@ public class WpSparkCommand implements CommandExecutor, TabCompleter {
             this.plugin.getCooldownManager().set(player, "wpspark-throttle", 4L);
             AbilityMode mode = args.length > 0 && SECONDARY_ALIASES.contains(args[0].toLowerCase(Locale.ROOT)) ? AbilityMode.SECONDARY : AbilityMode.PRIMARY;
             if (!this.dispatcher.trigger(player, mode) && this.dispatcher.heldWeaponKey(player) == null) {
-               player.sendActionBar(Component.text("You are not holding a legendary weapon."));
+               com.legendaryweapons.managers.HudManager.message(player, Component.text("You are not holding a legendary weapon."));
             }
 
             return true;
