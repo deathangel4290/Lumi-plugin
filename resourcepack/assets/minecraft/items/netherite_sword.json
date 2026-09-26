@@ -29,36 +29,111 @@
       {
         "threshold": 2,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/ender_glaive__netherite_sword"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/ender_glaive__netherite_sword"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/ender_glaive_3d"
+          }
         }
       },
       {
         "threshold": 4,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/sword_of_eclipse__netherite_sword"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/sword_of_eclipse__netherite_sword"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/sword_of_eclipse_3d"
+          }
         }
       },
       {
         "threshold": 7,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/hermes_blade__netherite_sword"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/hermes_blade__netherite_sword"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/hermes_blade_3d"
+          }
         }
       },
       {
         "threshold": 8,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/chiones_blade__netherite_sword"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/chiones_blade__netherite_sword"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/chiones_blade_3d"
+          }
         }
       },
       {
         "threshold": 10,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/blade_of_diminution__netherite_sword"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/blade_of_diminution__netherite_sword"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/blade_of_diminution_3d"
+          }
         }
       }
     ],

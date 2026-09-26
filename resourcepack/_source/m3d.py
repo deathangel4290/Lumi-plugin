@@ -218,3 +218,53 @@ def blade_curve(m, start, steps, depth, mats, z=8.0, edge_w=0.9, spine_w=0.7):
         _curve_box(m, s, phi, length, spine_w, depth + 0.3, mats[2], z, 0.5)
         pos = (pos[0] - length * math.cos(a), pos[1] - length * math.sin(a))
     return pos
+
+# ---------------------------------------------------------------- silhouette extrusion
+def extrude(m, mat_at, x0, x1, y0, y1, z, depth, step=0.5):
+    """Build a flat shape from horizontal slices. mat_at(x, y) returns a material name or None for each
+    `step`-sized cell; runs of the same material on a row become one box, so curves stay smooth."""
+    y = y0
+    while y < y1 - 1e-9:
+        x = x0; run_mat = None; run_start = None
+        while x <= x1 + 1e-9:
+            mat = mat_at(x + step / 2, y + step / 2) if x < x1 - 1e-9 else None
+            if mat != run_mat:
+                if run_mat is not None:
+                    m.box((run_start, y, z - depth / 2), (x, y + step, z + depth / 2), run_mat)
+                run_mat, run_start = mat, x
+            x += step
+        y += step
+
+def ring(m, y, h, r, mat, cx=8.0, cz=8.0):
+    m.box((cx - r, y, cz - r), (cx + r, y + h, cz + r), mat)
+
+def rod(m, y0, y1, r, mat, cx=8.0, cz=8.0):
+    m.box((cx - r, y0, cz - r), (cx + r, y1, cz + r), mat)
+
+def stone(dark, base, light):
+    def paint(t, rng):
+        n = t.width
+        for y in range(n):
+            for x in range(n):
+                v = rng.random()
+                c = lerp(dark, light, 0.35 + 0.4 * v) if v > 0.2 else lerp(dark, base, 0.5)
+                if x in (0, n - 1) or y in (0, n - 1): c = lerp(c, dark, 0.5)
+                t.putpixel((x, y), c + (255,))
+    return paint
+
+def glow(core, rim):
+    def paint(t, rng):
+        n = t.width; cx = cy = (n - 1) / 2
+        for y in range(n):
+            for x in range(n):
+                d = min(1.0, math.hypot(x - cx, y - cy) / (n / 2))
+                t.putpixel((x, y), lerp(core, rim, d) + (255,))
+    return paint
+
+def sheet(models, path, yaw=35, pitch=20, size=300):
+    from PIL import Image
+    imgs = [render(mm, yaw=yaw, pitch=pitch, size=size) for mm in models]
+    out = Image.new('RGBA', (sum(i.width for i in imgs), size))
+    x = 0
+    for i in imgs: out.paste(i, (x, 0)); x += i.width
+    out.save(path)

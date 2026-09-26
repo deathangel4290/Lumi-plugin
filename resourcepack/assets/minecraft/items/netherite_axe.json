@@ -1,27 +1,57 @@
 {
-    "model":  {
-                  "type":  "minecraft:range_dispatch",
-                  "property":  "minecraft:custom_model_data",
-                  "index":  0,
-                  "entries":  [
-                                  {
-                                      "threshold":  3,
-                                      "model":  {
-                                                    "type":  "minecraft:model",
-                                                    "model":  "luminara:item/axe_of_zeus__netherite_axe"
-                                                }
-                                  },
-                                  {
-                                      "threshold":  9,
-                                      "model":  {
-                                                    "type":  "minecraft:model",
-                                                    "model":  "luminara:item/titans_axe__netherite_axe"
-                                                }
-                                  }
-                              ],
-                  "fallback":  {
-                                   "type":  "minecraft:model",
-                                   "model":  "minecraft:item/netherite_axe"
-                               }
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 3,
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/axe_of_zeus__netherite_axe"
               }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/axe_of_zeus_3d"
+          }
+        }
+      },
+      {
+        "threshold": 9,
+        "model": {
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/titans_axe__netherite_axe"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/titans_axe_3d"
+          }
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/netherite_axe"
+    }
+  }
 }

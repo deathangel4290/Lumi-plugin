@@ -42,7 +42,7 @@
                                                                        "threshold":  6,
                                                                        "model":  {
                                                                                      "type":  "minecraft:model",
-                                                                                     "model":  "luminara:item/lost_trident__trident_throwing_3d"
+                                                                                     "model":  "luminara:item/lost_trident_3d_throwing"
                                                                                  }
                                                                    }
                                                                ],
@@ -63,7 +63,7 @@
                                                                         "threshold":  6,
                                                                         "model":  {
                                                                                       "type":  "minecraft:model",
-                                                                                      "model":  "luminara:item/lost_trident__trident_in_hand_3d"
+                                                                                      "model":  "luminara:item/lost_trident_3d"
                                                                                   }
                                                                     }
                                                                 ],

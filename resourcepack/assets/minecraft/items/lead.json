@@ -7,15 +7,45 @@
       {
         "threshold": 13,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/tether_chain__lead"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/tether_chain__lead"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/tether_chain_3d"
+          }
         }
       },
       {
         "threshold": 14,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/tether_chain__lead"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/tether_chain__lead"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/tether_chain_3d"
+          }
         }
       }
     ],
