@@ -17,6 +17,7 @@ import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -163,6 +164,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
                   if (textures.isEmpty() && (this.abilities() == null || this.abilities().getBoolean("require-skin", true))) {
                      HudManager.message(player, Component.text("That face would not hold (no skin found for " + targetName + ").", NamedTextColor.RED));
                   } else if (this.plugin.getDisguiseManager().apply(player, targetName, textures)) {
+                     com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_STAINED_GLASS, 1.6, 0.2, 10, false);
                      this.plugin.getCooldownManager().setWithHeldItemFeedback(player, COOLDOWN_KEY, this.abilityLong("morph-cooldown", 4800L));
                      Bukkit.broadcast(Component.translatable("multiplayer.player.joined", NamedTextColor.YELLOW, Component.text(targetName)));
                      HudManager.message(player, Component.text("You are " + targetName + ".", NamedTextColor.LIGHT_PURPLE));

@@ -298,6 +298,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       final Vector facing = flat.lengthSquared() < 1.0E-4 ? new Vector(0, 0, 1) : flat.normalize();
       final Vector across = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
       final Location origin = player.getLocation().add(0.0, 0.3, 0.0);
+      com.legendaryweapons.managers.AnimationFx.spikeLine(player.getLocation(), facing, range, speed, Material.PACKED_ICE, false);
       final Set<UUID> hit = new HashSet<>();
       this.plugin.getSoundManager().world(origin, Sound.BLOCK_POWDER_SNOW_BREAK, 0.9F, 0.7F);
       this.plugin.getSoundManager().world(origin, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.6F, 0.6F);

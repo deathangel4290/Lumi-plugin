@@ -7,6 +7,7 @@ import com.legendaryweapons.managers.WeaponManager;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import org.bukkit.Material;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -853,6 +854,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    private void activateDualWield(final Player player) {
       final UUID uuid = player.getUniqueId();
       this.dualWielding.put(uuid, true);
+      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_CONCRETE, 0.4, 2.4, 10, true);
+      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_CONCRETE, 2.4, 0.4, 10, false);
       this.mainSlot.put(uuid, player.getInventory().getHeldItemSlot());
       ItemStack previousOffhand = player.getInventory().getItemInOffHand();
       this.offhandCache.put(uuid, previousOffhand == null || previousOffhand.getType().isAir() ? null : previousOffhand.clone());

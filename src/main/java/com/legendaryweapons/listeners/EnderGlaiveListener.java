@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -287,6 +288,8 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                Location hitLoc = event.getEntity().getLocation();
                this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6F, 1.0F);
                ParticleManager.spawn(Particle.PORTAL, hitLoc, 20, 1.0, 1.0, 1.0, 0.2);
+               com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.PURPLE_STAINED_GLASS, 0.3, 1.6, 8, true);
+               com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.PURPLE_STAINED_GLASS, 1.6, 0.3, 8, true);
             }
          }
       }

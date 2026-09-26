@@ -80,6 +80,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.cooldownManager = new CooldownManager(this);
       this.soundManager = new SoundManager(this);
       this.particleManager = new ParticleManager(this);
+      com.legendaryweapons.managers.AnimationFx.init(this);
       this.hudManager = new HudManager(this);
       this.protectionManager = new ProtectionManager(this);
       this.chargePool = new ChargePool();

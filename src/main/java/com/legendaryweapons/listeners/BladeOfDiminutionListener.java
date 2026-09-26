@@ -12,6 +12,7 @@ import java.util.Map.Entry;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -264,6 +265,7 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
             this.shrinkUntil.put(player.getUniqueId(), System.currentTimeMillis() + this.abilityLong("diminish-duration", 160L) * 50L);
             Location loc = player.getLocation();
             ParticleManager.spawn(Particle.WITCH, loc.clone().add(0.0, 0.8, 0.0), 16, 0.4, 0.6, 0.4, 0.03);
+            com.legendaryweapons.managers.AnimationFx.ring(loc, Material.PURPLE_STAINED_GLASS, 1.8, 0.2, 10, true);
             this.plugin.getSoundManager().world(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.7F, 1.8F);
             HudManager.message(player, Component.text("Diminished - smaller, and so is your reach", NamedTextColor.LIGHT_PURPLE));
          }

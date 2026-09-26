@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -355,6 +356,8 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
       Location centre = player.getLocation();
       player.setFallDistance(0.0F);
       ParticleManager.spawn(Particle.EXPLOSION_EMITTER, centre, 1, 0.0, 0.0, 0.0, 0.0);
+      com.legendaryweapons.managers.AnimationFx.ring(centre, Material.GLOWSTONE, 0.6, radius, 12, true);
+      com.legendaryweapons.managers.AnimationFx.shockwave(centre, Material.GOLD_BLOCK, radius * 0.7, 12);
       ParticleManager.spawn(Particle.FLASH, centre, 1, 0.0, 0.0, 0.0, 0.0, Color.fromRGB(255, 230, 150));
       ParticleManager.spawn(Particle.END_ROD, centre.clone().add(0.0, 0.3, 0.0), (int)(24.0 * power) + 8, radius / 2.0, 0.3, radius / 2.0, 0.08);
       this.plugin.getSoundManager().world(centre, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0F, 0.8F);

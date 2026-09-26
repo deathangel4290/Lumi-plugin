@@ -208,6 +208,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    private void onAxeHit(Entity axe, Player owner, LivingEntity hitEntity) {
       Location hitLoc = axe.getLocation();
       hitLoc.getWorld().strikeLightningEffect(hitLoc);
+      com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.LIGHT_BLUE_STAINED_GLASS, 0.3, 2.5, 8, true);
       this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.7F, 1.2F);
       if (hitEntity != null && this.plugin.getProtectionManager().canAffect(owner, hitEntity)) {
          hitEntity.damage(this.ability("throw-damage", 8.0), owner);

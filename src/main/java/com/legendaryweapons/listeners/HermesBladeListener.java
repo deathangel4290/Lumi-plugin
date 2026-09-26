@@ -11,6 +11,7 @@ import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -119,6 +120,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       final int slowDuration = this.abilityInt("dash-slowness-duration", 60);
       final int slowAmplifier = this.abilityInt("dash-slowness-amplifier", 1);
       Vector direction = player.getLocation().getDirection().setY(0.0).normalize().multiply(power);
+      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_STAINED_GLASS, 0.4, 1.8, 6, false);
       direction.setY(lift);
       player.setVelocity(direction);
       this.plugin.getDashTracker().markDashing(player, duration + 4L);

@@ -240,6 +240,8 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
       ParticleManager.spawn(Particle.EXPLOSION, centre, 2, 0.5, 0.1, 0.5, 0.0);
       ParticleManager.spawn(Particle.BLOCK, centre, 40, radius / 2.0, 0.2, radius / 2.0, 0.2, Material.DEEPSLATE.createBlockData());
       this.plugin.getSoundManager().world(centre, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0F, 0.6F);
+      com.legendaryweapons.managers.AnimationFx.shockwave(centre, Material.DEEPSLATE, radius, 12);
+      com.legendaryweapons.managers.AnimationFx.ring(centre, Material.MAGMA_BLOCK, 0.8, radius, 10, true);
 
       for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0, radius)) {
          if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {

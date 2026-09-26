@@ -6,6 +6,7 @@ import com.legendaryweapons.managers.WeaponManager;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.bukkit.Material;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -66,6 +67,7 @@ public class HellstormCrossbowListener implements Listener {
    }
 
    private void fireHellstorm(final Player player, final HellstormCrossbowListener.Settings settings) {
+      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.ORANGE_STAINED_GLASS, 0.3, 1.5, 6, true);
       Location eyeLocation = player.getEyeLocation();
       final Vector direction = eyeLocation.getDirection();
 

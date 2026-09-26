@@ -6,6 +6,7 @@ import com.legendaryweapons.managers.HudManager;
 import com.legendaryweapons.managers.ParticleManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Material;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -115,6 +116,7 @@ public class TetherChainListener extends AbstractWeaponListener {
    }
 
    private void hooked(Player owner, LivingEntity target) {
+      com.legendaryweapons.managers.AnimationFx.ring(target.getLocation(), Material.CHAIN, 1.4, 0.3, 8, false);
       Vector pull = owner.getLocation().toVector().subtract(target.getLocation().toVector());
       double distance = pull.length();
       if (distance > 0.5) {
