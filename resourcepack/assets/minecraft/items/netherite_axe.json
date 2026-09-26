@@ -47,6 +47,13 @@
             "model": "luminara:item/titans_axe_3d"
           }
         }
+      },
+      {
+        "threshold": 303,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/amethyst_axe"
+        }
       }
     ],
     "fallback": {

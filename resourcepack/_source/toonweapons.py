@@ -417,3 +417,60 @@ def hellstorm(state='standby'):
     return m
 
 XBOW_STATES = list(NOCK)
+
+# ---------------------------------------------------------------- amethyst tools (DonutSMP style)
+# Vanilla tool layout (handle bottom-left, head top-right) so the vanilla handheld poses fit exactly.
+AMETHYST = ['#2a0a4a', '#5a2a9a', '#9a5ad8', '#c89aff', '#f4e4ff']
+AMETHYST_EDGE = ['#3a1a6a', '#a878e8', '#cca8ff', '#eadcff', '#ffffff']
+
+def _uv(x, y):
+    return ((x - 8) + (y - 8)) / math.sqrt(2), ((y - 8) - (x - 8)) / math.sqrt(2)
+
+def _tool(head):
+    m = Model()
+    m.mat('handle', ['#141216', '#2a262c', '#423c44', '#5e5660', '#7a7280'])
+    m.mat('band', AMETHYST)
+    m.mat('head', AMETHYST)
+    m.mat('edge', AMETHYST_EDGE)
+    m.mat('core', ['#6a2ab0', '#b070ff', '#e0b8ff', '#f8ecff', '#ffffff'], 'glow', 8)
+    def at(x, y):
+        u, v = _uv(x, y)
+        h = head(u, v)
+        if h: return h
+        if -9.2 <= u <= 5.0 and abs(v) <= 0.8:
+            return 'band' if (-6.2 <= u <= -5.2) or (-2.2 <= u <= -1.2) else 'handle'
+        return None
+    m.extrude(at, 0, 16, 0, 16, 8.0, 1.25)
+    return m
+
+def amethyst_pickaxe():
+    def head(u, v):
+        if abs(v) > 7.6: return None
+        c = 5.2 - 0.05 * v * v
+        w = 1.35 - 0.8 * (abs(v) / 7.6) ** 2
+        if abs(u - c) > w: return None
+        if abs(v) < 1.1 and abs(u - c) < 0.7: return 'core'
+        return 'edge' if abs(v) > 5.6 else 'head'
+    return _tool(head)
+
+def amethyst_shovel():
+    def head(u, v):
+        if 2.8 <= u <= 4.2 and abs(v) <= 1.1: return 'band'
+        d = ((u - 7.0) / 3.1) ** 2 + (v / 2.5) ** 2
+        if d > 1: return None
+        if d < 0.12: return 'core'
+        return 'edge' if u > 8.6 else 'head'
+    return _tool(head)
+
+def amethyst_axe():
+    def head(u, v):
+        if 3.2 <= u <= 6.8 and -1.9 <= v <= 0.9: return 'head'          # poll behind the handle
+        if v < 0.8: return None
+        lo, hi = 3.4 - 0.45 * (v - 0.8), 6.6 + 0.45 * (v - 0.8)
+        edge = 4.6 + 0.9 * (1 - ((u - 5.0) / 3.3) ** 2)
+        if not (lo <= u <= hi) or v > edge: return None
+        if abs(u - 5.0) < 0.6 and 1.4 < v < 2.4: return 'core'
+        return 'edge' if v > edge - 1.1 else 'head'
+    return _tool(head)
+
+TOOLS = {'amethyst_pickaxe': amethyst_pickaxe, 'amethyst_shovel': amethyst_shovel, 'amethyst_axe': amethyst_axe}

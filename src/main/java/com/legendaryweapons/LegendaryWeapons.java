@@ -141,6 +141,7 @@ public class LegendaryWeapons extends JavaPlugin {
          veilOfMimicryListener,
          tetherChainListener,
          this.customItems,
+         new com.legendaryweapons.listeners.AmethystToolsListener(this),
          new AbilityListener(this, this.abilityDispatcher, enderGlaiveListener),
          new GUIListener(this.guiManager),
          new TrustListener(this, this.trustManager, this.configManager, this.weaponManager)

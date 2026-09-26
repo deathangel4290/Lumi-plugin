@@ -4,7 +4,7 @@ import json, os, sys, math, copy
 import numpy as np
 from PIL import Image
 from toon import rot_xyz, showcase, first_person, _corners
-from toonweapons import MODELS, GRIP, hellstorm, XBOW_STATES
+from toonweapons import MODELS, GRIP, hellstorm, XBOW_STATES, TOOLS
 from bbexport import to_bbmodel
 
 FP_ROLL = -5
@@ -113,9 +113,26 @@ if __name__ == '__main__':
             if st in ('standby', 'arrow'):
                 shows.append(showcase(out, tex, yaw=20, pitch=25, size=300)); fps.append(first_person(out, tex, W=384, H=216))
         print('hellstorm: 6 states')
+    HANDHELD = {'thirdperson_righthand': {'rotation': [0, -90, 55], 'translation': [0, 4, 0.5], 'scale': [0.85] * 3},
+                'thirdperson_lefthand': {'rotation': [0, 90, -55], 'translation': [0, 4, 0.5], 'scale': [0.85] * 3},
+                'firstperson_righthand': {'rotation': [0, -90, 25], 'translation': [1.13, 3.2, 1.13], 'scale': [0.68] * 3},
+                'firstperson_lefthand': {'rotation': [0, 90, -25], 'translation': [1.13, 3.2, 1.13], 'scale': [0.68] * 3},
+                'ground': {'rotation': [0, 0, 0], 'translation': [0, 2, 0], 'scale': [0.5] * 3},
+                'head': {'rotation': [0, 180, 0], 'translation': [0, 13, 7], 'scale': [1] * 3},
+                'fixed': {'rotation': [0, 180, 0], 'translation': [0, 0, 0], 'scale': [1] * 3},
+                'gui': {'rotation': [0, 0, 0], 'translation': [0, 0, 0], 'scale': [1] * 3}}
+    if not only or 'tools' in only:
+        for name, build in TOOLS.items():
+            m = build()
+            out, tex = m.export(f'luminara:item/{name}', HANDHELD)
+            if pack != '-':
+                save_texture(m, tex, f'{pack}/assets/luminara/textures/item/{name}.png')
+                json.dump(out, open(f'{pack}/assets/luminara/models/item/{name}.json', 'w'), indent=1)
+            to_bbmodel(out, tex, name, f'{bb}/{name}.bbmodel')
+        print('tools: 3')
     def grid(imgs, cols, path):
         w, h = imgs[0].size; rows = (len(imgs) + cols - 1) // cols
         g = Image.new('RGB', (w * cols, h * rows), (139, 139, 139))
         for i, im in enumerate(imgs): g.paste(im, ((i % cols) * w, (i // cols) * h))
         g.save(path)
-    grid(shows, 6, f'{prev}/models.png'); grid(fps, 4, f'{prev}/first_person.png')
+    if shows: grid(shows, 6, f'{prev}/models.png'); grid(fps, 4, f'{prev}/first_person.png')

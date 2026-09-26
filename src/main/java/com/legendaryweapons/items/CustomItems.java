@@ -32,12 +32,15 @@ import org.bukkit.potion.PotionEffectType;
  * never stand in for it.
  *
  * Recipe and loot tables refer to them by token: FRAGMENT_T1..FRAGMENT_T4, LUMINOSITY_FRAGMENT,
- * HILL_MARKER, ALL_IN_ONE_POTION.
+ * HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE.
  */
 public class CustomItems implements Listener {
    public static final String LUMINOSITY_FRAGMENT = "luminosity-fragment";
    public static final String HILL_MARKER = "hill-marker";
    public static final String ALL_IN_ONE_POTION = "all-in-one-potion";
+   public static final String AMETHYST_PICKAXE = "amethyst-pickaxe";
+   public static final String AMETHYST_SHOVEL = "amethyst-shovel";
+   public static final String AMETHYST_AXE = "amethyst-axe";
    private static final TextColor[] TIER_COLOURS = new TextColor[]{
       NamedTextColor.GRAY, NamedTextColor.GREEN, NamedTextColor.AQUA, TextColor.color(255, 190, 60)
    };
@@ -70,13 +73,16 @@ public class CustomItems implements Listener {
             case "LUMINOSITY_FRAGMENT" -> LUMINOSITY_FRAGMENT;
             case "HILL_MARKER" -> HILL_MARKER;
             case "ALL_IN_ONE_POTION" -> ALL_IN_ONE_POTION;
+            case "AMETHYST_PICKAXE" -> AMETHYST_PICKAXE;
+            case "AMETHYST_SHOVEL" -> AMETHYST_SHOVEL;
+            case "AMETHYST_AXE" -> AMETHYST_AXE;
             default -> null;
          };
       }
    }
 
    public static List<String> allIds() {
-      return List.of("fragment-t1", "fragment-t2", "fragment-t3", "fragment-t4", LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION);
+      return List.of("fragment-t1", "fragment-t2", "fragment-t3", "fragment-t4", LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE);
    }
 
    public String idOf(ItemStack item) {
@@ -101,6 +107,9 @@ public class CustomItems implements Listener {
             case LUMINOSITY_FRAGMENT -> "Luminosity Fragment";
             case HILL_MARKER -> "Hill Marker";
             case ALL_IN_ONE_POTION -> "All-in-One Potion";
+            case AMETHYST_PICKAXE -> "Amethyst Pickaxe";
+            case AMETHYST_SHOVEL -> "Amethyst Shovel";
+            case AMETHYST_AXE -> "Amethyst Axe";
             default -> id;
          };
       }
@@ -129,6 +138,9 @@ public class CustomItems implements Listener {
                line("Break it to clear the hill.", NamedTextColor.GRAY)
             ));
             case ALL_IN_ONE_POTION -> this.allInOnePotion(amount);
+            case AMETHYST_PICKAXE -> this.tool(Material.NETHERITE_PICKAXE, 301, id, false);
+            case AMETHYST_SHOVEL -> this.tool(Material.NETHERITE_SHOVEL, 302, id, false);
+            case AMETHYST_AXE -> this.tool(Material.NETHERITE_AXE, 303, id, true);
             default -> null;
          };
       }
@@ -150,6 +162,24 @@ public class CustomItems implements Listener {
       component.setFloats(List.of((float)modelData));
       meta.setCustomModelDataComponent(component);
       meta.getPersistentDataContainer().set(this.idKey, PersistentDataType.STRING, id);
+      item.setItemMeta(meta);
+      return item;
+   }
+
+   private ItemStack tool(Material material, int modelData, String id, boolean silkTouch) {
+      ItemStack item = this.build(material, modelData, id, 1, Component.text(this.displayName(id), TextColor.color(200, 150, 255)), List.of(
+         line(com.legendaryweapons.listeners.AmethystToolsListener.describe(id), NamedTextColor.GRAY),
+         Component.empty(),
+         line("Amethyst Tool", NamedTextColor.LIGHT_PURPLE)
+      ));
+      ItemMeta meta = item.getItemMeta();
+      meta.setEnchantmentGlintOverride(false);              // let the amethyst texture show
+      meta.addEnchant(org.bukkit.enchantments.Enchantment.EFFICIENCY, 5, true);
+      meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 3, true);
+      if (silkTouch) {
+         meta.addEnchant(org.bukkit.enchantments.Enchantment.SILK_TOUCH, 1, true);
+      }
+
       item.setItemMeta(meta);
       return item;
    }

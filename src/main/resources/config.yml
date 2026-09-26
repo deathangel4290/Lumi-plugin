@@ -91,6 +91,18 @@ acquisition:
 # ============================================================================
 #  Weapon fragments -- Tier I..IV, plus the Luminosity Fragment (events only)
 # ============================================================================
+# DonutSMP-style amethyst tools. Give with /lwtest give AMETHYST_PICKAXE (or _SHOVEL/_AXE), the /gui
+# menu, or use the tokens in loot/reward lists (they are in the late supply drop by default).
+tools:
+  sneak-to-disable: true      # sneaking mines a single block
+  durability-per-block: 1     # per extra block broken (Unbreaking applies)
+  max-hardness: 40.0          # never breaks anything harder (obsidian is 50, bedrock is unbreakable)
+  blacklist: []               # extra materials the 3x3 must never touch, e.g. [ANCIENT_DEBRIS]
+  axe:
+    max-logs: 300
+    break-leaves: true        # also clear the tree's natural leaves (drops saplings/apples)
+    require-leaves: true      # only fell real trees, so log builds are safe
+
 fragments:
   fusion-cost: 4
   # Kills by a player only. ENTITY_TYPE: "tier:chance"
@@ -749,6 +761,9 @@ events:
           - "ENCHANTED:DIAMOND_SWORD:SHARPNESS=5,UNBREAKING=3 1 w3"
           - "ENCHANTED:DIAMOND_AXE:SHARPNESS=5,EFFICIENCY=5 1 w2"
           - "ENCHANTED:BOW:POWER=5,INFINITY=1 1 w2"
+          - "AMETHYST_PICKAXE 1 w1"
+          - "AMETHYST_SHOVEL 1 w1"
+          - "AMETHYST_AXE 1 w1"
           - "GOLD_BLOCK 2-4 w3"
           - "DIAMOND_BLOCK 1 w2"
           - "NETHERITE_SCRAP 1-2 w2"

@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  *   /lwtest reset [player]                undo every effect: size, freeze, disguise, meters, cooldowns
  *   /lwtest finishrituals                 complete every running ritual now
  *   /lwtest fragments                     one stack of every fragment and event item
- *   /lwtest give <item> [amount]          FRAGMENT_T1..T4, LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION
+ *   /lwtest give <item> [amount]          FRAGMENT_T1..T4, LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE/_SHOVEL/_AXE
  *   /lwfx <full|reduced|minimal|off>      per-player particle level (every player can use this one)
  *
  * When [weapon] is left out, the weapon in the target's main hand is used.
@@ -235,7 +235,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
 
                ItemStack item = CustomItems.get().fromToken(args[1], amount);
                if (item == null) {
-                  sender.sendMessage("§cUnknown item. Try FRAGMENT_T1..FRAGMENT_T4, LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION.");
+                  sender.sendMessage("§cUnknown item. Try FRAGMENT_T1..FRAGMENT_T4, LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE.");
                } else {
                   player.getInventory().addItem(new ItemStack[]{item});
                }
@@ -328,7 +328,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
             } else if (args.length == 2 && args[0].equalsIgnoreCase("reset")) {
                options.addAll(players);
             } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
-               options.addAll(List.of("FRAGMENT_T1", "FRAGMENT_T2", "FRAGMENT_T3", "FRAGMENT_T4", "LUMINOSITY_FRAGMENT", "HILL_MARKER", "ALL_IN_ONE_POTION"));
+               options.addAll(List.of("FRAGMENT_T1", "FRAGMENT_T2", "FRAGMENT_T3", "FRAGMENT_T4", "LUMINOSITY_FRAGMENT", "HILL_MARKER", "ALL_IN_ONE_POTION", "AMETHYST_PICKAXE", "AMETHYST_SHOVEL", "AMETHYST_AXE"));
             }
       }
 
