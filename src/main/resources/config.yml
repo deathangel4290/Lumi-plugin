@@ -54,6 +54,9 @@ effects:
   eye-clearance: 1.3              # blocks
   passive-auras: false            # always-on auras around HELD weapons (Sword of Eclipse). Off: they blocked vision.
   trails: true
+  # Ritual altars are drawn at this strength regardless of density and /lwfx (except "off"):
+  # they are a landmark people navigate to, not combat clutter.
+  ritual-density: 1.0
 
 
 # ============================================================================

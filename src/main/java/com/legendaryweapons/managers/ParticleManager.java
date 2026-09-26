@@ -82,6 +82,17 @@ public class ParticleManager {
       }
    }
 
+   /**
+    * Landmark effects (ritual altars): skip the combat density and the per-player level thinning,
+    * because they exist to be seen from a distance. Only /lwfx off hides them. Scaled by
+    * effects.ritual-density instead.
+    */
+   public static void showcase(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
+      if (instance != null) {
+         instance.emit(particle, location, count, dx, dy, dz, speed, data, true);
+      }
+   }
+
    /** For persistent, decorative effects (auras, idle altar sparkle). Off unless effects.passive-auras is on. */
    public static void ambient(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
       if (instance != null && instance.passiveEnabled()) {
@@ -158,17 +169,21 @@ public class ParticleManager {
    }
 
    private void emit(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data) {
+      this.emit(particle, location, count, dx, dy, dz, speed, data, false);
+   }
+
+   private void emit(Particle particle, Location location, int count, double dx, double dy, double dz, double speed, Object data, boolean showcase) {
       if (this.enabled() && location != null && particle != null) {
          World world = location.getWorld();
          if (world != null) {
             Object resolved = this.resolveData(particle, data);
             if (resolved != MISSING) {
-               double range = this.viewRange();
+               double range = showcase ? Math.max(96.0, this.viewRange()) : this.viewRange();
                double rangeSq = range * range;
                double clearance = this.eyeClearance();
                double clearanceSq = clearance * clearance;
                double spread = Math.max(Math.abs(dx), Math.max(Math.abs(dy), Math.abs(dz)));
-               double density = this.density();
+               double density = showcase ? Math.max(0.0, Math.min(1.0, this.plugin.getConfig().getDouble("effects.ritual-density", 1.0))) : this.density();
 
                for (Player viewer : world.getPlayers()) {
                   Location viewerLoc = viewer.getLocation();
@@ -181,7 +196,7 @@ public class ParticleManager {
                            continue;
                         }
 
-                        int amount = count <= 0 ? 0 : thin(count * density * level.factor);
+                        int amount = count <= 0 ? 0 : thin(count * density * (showcase ? 1.0 : level.factor));
                         if (count <= 0 || amount > 0) {
                            try {
                               if (resolved == null) {
