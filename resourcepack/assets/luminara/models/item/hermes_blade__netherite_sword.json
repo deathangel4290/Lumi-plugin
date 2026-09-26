@@ -1,6 +1,76 @@
 {
-    "parent":  "minecraft:item/netherite_sword",
-    "textures":  {
-                     "layer0":  "luminara:item/hermes_blade__netherite_sword"
-                 }
+  "parent": "minecraft:item/netherite_sword",
+  "textures": {
+    "layer0": "luminara:item/hermes_blade__netherite_sword"
+  },
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        55
+      ],
+      "translation": [
+        0,
+        4.6,
+        0.5
+      ],
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -55
+      ],
+      "translation": [
+        0,
+        4.6,
+        0.5
+      ],
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -90,
+        25
+      ],
+      "translation": [
+        1.13,
+        3.56,
+        1.13
+      ],
+      "scale": [
+        0.82,
+        0.82,
+        0.82
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        90,
+        -25
+      ],
+      "translation": [
+        1.13,
+        3.56,
+        1.13
+      ],
+      "scale": [
+        0.82,
+        0.82,
+        0.82
+      ]
+    }
+  }
 }
