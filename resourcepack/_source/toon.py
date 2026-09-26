@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image
 
 D = 2                                   # texels per model unit
+ANIM_FRAMES = 8                         # glow animation length (x frametime 2 = 0.8 s loop)
 ALLOWED = (-45.0, -22.5, 0.0, 22.5, 45.0)
 FACES = ('north', 'south', 'east', 'west', 'up', 'down')
 
@@ -116,7 +117,7 @@ class Model:
         self.elements.append(e)
         return e
 
-    def extrude(self, at, x0, x1, y0, y1, z, depth, step=0.5):
+    def extrude(self, at, x0, x1, y0, y1, z, depth, step=0.5, rot=None):
         """Flat pixel-art shape: at(x, y) -> material or None per step-sized cell. One box per same-material
         run on each row; the front/back of every run shows its slice of one painted sprite."""
         assert abs(step * D - 1) < 1e-9, 'sprites are one texel per cell'
@@ -136,7 +137,7 @@ class Model:
                 if k == nx or grid[j][k] is None: faces.append('east')
                 if j == ny - 1 or any(grid[j + 1][c] is None for c in range(i, k)): faces.append('up')
                 if j == 0 or any(grid[j - 1][c] is None for c in range(i, k)): faces.append('down')
-                e = self.box((x0 + i * step, y0 + j * step, z - depth / 2), (x0 + k * step, y0 + (j + 1) * step, z + depth / 2), name, faces=faces)
+                e = self.box((x0 + i * step, y0 + j * step, z - depth / 2), (x0 + k * step, y0 + (j + 1) * step, z + depth / 2), name, rot=rot, faces=faces)
                 e['sprite'] = (sid, i, k, ny - 1 - j)
                 i = k
 
@@ -191,7 +192,49 @@ class Model:
                     uv = (fx, fy, fx + img.width, fy + img.height)
                 el['faces'][f] = {'uv': [round(v * k, 4) for v in uv], 'texture': '#0'}
             out['elements'].append(el)
+        self.anim_strip = self._animate(atlas, at, lookup)
         return out, atlas
+
+    def _animated(self, name):
+        M = self.mats[name]
+        return M.kind == 'glow' or M.emit > 0
+
+    def _animate(self, atlas, at, lookup, frames=ANIM_FRAMES):
+        """Vertical strip of `frames` copies of the atlas in which every glowing texel pulses toward its
+        brightest colour, phase-shifted by position so the light flows along the part."""
+        glow = []                                         # (x, y, ramp)
+        for sid, (grid, nx, ny) in enumerate(self.sprites):
+            sx, sy = at[('s', sid)]
+            for j in range(ny):
+                for i in range(nx):
+                    if grid[j][i] is not None and self._animated(grid[j][i]):
+                        glow.append((sx + i, sy + ny - 1 - j, self.mats[grid[j][i]].r))
+        for n, e in enumerate(self.elements):
+            if 'sprite' in e or not self._animated(e['mat']): continue
+            for f in e['faces']:
+                fx, fy = at[('f', n, f)]; img = lookup[('f', n, f)]
+                for v in range(-1, img.height + 1):
+                    for u in range(-1, img.width + 1):
+                        glow.append((fx + u, fy + v, self.mats[e['mat']].r))
+        if not glow:
+            return None
+        S = atlas.width
+        strip = Image.new('RGBA', (S, S * frames))
+        src = atlas.load()
+        for k in range(frames):
+            strip.paste(atlas, (0, S * k))
+        px = strip.load()
+        for x, y, r in glow:
+            base = src[x, y]
+            if base[3] == 0: continue
+            for k in range(frames):
+                wave = math.sin(2 * math.pi * (k / frames - (x + y) * 0.035))
+                if wave >= 0:
+                    c = tuple(int(base[i] + (r[4][i] - base[i]) * 0.65 * wave) for i in range(3))
+                else:
+                    c = tuple(int(base[i] + (r[1][i] - base[i]) * 0.35 * -wave) for i in range(3))
+                px[x, y + S * k] = c + (255,)
+        return strip
 
 
 def _pack(imgs):

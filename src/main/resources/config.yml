@@ -658,6 +658,17 @@ events:
     vertical-range: 4.0
     hologram-height: 3.5
     hologram-lines: 5
+    win-points: 300           # first to this many points wins on the spot; 0 = highest score when time runs out
+    points:
+      per-second: 1           # each second you hold the hill alone
+      streak-every: 30        # every 30s held without losing it...
+      streak-bonus: 10        # ...earns this bonus
+      capture-bonus: 5        # taking the hill from the previous king
+      kill-bonus: 15          # a kill where you or your victim is on the hill
+      contested-per-second: 0 # each player on a contested hill
+    ring:
+      enabled: true           # glowing ring of display blocks marking the edge (red while contested)
+      width: 0.25
     reward:
       - "LUMINOSITY_FRAGMENT 1"
 

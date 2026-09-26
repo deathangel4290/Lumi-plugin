@@ -43,10 +43,12 @@ import com.legendaryweapons.managers.TrustManager;
 import com.legendaryweapons.managers.TutorialManager;
 import com.legendaryweapons.managers.WeaponManager;
 import com.legendaryweapons.rituals.RitualRecipes;
+import org.bukkit.Material;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class LegendaryWeapons extends JavaPlugin {
+   private LostTridentListener lostTridentListener;
    private ConfigManager configManager;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
@@ -97,7 +99,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.eventManager = new EventManager(this);
       this.swordOfEclipseListener = new SwordOfEclipseListener(this);
       EnderGlaiveListener enderGlaiveListener = new EnderGlaiveListener(this);
-      LostTridentListener lostTridentListener = new LostTridentListener(this);
+      LostTridentListener lostTridentListener = this.lostTridentListener = new LostTridentListener(this);
       AxeOfZeusListener axeOfZeusListener = new AxeOfZeusListener(this);
       HermesBladeListener hermesBladeListener = new HermesBladeListener(this);
       this.chionesBladeListener = new ChionesBladeListener(this);
@@ -171,6 +173,10 @@ public class LegendaryWeapons extends JavaPlugin {
          this.bladeOfDiminutionListener.cleanup();
       }
 
+      if (this.lostTridentListener != null) {
+         this.lostTridentListener.cleanup();
+      }
+
       if (this.disguiseManager != null) {
          this.disguiseManager.removeAll();
       }
@@ -224,6 +230,29 @@ public class LegendaryWeapons extends JavaPlugin {
 
    public TrustManager getTrustManager() {
       return this.trustManager;
+   }
+
+   /** Every cooldown, charge, dash lock and freeze immunity, plus the vanilla item cooldown overlays. */
+   public void resetAllCooldowns(org.bukkit.entity.Player target) {
+      this.getCooldownManager().clearAll(target);
+      this.getChargePool().clear(target);
+      this.getDashTracker().clear(target);
+      this.getChionesBladeListener().resetImmunity(target);
+
+      for (String key : this.getWeaponManager().getWeaponKeys()) {
+         Material material = this.getConfigManager().getWeaponMaterial(key);
+         if (material != null && !material.isAir()) {
+            target.setCooldown(material, 0);
+         }
+      }
+
+      target.setCooldown(Material.SHIELD, 0);
+      // Anything else still showing the white sweep (a weapon on a material the config no longer lists).
+      for (org.bukkit.inventory.ItemStack item : target.getInventory().getContents()) {
+         if (item != null && !item.getType().isAir() && target.getCooldown(item.getType()) > 0) {
+            target.setCooldown(item.getType(), 0);
+         }
+      }
    }
 
    public CooldownManager getCooldownManager() {

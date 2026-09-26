@@ -109,19 +109,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
    }
 
    private void resetCooldowns(Player target) {
-      this.plugin.getCooldownManager().clearAll(target);
-      this.plugin.getChargePool().clear(target);
-      this.plugin.getDashTracker().clear(target);
-      this.plugin.getChionesBladeListener().resetImmunity(target);
-
-      for (String key : this.plugin.getWeaponManager().getWeaponKeys()) {
-         Material material = this.plugin.getConfigManager().getWeaponMaterial(key);
-         if (material != null && !material.isAir()) {
-            target.setCooldown(material, 0);
-         }
-      }
-
-      target.setCooldown(Material.SHIELD, 0);
+      this.plugin.resetAllCooldowns(target);
    }
 
    /** Split trailing args into an optional player name and an optional weapon key, in either order. */

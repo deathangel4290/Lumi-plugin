@@ -6,8 +6,10 @@ import com.legendaryweapons.abilities.WeaponAbility;
 import com.legendaryweapons.managers.WeaponManager;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -29,6 +31,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Trident;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.inventory.ItemStack;
@@ -43,6 +46,9 @@ public class LostTridentListener implements Listener, WeaponAbility {
    private final LegendaryWeapons plugin;
    private final WeaponManager weaponManager;
    private final Map<UUID, BukkitRunnable> tridentEffects = new HashMap<>();
+   /** Water placed by live walls. It must never flow: flowing water next to two sources makes new sources
+    *  the wall doesn't know about, and those were left behind forever after the wall ended. */
+   private final Set<Block> wallWater = new HashSet<>();
    private final NamespacedKey tridentKey;
 
    @Override
@@ -273,6 +279,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
                   Location blockLoc = anchor.clone().add(perpendicular.clone().multiply(w)).add(bow).add(0.0, h, 0.0);
                   Block block = blockLoc.getBlock();
                   if (block.getType().isAir() && this.plugin.getProtectionManager().canBuild(player, blockLoc)) {
+                     LostTridentListener.this.wallWater.add(block);
                      block.setType(Material.WATER);
                      waterBlocks.add(block);
                   }
@@ -297,6 +304,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
             (new BukkitRunnable() {
                public void run() {
                   for (Block block : waterBlocks) {
+                     LostTridentListener.this.wallWater.remove(block);
                      if (block.getType() == Material.WATER) {
                         ParticleManager.spawn(Particle.CLOUD, block.getLocation().add(0.5, 0.5, 0.5), 2, 0.2, 0.2, 0.2, 0.05);
                         block.setType(Material.AIR);
@@ -308,6 +316,24 @@ public class LostTridentListener implements Listener, WeaponAbility {
             ParticleManager.spawn(Particle.SWEEP_ATTACK, anchor, 10, 2.0, 2.0, 2.0, 0.1);
          }
       }
+   }
+
+   @EventHandler(ignoreCancelled = true)
+   public void onWallFlow(BlockFromToEvent event) {
+      if (this.wallWater.contains(event.getBlock())) {
+         event.setCancelled(true);
+      }
+   }
+
+   /** Plugin disable: the removal tasks will never run, so take every live wall down now. */
+   public void cleanup() {
+      for (Block block : this.wallWater) {
+         if (block.getType() == Material.WATER) {
+            block.setType(Material.AIR);
+         }
+      }
+
+      this.wallWater.clear();
    }
 
    private void pushEntitiesFromWall(Location anchor, Vector facing, int width, int height, double push, Player owner) {

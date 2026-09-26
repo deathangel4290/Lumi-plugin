@@ -87,7 +87,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          }
       } else if (args[0].equalsIgnoreCase("resetcooldowns")) {
          if (sender instanceof Player playerxx) {
-            this.swordOfEclipseListener.resetCooldowns(playerxx);
+            this.plugin.resetAllCooldowns(playerxx);
             sender.sendMessage("§aAll legendary weapon cooldowns have been reset.");
             return true;
          } else {

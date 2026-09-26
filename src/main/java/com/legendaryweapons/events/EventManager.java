@@ -166,6 +166,7 @@ public class EventManager implements Listener {
       Player killer = victim.getKiller();
       this.bounty.onKill(victim, killer);
       this.mostWanted.onDeath(victim, killer);
+      this.koth.onKill(victim, killer);
    }
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

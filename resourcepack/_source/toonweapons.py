@@ -359,3 +359,61 @@ def veil():
 MODELS = {'scythe_of_diablo': scythe, 'luminosity': luminosity, 'ender_glaive': glaive, 'hermes_blade': hermes,
           'chiones_blade': chione, 'blade_of_diminution': diminution, 'sword_of_eclipse': eclipse, 'axe_of_zeus': zeus,
           'titans_axe': titan, 'lost_trident': trident, 'tether_chain': tether, 'veil_of_mimicry': veil}
+
+# ---------------------------------------------------------------- Hellstorm (crossbow, one model per draw state)
+# Built in the same diagonal layout as the vanilla crossbow sprite so the vanilla crossbow hand poses fit:
+# everything is modelled along u (butt -> nose) and v, then turned 45 degrees about the model centre.
+DIAG = ('z', 45.0, (8.0, 8.0, 8.0))
+NOCK = {'standby': 2.2, 'pulling_0': 0.8, 'pulling_1': -1.2, 'pulling_2': -3.2, 'arrow': -3.2, 'firework': -3.2}
+
+def hellstorm(state='standby'):
+    m = Model()
+    m.mat('stock', ['#140a08', '#2e1a14', '#4a2c20', '#6a4230', '#8a5a40'], 'wood')
+    m.mat('iron', ['#24242c', '#4a4a56', '#74747e', '#a4a4ae', '#d8d8e0'])
+    m.mat('wrap', ['#200806', '#4a1410', '#74241a', '#9a3a28', '#c05a40'], 'wrap')
+    m.mat('limb', ['#3a0c00', '#8a2400', '#d05010', '#f08a30', '#ffc870'])
+    m.mat('ember', ['#802000', '#e04a00', '#ff8a20', '#ffc860', '#fff0b0'], 'glow', 12)
+    m.mat('string', ['#ffe0b0', '#ffe0b0', '#ffe8c8', '#fff4e0', '#ffffff'], 'glow', 8)
+    m.mat('gem', ['#5a0000', '#b01010', '#ff3a20', '#ff9a60', '#ffe0c0'], 'gem', 12)
+    U = lambda u: 8.0 + u                                   # u/v -> pre-rotation x/y
+    def box(u0, v0, u1, v1, z0, z1, mat):
+        m.box((U(u0), U(v0), z0), (U(u1), U(v1), z1), mat, DIAG)
+    box(-9.0, -1.0, 6.0, 1.0, 7.0, 9.0, 'stock')           # stock
+    box(-9.5, -1.4, -8.5, 1.4, 6.6, 9.4, 'iron')           # butt plate
+    box(-7.0, -1.25, -4.0, 1.25, 6.75, 9.25, 'wrap')       # grip
+    box(-3.5, -2.5, -2.5, -1.0, 7.5, 8.5, 'iron')          # trigger
+    box(-3.0, -1.2, 1.5, 1.2, 9.0, 9.4, 'iron')            # rail
+    box(4.0, -1.4, 6.5, 1.4, 6.6, 9.4, 'iron')             # nose cap
+    box(4.6, -0.6, 5.9, 0.6, 6.3, 9.7, 'gem')              # fire gem through the nose
+    # limbs: an arc bulging toward the nose, with a glowing vein
+    def limb(x, y):
+        u, v = x - 8, y - 8
+        if abs(v) > 6.6: return None
+        c = 4.8 - 0.055 * v * v
+        w = 0.9 - 0.25 * abs(v) / 6.6
+        if abs(u - c) > w: return None
+        return 'ember' if abs(u - c) < 0.3 and 0.8 < abs(v) < 5.8 else 'limb'
+    m.extrude(limb, 0, 16, 0, 16, 8.0, 2.0, rot=DIAG)
+    # string: tips -> nock
+    tip = 4.8 - 0.055 * 6.4 * 6.4
+    nock = NOCK[state]
+    def string(x, y):
+        u, v = x - 8, y - 8
+        if abs(v) > 6.4: return None
+        target = nock + (tip - nock) * abs(v) / 6.4
+        return 'string' if abs(u - target) <= 0.26 else None
+    m.extrude(string, 0, 16, 0, 16, 9.0, 0.5, rot=DIAG)
+    if state == 'arrow':
+        box(-3.5, -0.3, 7.5, 0.3, 9.4, 10.0, 'stock')      # shaft
+        box(7.5, -0.8, 9.0, 0.8, 9.3, 10.1, 'ember')       # flaming head
+        box(-3.5, -1.0, -2.0, 1.0, 9.5, 9.9, 'iron')       # fletching
+    elif state == 'firework':
+        m.mat('rocket', ['#4a0008', '#900a18', '#d8203a', '#ff6070', '#ffc0c8'])
+        m.mat('paper', ['#8a7a5a', '#c8b890', '#ece0bc', '#fff6dc', '#ffffff'])
+        box(-2.5, -1.0, 5.5, 1.0, 9.4, 11.4, 'rocket')
+        box(-1.5, -1.05, -0.5, 1.05, 9.35, 11.45, 'paper')
+        box(3.5, -1.05, 4.5, 1.05, 9.35, 11.45, 'paper')
+        box(5.5, -0.6, 7.0, 0.6, 9.8, 11.0, 'iron')
+    return m
+
+XBOW_STATES = list(NOCK)
