@@ -158,12 +158,13 @@ public class CustomItems implements Listener {
       ItemStack potion = new ItemStack(Material.POTION, Math.max(1, amount));
       PotionMeta meta = (PotionMeta)potion.getItemMeta();
       meta.displayName(Component.text("All-in-One Potion", NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+      // Particles off: five effects' worth of swirls (Resistance is purple) float in front of the drinker's camera.
       meta.setColor(Color.fromRGB(200, 60, 255));
-      meta.addCustomEffect(new PotionEffect(PotionEffectType.STRENGTH, 3600, 1), true);
-      meta.addCustomEffect(new PotionEffect(PotionEffectType.SPEED, 3600, 1), true);
-      meta.addCustomEffect(new PotionEffect(PotionEffectType.REGENERATION, 900, 1), true);
-      meta.addCustomEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3600, 0), true);
-      meta.addCustomEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 9600, 0), true);
+      meta.addCustomEffect(new PotionEffect(PotionEffectType.STRENGTH, 3600, 1, false, false, true), true);
+      meta.addCustomEffect(new PotionEffect(PotionEffectType.SPEED, 3600, 1, false, false, true), true);
+      meta.addCustomEffect(new PotionEffect(PotionEffectType.REGENERATION, 900, 1, false, false, true), true);
+      meta.addCustomEffect(new PotionEffect(PotionEffectType.RESISTANCE, 3600, 0, false, false, true), true);
+      meta.addCustomEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, 9600, 0, false, false, true), true);
       meta.getPersistentDataContainer().set(this.idKey, PersistentDataType.STRING, ALL_IN_ONE_POTION);
       potion.setItemMeta(meta);
       return potion;
