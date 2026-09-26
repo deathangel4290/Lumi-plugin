@@ -617,6 +617,7 @@ weapons:
 # ============================================================================
 ritual:
   timer: 900                            # SECONDS (900 = 15 minutes)
+  altar-decoration: true                # small turning crystal above idle altars; false = glyph particles only
 
 ritual-block-recipe:
   enabled: true

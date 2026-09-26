@@ -301,20 +301,24 @@ public class RitualManager implements Listener {
          }
 
          ItemDisplay core = this.altarCores.get(altar);
+         boolean decorate = this.plugin.getConfig().getBoolean("ritual.altar-decoration", true);
          if (loaded && watched && this.getRitualAtLocation(altar) == null) {
+            ParticleManager.spawn(Particle.ENCHANT, altar.clone().add(0.5, 1.4, 0.5), 6, 0.6, 0.3, 0.6, 0.6);
+         }
+
+         if (decorate && loaded && watched && this.getRitualAtLocation(altar) == null) {
             if (core == null || !core.isValid()) {
-               core = world.spawn(altar.clone().add(0.5, 1.45, 0.5), ItemDisplay.class, display -> {
+               core = world.spawn(altar.clone().add(0.5, 1.15, 0.5), ItemDisplay.class, display -> {
                   display.setItemStack(new ItemStack(Material.AMETHYST_CLUSTER));
                   display.setPersistent(false);
                   display.setBillboard(Billboard.FIXED);
                   display.setInterpolationDuration(20);
-                  display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.55F, 0.55F, 0.55F), new Quaternionf()));
+                  display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.35F, 0.35F, 0.35F), new Quaternionf()));
                });
                this.altarCores.put(altar, core);
             }
 
-            core.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 0.5) * 0.08), 0.0F), new Quaternionf().rotateY((float)(time * 0.6)), new Vector3f(0.55F, 0.55F, 0.55F), new Quaternionf()));
-            ParticleManager.spawn(Particle.ENCHANT, altar.clone().add(0.5, 1.6, 0.5), 6, 0.6, 0.3, 0.6, 0.6);
+            core.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 0.5) * 0.04), 0.0F), new Quaternionf().rotateY((float)(time * 0.6)), new Vector3f(0.35F, 0.35F, 0.35F), new Quaternionf()));
          } else if (core != null) {
             if (core.isValid()) {
                core.remove();
