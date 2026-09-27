@@ -188,7 +188,8 @@ public class SupplyDrops {
             Location base = drop.location.clone().add(0.5, 1.0, 0.5);
 
             for (int i = 0; i < 4; i++) {
-               ParticleManager.spawn(Particle.END_ROD, base.clone().add(0.0, Math.random() * 40.0, 0.0), 1, 0.05, 0.0, 0.05, 0.0);
+               // a landmark, like the altars: not thinned by combat density, seen from 96 blocks
+               ParticleManager.showcase(Particle.END_ROD, base.clone().add(0.0, Math.random() * 40.0, 0.0), 1, 0.05, 0.0, 0.05, 0.0, null);
             }
          }
       }

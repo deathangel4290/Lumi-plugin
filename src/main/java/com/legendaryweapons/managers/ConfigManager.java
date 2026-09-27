@@ -193,8 +193,13 @@ public class ConfigManager {
       return Math.max(0, Math.min(4, this.config.getInt("weapons." + weaponKey + ".power-tier", 0)));
    }
 
+   /**
+    * Never null: a weapon whose abilities section was deleted from the config gets an empty one, so
+    * every lookup falls back to its built-in default instead of throwing mid-fight.
+    */
    public ConfigurationSection getWeaponAbilities(String weaponKey) {
-      return this.config.getConfigurationSection("weapons." + weaponKey + ".abilities");
+      ConfigurationSection section = this.config.getConfigurationSection("weapons." + weaponKey + ".abilities");
+      return section != null ? section : new org.bukkit.configuration.file.YamlConfiguration();
    }
 
    private Enchantment resolveEnchantment(String name) {
