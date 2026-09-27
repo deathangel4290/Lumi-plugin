@@ -103,14 +103,7 @@ public class KothEvent {
          this.totalMillis = Math.max(1, minutes) * 60000L;
          this.endsAt = System.currentTimeMillis() + this.totalMillis;
          this.removeHologram();
-         this.hologram = this.center.getWorld().spawn(this.center.clone().add(0.5, this.plugin.getConfig().getDouble("events.koth.hologram-height", 3.5), 0.5), TextDisplay.class, display -> {
-            display.setBillboard(Billboard.CENTER);
-            display.setPersistent(false);
-            display.setShadowed(true);
-            display.setDefaultBackground(false);
-            display.setBackgroundColor(Color.fromARGB(110, 0, 0, 0));
-            display.setLineWidth(220);
-         });
+         this.spawnHologram();
 
          for (Player player : Bukkit.getOnlinePlayers()) {
             player.showBossBar(this.bar);
@@ -126,6 +119,40 @@ public class KothEvent {
             }
          }).runTaskTimer(this.plugin, 20L, 20L);
          return null;
+      }
+   }
+
+   private void spawnHologram() {
+      this.hologram = this.center.getWorld().spawn(this.center.clone().add(0.5, this.plugin.getConfig().getDouble("events.koth.hologram-height", 3.5), 0.5), TextDisplay.class, display -> {
+         display.setBillboard(Billboard.CENTER);
+         display.setPersistent(false);
+         display.setShadowed(true);
+         display.setDefaultBackground(false);
+         display.setBackgroundColor(Color.fromARGB(110, 0, 0, 0));
+         display.setLineWidth(220);
+      });
+   }
+
+   /**
+    * The ring and leaderboard are non-persistent, so they are discarded when the hill's chunk
+    * unloads with nobody around. Put them back as soon as the chunk is loaded again.
+    */
+   private void restoreDisplays() {
+      if (!this.center.getWorld().isChunkLoaded(this.center.getBlockX() >> 4, this.center.getBlockZ() >> 4)) {
+         return;
+      }
+
+      if (this.hologram == null || !this.hologram.isValid()) {
+         this.spawnHologram();
+      }
+
+      if (!this.ring.isEmpty() && !this.ring.get(0).isValid()) {
+         Boolean contested = this.ringContested;
+         this.buildRing();
+         if (Boolean.TRUE.equals(contested)) {
+            this.ringContested = false;
+            this.colourRing(true);
+         }
       }
    }
 
@@ -232,6 +259,7 @@ public class KothEvent {
                .append(Component.text("  #" + this.rankOf(player.getUniqueId()), NamedTextColor.GRAY)));
          }
 
+         this.restoreDisplays();
          long seconds = left / 1000L;
          this.bar.name(Component.text("♔ King of the Hill  ", NamedTextColor.GOLD).append(state).append(Component.text("  " + String.format("%02d:%02d", seconds / 60L, seconds % 60L), NamedTextColor.WHITE)));
          this.bar.progress((float)Math.max(0.0, Math.min(1.0, (double)left / this.totalMillis)));

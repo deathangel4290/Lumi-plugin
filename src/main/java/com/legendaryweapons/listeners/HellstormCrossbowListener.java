@@ -149,7 +149,8 @@ public class HellstormCrossbowListener implements Listener {
                   boolean breakBlocks = !(arrow.getShooter() instanceof Player shooter)
                      || HellstormCrossbowListener.this.plugin.getProtectionManager().canBuild(shooter, explosionLoc);
                   // With a source entity, protection plugins filter the explosion per region.
-                  arrow.getWorld().createExplosion(explosionLoc, power, true, breakBlocks, source);
+                  // no fire where the shooter may not build either (claims, spawn, regions)
+                  arrow.getWorld().createExplosion(explosionLoc, power, breakBlocks, breakBlocks, source);
                   ParticleManager.spawn(Particle.EXPLOSION_EMITTER, explosionLoc, 2, 0.0, 0.0, 0.0, 0.0);
                   HellstormCrossbowListener.this.plugin.getSoundManager().world(explosionLoc, Sound.ENTITY_GENERIC_EXPLODE, 1.0F, 0.8F);
                   arrow.remove();

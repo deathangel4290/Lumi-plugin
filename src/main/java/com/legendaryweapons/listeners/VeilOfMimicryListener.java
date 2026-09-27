@@ -135,7 +135,8 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
       double cosLimit = Math.cos(Math.toRadians(this.ability("witness-fov-degrees", 110.0) / 2.0));
 
       for (Player other : Bukkit.getOnlinePlayers()) {
-         if (!other.equals(player) && other.getWorld().equals(player.getWorld()) && !other.isDead() && other.getLocation().distance(player.getLocation()) <= range && other.canSee(player)) {
+         if (!other.equals(player) && other.getWorld().equals(player.getWorld()) && !other.isDead() && other.getGameMode() != org.bukkit.GameMode.SPECTATOR
+            && other.getLocation().distance(player.getLocation()) <= range && other.canSee(player)) {
             Vector toPlayer = player.getEyeLocation().toVector().subtract(other.getEyeLocation().toVector());
             if (toPlayer.lengthSquared() < 1.0E-4) {
                return other;
