@@ -90,11 +90,40 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       }
 
       this.kills.remove(event.getEntity().getUniqueId());
+      event.getEntity().getPersistentDataContainer().remove(this.killsKey());
+   }
+
+   private org.bukkit.NamespacedKey killsKey() {
+      return new org.bukkit.NamespacedKey(this.plugin, "hermes-kills");
+   }
+
+   /** Kills survive logging out; only dying resets them (as the lore says). */
+   @EventHandler
+   public void onQuit(PlayerQuitEvent event) {
+      Integer count = this.kills.remove(event.getPlayer().getUniqueId());
+      if (count != null && count > 0) {
+         event.getPlayer().getPersistentDataContainer().set(this.killsKey(), org.bukkit.persistence.PersistentDataType.INTEGER, count);
+      }
+   }
+
+   /** Plugin disable / restart: keep everyone's kills. */
+   public void cleanup() {
+      for (Player player : this.plugin.getServer().getOnlinePlayers()) {
+         Integer count = this.kills.get(player.getUniqueId());
+         if (count != null && count > 0) {
+            player.getPersistentDataContainer().set(this.killsKey(), org.bukkit.persistence.PersistentDataType.INTEGER, count);
+         }
+      }
    }
 
    @EventHandler
-   public void onQuit(PlayerQuitEvent event) {
-      this.kills.remove(event.getPlayer().getUniqueId());
+   public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+      Integer saved = event.getPlayer().getPersistentDataContainer().get(this.killsKey(), org.bukkit.persistence.PersistentDataType.INTEGER);
+      if (saved != null && saved > 0) {
+         this.kills.put(event.getPlayer().getUniqueId(), saved);
+      }
+
+      event.getPlayer().getPersistentDataContainer().remove(this.killsKey());
    }
 
    @Override

@@ -207,9 +207,28 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    }
 
    /** Split blades left behind by a crash or restart mid-split become one real sword again. */
+   private NamespacedKey killsKey() {
+      return new NamespacedKey(this.plugin, "eclipse-kills");
+   }
+
+   /** Progress survives logging out; only dying resets it, as the lore says. */
+   private void saveKills(Player player) {
+      int kills = this.killTracker.getOrDefault(player.getUniqueId(), 0);
+      if (kills > 0) {
+         player.getPersistentDataContainer().set(this.killsKey(), PersistentDataType.INTEGER, kills);
+      } else {
+         player.getPersistentDataContainer().remove(this.killsKey());
+      }
+   }
+
    @EventHandler
    public void onJoin(PlayerJoinEvent event) {
       Player player = event.getPlayer();
+      Integer saved = player.getPersistentDataContainer().get(this.killsKey(), PersistentDataType.INTEGER);
+      if (saved != null && saved > 0) {
+         this.killTracker.put(player.getUniqueId(), saved);
+      }
+
       if (this.stripSplitSwords(player) > 0) {
          player.getInventory().addItem(new ItemStack[]{this.weaponManager.getWeapon("sword-of-eclipse")}).values().forEach(left -> player.getWorld().dropItemNaturally(player.getLocation(), left));
       }
@@ -241,6 +260,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          if (this.dualWielding.getOrDefault(player.getUniqueId(), false)) {
             this.deactivateDualWield(player);
          }
+
+         this.saveKills(player);
       }
    }
 
@@ -248,6 +269,13 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    public void onPlayerQuit(PlayerQuitEvent event) {
       Player player = event.getPlayer();
       UUID uuid = player.getUniqueId();
+      // End a split properly while the inventory can still be edited: the halves become the real
+      // sword again and the cached off-hand item goes back. Skipping this lost the off-hand item.
+      if (this.dualWielding.getOrDefault(uuid, false)) {
+         this.deactivateDualWield(player);
+      }
+
+      this.saveKills(player);
       if (this.stageEffects.containsKey(uuid)) {
          this.stageEffects.get(uuid).cancel();
          this.stageEffects.remove(uuid);
@@ -375,6 +403,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       Player killed = event.getEntity();
       Player killer = killed.getKiller();
       UUID killedUuid = killed.getUniqueId();
+      killed.getPersistentDataContainer().remove(this.killsKey());
       if (this.killTracker.containsKey(killedUuid)) {
          this.killTracker.remove(killedUuid);
          if (this.stageEffects.containsKey(killedUuid)) {

@@ -51,6 +51,7 @@ public class LegendaryWeapons extends JavaPlugin {
    private LostTridentListener lostTridentListener;
    private AxeOfZeusListener axeOfZeusListener;
    private EnderGlaiveListener enderGlaiveListener;
+   private HermesBladeListener hermesBladeListener;
    private ConfigManager configManager;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
@@ -104,7 +105,7 @@ public class LegendaryWeapons extends JavaPlugin {
       EnderGlaiveListener enderGlaiveListener = this.enderGlaiveListener = new EnderGlaiveListener(this);
       LostTridentListener lostTridentListener = this.lostTridentListener = new LostTridentListener(this);
       AxeOfZeusListener axeOfZeusListener = this.axeOfZeusListener = new AxeOfZeusListener(this);
-      HermesBladeListener hermesBladeListener = new HermesBladeListener(this);
+      HermesBladeListener hermesBladeListener = this.hermesBladeListener = new HermesBladeListener(this);
       this.chionesBladeListener = new ChionesBladeListener(this);
       TitansAxeListener titansAxeListener = new TitansAxeListener(this);
       this.bladeOfDiminutionListener = new BladeOfDiminutionListener(this);
@@ -187,6 +188,10 @@ public class LegendaryWeapons extends JavaPlugin {
 
       if (this.enderGlaiveListener != null) {
          this.enderGlaiveListener.cleanup();
+      }
+
+      if (this.hermesBladeListener != null) {
+         this.hermesBladeListener.cleanup();
       }
 
       if (this.disguiseManager != null) {
