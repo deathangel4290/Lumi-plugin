@@ -50,6 +50,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class LegendaryWeapons extends JavaPlugin {
    private LostTridentListener lostTridentListener;
    private AxeOfZeusListener axeOfZeusListener;
+   private EnderGlaiveListener enderGlaiveListener;
    private ConfigManager configManager;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
@@ -100,7 +101,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.guiManager = new GUIManager(this);
       this.eventManager = new EventManager(this);
       this.swordOfEclipseListener = new SwordOfEclipseListener(this);
-      EnderGlaiveListener enderGlaiveListener = new EnderGlaiveListener(this);
+      EnderGlaiveListener enderGlaiveListener = this.enderGlaiveListener = new EnderGlaiveListener(this);
       LostTridentListener lostTridentListener = this.lostTridentListener = new LostTridentListener(this);
       AxeOfZeusListener axeOfZeusListener = this.axeOfZeusListener = new AxeOfZeusListener(this);
       HermesBladeListener hermesBladeListener = new HermesBladeListener(this);
@@ -182,6 +183,10 @@ public class LegendaryWeapons extends JavaPlugin {
 
       if (this.axeOfZeusListener != null) {
          this.axeOfZeusListener.cleanup();
+      }
+
+      if (this.enderGlaiveListener != null) {
+         this.enderGlaiveListener.cleanup();
       }
 
       if (this.disguiseManager != null) {

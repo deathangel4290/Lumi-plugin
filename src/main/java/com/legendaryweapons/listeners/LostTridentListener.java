@@ -92,12 +92,17 @@ public class LostTridentListener implements Listener, WeaponAbility {
          ItemStack item = player.getInventory().getItemInMainHand();
          if (this.weaponManager.isLegendaryWeapon(item) && "lost-trident-of-atlantis".equals(this.weaponManager.getWeaponKey(item))) {
             Trident trident = (Trident)event.getEntity();
-            ItemStack tridentItem = this.weaponManager.getWeapon("lost-trident-of-atlantis");
+            // Keep the player's own trident (their enchantments, their durability); only make sure it
+            // comes back. It used to be swapped for a fresh template, wiping anything added to it.
+            ItemStack tridentItem = trident.getItemStack().clone();
             ItemMeta meta = tridentItem.getItemMeta();
-            meta.addEnchant(Enchantment.LOYALTY, 3, true);
-            meta.addEnchant(Enchantment.CHANNELING, 1, true);
-            tridentItem.setItemMeta(meta);
-            trident.setItem(tridentItem);
+            if (meta != null && meta.getEnchantLevel(Enchantment.LOYALTY) < 3) {
+               meta.addEnchant(Enchantment.LOYALTY, 3, true);
+               tridentItem.setItemMeta(meta);
+               trident.setItemStack(tridentItem);
+            }
+
+            this.flyModel(trident, tridentItem);
             trident.getPersistentDataContainer().set(this.tridentKey, PersistentDataType.BYTE, (byte)1);
             this.startTridentEffects(trident, player);
             this.createLaunchEffects(player.getLocation(), trident.getVelocity());
@@ -121,6 +126,51 @@ public class LostTridentListener implements Listener, WeaponAbility {
       }
    }
 
+   /**
+    * A thrown trident is drawn with vanilla's fixed trident model whatever the item is, so hide the
+    * entity and fly the Atlantis model on it (out, stuck, and all the way home on loyalty).
+    */
+   private void flyModel(final Trident trident, ItemStack look) {
+      for (Player viewer : trident.getWorld().getPlayers()) {
+         viewer.hideEntity(this.plugin, trident);
+      }
+
+      final org.bukkit.entity.ItemDisplay display = trident.getWorld().spawn(trident.getLocation(), org.bukkit.entity.ItemDisplay.class, d -> {
+         d.setPersistent(false);
+         d.setItemStack(look.clone());
+         d.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
+         d.setTeleportDuration(1);
+      });
+      (new BukkitRunnable() {
+         int life = 0;
+
+         public void run() {
+            if (!trident.isValid() || !display.isValid() || this.life++ > 1200) {
+               if (display.isValid()) {
+                  display.remove();
+               }
+
+               if (trident.isValid()) {
+                  for (Player viewer : trident.getWorld().getPlayers()) {
+                     viewer.showEntity(LostTridentListener.this.plugin, trident);
+                  }
+               }
+
+               this.cancel();
+               return;
+            }
+
+            display.teleport(trident.getLocation());
+            Vector v = trident.getVelocity();
+            if (v.lengthSquared() > 1.0E-3) {
+               org.joml.Quaternionf pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F, (float)v.getX(), (float)v.getY(), (float)v.getZ());
+               org.bukkit.util.Transformation now = display.getTransformation();
+               display.setTransformation(new org.bukkit.util.Transformation(now.getTranslation(), pointing, now.getScale(), now.getRightRotation()));
+            }
+         }
+      }).runTaskTimer(this.plugin, 1L, 1L);
+   }
+
    private void startTridentEffects(final Trident trident, Player player) {
       final UUID tridentId = trident.getUniqueId();
       BukkitRunnable effectTask = new BukkitRunnable() {
@@ -130,9 +180,10 @@ public class LostTridentListener implements Listener, WeaponAbility {
             if (trident != null && trident.isValid() && !trident.isOnGround()) {
                Location tridentLoc = trident.getLocation();
                World world = trident.getWorld();
-               ParticleManager.spawn(Particle.DRIPPING_WATER, tridentLoc, 5, 0.1, 0.1, 0.1, 0.02);
-               ParticleManager.spawn(Particle.FALLING_WATER, tridentLoc, 3, 0.05, 0.05, 0.05, 0.01);
-               ParticleManager.spawn(Particle.NAUTILUS, tridentLoc, 2, 0.2, 0.2, 0.2, 0.1);
+               if (this.ticks % 2 == 0) {
+                  ParticleManager.spawn(Particle.DRIPPING_WATER, tridentLoc, 2, 0.1, 0.1, 0.1, 0.02);
+                  ParticleManager.spawn(Particle.NAUTILUS, tridentLoc, 1, 0.2, 0.2, 0.2, 0.1);
+               }
                if (this.ticks % 3 == 0) {
                   ParticleManager.spawn(Particle.BUBBLE_POP, tridentLoc, 2, 0.3, 0.3, 0.3, 0.05);
                }
@@ -150,7 +201,6 @@ public class LostTridentListener implements Listener, WeaponAbility {
                   LostTridentListener.this.plugin.getSoundManager().ambient(tridentLoc, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.3F, 1.5F);
                }
 
-               trident.setGlowing(this.ticks % 20 < 10);
                this.ticks++;
             } else {
                LostTridentListener.this.tridentEffects.remove(tridentId);

@@ -39,6 +39,10 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
    private final NamespacedKey glaiveKey;
    private final HashMap<UUID, UUID> tridentOwners = new HashMap<>();
    private final HashMap<UUID, ItemStack> glaiveItems = new HashMap<>();
+   /** trident -> the display that shows the real glaive model flying in its place */
+   private final HashMap<UUID, org.bukkit.entity.ItemDisplay> glaiveDisplays = new HashMap<>();
+   /** Glaives owed to a player, kept on the player so a logout or restart mid-flight can't lose one. */
+   private final NamespacedKey owedKey;
 
    @Override
    public String weaponKey() {
@@ -60,6 +64,50 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
       this.glaiveKey = new NamespacedKey(plugin, "ender-glaive");
+      this.owedKey = new NamespacedKey(plugin, "glaives-owed");
+   }
+
+   private int owed(Player player) {
+      Integer value = player.getPersistentDataContainer().get(this.owedKey, PersistentDataType.INTEGER);
+      return value == null ? 0 : value;
+   }
+
+   private void setOwed(Player player, int value) {
+      if (value <= 0) {
+         player.getPersistentDataContainer().remove(this.owedKey);
+      } else {
+         player.getPersistentDataContainer().set(this.owedKey, PersistentDataType.INTEGER, value);
+      }
+   }
+
+   @EventHandler
+   public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+      Player player = event.getPlayer();
+      int owed = this.owed(player);
+      if (owed > 0 && !this.tridentOwners.containsValue(player.getUniqueId())) {
+         this.setOwed(player, 0);
+         for (int i = 0; i < owed; i++) {
+            ItemStack glaive = this.weaponManager.createWeapon("ender-glaive");
+            if (glaive != null) {
+               player.getInventory().addItem(glaive).values().forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
+            }
+         }
+      }
+
+      // late joiners must not see the stand-in trident either
+      for (UUID tridentId : this.tridentOwners.keySet()) {
+         Entity trident = Bukkit.getEntity(tridentId);
+         if (trident != null) {
+            player.hideEntity(this.plugin, trident);
+         }
+      }
+   }
+
+   /** Plugin disable: return every glaive still in the air. */
+   public void cleanup() {
+      for (UUID tridentId : new java.util.ArrayList<>(this.tridentOwners.keySet())) {
+         this.returnGlaiveToPlayer(tridentId);
+      }
    }
 
    public void triggerAbility(Player player) {
@@ -216,6 +264,19 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       trident.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "glaive-damage"), PersistentDataType.DOUBLE, baseDamage);
       this.tridentOwners.put(trident.getUniqueId(), player.getUniqueId());
       this.glaiveItems.put(trident.getUniqueId(), glaiveItem);
+      this.setOwed(player, this.owed(player) + 1);
+      // The thrown entity would render as a vanilla trident; hide it and fly the glaive model instead.
+      for (Player viewer : player.getWorld().getPlayers()) {
+         viewer.hideEntity(this.plugin, trident);
+      }
+
+      org.bukkit.entity.ItemDisplay shown = player.getWorld().spawn(trident.getLocation(), org.bukkit.entity.ItemDisplay.class, display -> {
+         display.setPersistent(false);
+         display.setItemStack(glaiveItem.clone());
+         display.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
+         display.setTeleportDuration(1);
+      });
+      this.glaiveDisplays.put(trident.getUniqueId(), shown);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 0.7F, 1.2F);
       (new BukkitRunnable() {
          public void run() {
@@ -224,7 +285,9 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                this.cancel();
             } else if (!trident.isOnGround() && !trident.isInBlock()) {
                ParticleManager.spawn(Particle.REVERSE_PORTAL, trident.getLocation(), 1, 0.1, 0.1, 0.1, 0.005);
+               EnderGlaiveListener.this.followTrident(trident);
             } else {
+               EnderGlaiveListener.this.followTrident(trident);
                (new BukkitRunnable() {
                   public void run() {
                      EnderGlaiveListener.this.returnGlaiveToPlayer(trident.getUniqueId());
@@ -236,12 +299,33 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       }).runTaskTimer(this.plugin, 1L, 1L);
    }
 
+   /** Keep the glaive model on the hidden trident, blade pointing along its flight. */
+   private void followTrident(Trident trident) {
+      org.bukkit.entity.ItemDisplay display = this.glaiveDisplays.get(trident.getUniqueId());
+      if (display != null && display.isValid()) {
+         Vector velocity = trident.getVelocity();
+         display.teleport(trident.getLocation());
+         if (velocity.lengthSquared() > 1.0E-4) {
+            org.joml.Quaternionf pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F,
+               (float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
+            org.bukkit.util.Transformation now = display.getTransformation();
+            display.setTransformation(new org.bukkit.util.Transformation(now.getTranslation(), pointing, now.getScale(), now.getRightRotation()));
+         }
+      }
+   }
+
    private void returnGlaiveToPlayer(UUID tridentId) {
+      org.bukkit.entity.ItemDisplay display = this.glaiveDisplays.remove(tridentId);
+      if (display != null && display.isValid()) {
+         display.remove();
+      }
+
       if (this.tridentOwners.containsKey(tridentId) && this.glaiveItems.containsKey(tridentId)) {
          UUID playerId = this.tridentOwners.get(tridentId);
          ItemStack glaiveItem = this.glaiveItems.get(tridentId);
          Player player = Bukkit.getPlayer(playerId);
          if (player != null && player.isOnline()) {
+            this.setOwed(player, this.owed(player) - 1);            // offline owners keep it owed until they rejoin
             HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack[]{glaiveItem});
             if (leftover.isEmpty()) {
                this.plugin.getSoundManager().self(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1.2F);

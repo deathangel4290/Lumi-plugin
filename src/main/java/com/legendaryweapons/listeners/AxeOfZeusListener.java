@@ -164,6 +164,9 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       ItemDisplay axeDisplay = (ItemDisplay)player.getWorld().spawnEntity(startLoc, EntityType.ITEM_DISPLAY);
       axeDisplay.setPersistent(false);
       axeDisplay.setInvulnerable(true);
+      // FIXED = the model's item-frame size; with no transform the 3D axe rendered three blocks tall
+      axeDisplay.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+      axeDisplay.setTeleportDuration(1);                               // client smooths the per-tick moves
       ItemStack axeItem = this.weaponManager.createWeapon("axe-of-zeus");
       if (axeItem == null || axeItem.getType().isAir()) {
          axeItem = new ItemStack(Material.NETHERITE_AXE);
