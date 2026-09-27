@@ -134,7 +134,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
                ParticleManager.spawn(Particle.FALLING_WATER, tridentLoc, 3, 0.05, 0.05, 0.05, 0.01);
                ParticleManager.spawn(Particle.NAUTILUS, tridentLoc, 2, 0.2, 0.2, 0.2, 0.1);
                if (this.ticks % 3 == 0) {
-                  ParticleManager.spawn(Particle.ELECTRIC_SPARK, tridentLoc, 2, 0.3, 0.3, 0.3, 0.05);
+                  ParticleManager.spawn(Particle.BUBBLE_POP, tridentLoc, 2, 0.3, 0.3, 0.3, 0.05);
                }
 
                if (this.ticks % 10 == 0) {
@@ -466,7 +466,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
          final int intensity = i;
          (new BukkitRunnable() {
             public void run() {
-               ParticleManager.spawn(Particle.FLASH, location, 1, 0.0, 0.0, 0.0, 0.0);
+               ParticleManager.spawn(Particle.NAUTILUS, location, 12, 0.6, 0.6, 0.6, 0.4);
                ParticleManager.spawn(Particle.END_ROD, location, 5 + intensity * 3, 0.3, 0.3, 0.3, 0.1);
             }
          }).runTaskLater(this.plugin, i * 1L);

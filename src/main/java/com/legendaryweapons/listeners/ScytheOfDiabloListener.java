@@ -237,7 +237,7 @@ public class ScytheOfDiabloListener implements Listener {
          for (int i = 0; i < Math.min(combo, 5); i++) {
             Vector direction = damagerLoc.toVector().subtract(victimLoc.toVector()).normalize();
             Location numLoc = victimLoc.clone().add((Math.random() - 0.5) * 1.0, Math.random() * 1.5, (Math.random() - 0.5) * 1.0);
-            ParticleManager.spawn(Particle.ENCHANT, numLoc, 1, direction.getX() * 0.2, direction.getY() * 0.2, direction.getZ() * 0.2, 1.0);
+            ParticleManager.spawn(Particle.SOUL, numLoc, 1, 0.05, 0.05, 0.05, 0.01);
          }
       }
    }
@@ -296,7 +296,8 @@ public class ScytheOfDiabloListener implements Listener {
          }).runTaskLater(this.plugin, 10L + healLayer * 5L);
       }
 
-      this.plugin.getSoundManager().world(killer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 0.5F);
+      this.plugin.getSoundManager().world(killer.getLocation(), Sound.PARTICLE_SOUL_ESCAPE, 1.0F, 0.7F);
+      this.plugin.getSoundManager().world(killer.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 0.35F, 1.6F);
    }
 
    private void createSoulVortex(Location center, double radius) {
@@ -360,8 +361,9 @@ public class ScytheOfDiabloListener implements Listener {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location ringPoint = center.clone().add(x, 0.5, z);
-         ParticleManager.spawn(Particle.HEART, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
-         ParticleManager.spawn(Particle.HAPPY_VILLAGER, ringPoint, 1, 0.1, 0.1, 0.1, 0.0);
+         // the reaped soul feeding the wielder: crimson motes and soul flecks, not hearts
+         ParticleManager.spawn(Particle.DUST, ringPoint, 1, 0.1, 0.1, 0.1, 0.0, new Particle.DustOptions(org.bukkit.Color.fromRGB(190, 20, 40), 1.1F));
+         ParticleManager.spawn(Particle.SOUL, ringPoint, 1, 0.05, 0.15, 0.05, 0.01);
       }
    }
 

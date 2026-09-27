@@ -521,6 +521,7 @@ weapons:
       - "§7Each hit on a player  §f»  §e+{n:ultimate-charge-per-hit}% §7SuperNova"
       - "§7Ability  §f»  §7SuperNova: leap and slam the ground"
       - "§8  Up to {h:supernova-damage} hearts, never more than {pct:supernova-max-health-fraction} of a target's health."
+      - "§8  Everyone it hits glows for {s:supernova-glow-duration}."
       - ""
       - "§8Usable from {n:supernova-min-charge}%. The meter drains out of combat."
     abilities:
@@ -544,6 +545,7 @@ weapons:
       supernova-damage: 20.0            # at 100%, directly below; falls off squared; armour applies
       supernova-max-health-fraction: 0.6
       supernova-knockback: 1.8
+      supernova-glow-duration: 60      # ticks targets hit by SuperNova glow (0 = off)
       supernova-break-blocks: false     # only where the user may build, even when on
       supernova-block-power: 2.0
     enchantments:

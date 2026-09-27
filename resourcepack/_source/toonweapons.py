@@ -41,7 +41,8 @@ def scythe():
     m = Model()
     m.mat('haft', ['#12060a', '#24101a', '#3a1a28', '#56283a', '#6e3a4e'], 'wood')
     m.mat('wrap', ['#3a0610', '#801226', '#c0263a', '#ec5a5a', '#ff9a8a'], 'wrap')
-    m.mat('gold', GOLD)
+    m.mat('gold', ['#101014', '#24242c', '#3c3c48', '#5a5a68', '#80808e'])     # blackened iron fittings
+    m.mat('bone', ['#5a4a3a', '#a8967c', '#d8c8aa', '#efe4cc', '#fffaf0'])
     m.mat('ruby', RUBY, 'gem', 6)
     m.mat('blade', ['#1a0206', '#6e0a16', '#b01824', '#e03a3a', '#ff7a66'])
     m.mat('edge', ['#5a1a1a', '#ff9a8a', '#ffd0c0', '#ffe8e0', '#ffffff'])
@@ -53,7 +54,11 @@ def scythe():
     m.box((6, 24, 6), (10, 30, 10), 'gold')
     m.box((7, 25.5, 5.5), (9, 28.5, 10.5), 'ruby')
     rod(m, 30, 32, 0.75, 'gold')
-    m.box((9.5, 26.5, 7.25), (15, 28, 8.75), 'gold', ('z', 22.5, (9.5, 27.25, 8)))
+    # bone horns sweeping back from the head
+    m.box((9.5, 26.5, 7.25), (15, 28, 8.75), 'bone', ('z', 22.5, (9.5, 27.25, 8)))
+    m.box((14.2, 27.6, 7.5), (16.4, 28.8, 8.5), 'bone', ('z', 45, (14.2, 28.2, 8)))
+    m.box((9.5, 24.2, 7.5), (13.5, 25.4, 8.5), 'bone', ('z', -22.5, (9.5, 24.8, 8)))
+    for y in (-10, -8.5): ring(m, y, 0.6, 1.2, 'bone')                  # vertebra rings at the foot
     OC, OR, IC, IR = (6.0, 13.5), 16.5, (3.4, 9.2), 15.0
     runes = [(1.0, 27.2), (-4.5, 25.4), (-8.5, 21.8)]
     def at(x, y):
@@ -81,6 +86,8 @@ def luminosity():
     for x0 in (-2.5, 16):
         m.box((x0, 20.5, 3.5), (x0 + 2.5, 31.5, 12.5), 'rim')
     m.box((6.5, 30.5, 6.5), (9.5, 32, 9.5), 'rim')
+    for x0 in (2.5, 12.5):                                               # sun belts wrapping the head
+        m.box((x0, 21.2, 4.2), (x0 + 1, 30.8, 11.8), 'sun')
     for z0, z1 in ((4, 4.5), (11.5, 12)):
         m.box((5, 23, z0), (11, 29, z1), 'sun')
         m.box((7.5, 29, z0), (8.5, 30.5, z1), 'sun'); m.box((7.5, 21.5, z0), (8.5, 23, z1), 'sun')
@@ -97,6 +104,7 @@ def glaive():
     m.mat('blade', ['#1a0630', '#4a1a8a', '#7a38d0', '#a86af0', '#e0c8ff'])
     m.mat('edge', ['#3a1a6a', '#c8a0ff', '#e8d8ff', '#f4ecff', '#ffffff'])
     m.mat('eye', ['#022a18', '#0a6a3a', '#18b060', '#60f0a0', '#e0fff0'], 'gem', 10)
+    m.mat('star', ['#b890ff', '#d8c0ff', '#f0e4ff', '#ffffff', '#ffffff'], 'glow', 9)
     rod(m, -14, 16, 1.0, 'shaft')
     rod(m, -8, 0, 1.25, 'wrap')
     for y in (4, 10): ring(m, y, 1, 1.25, 'collar')
@@ -112,6 +120,8 @@ def glaive():
         hw = 3.6 * math.sin(math.pi * min(1.0, t * 1.02 + 0.06)) ** 0.75
         if abs(x - cx) > hw: return None
         if x - cx > hw - 1.2: return 'edge'
+        cell = int(x * 2) * 7 + int(y * 2) * 13
+        if cell % 29 == 0 and x - cx < hw - 1.8: return 'star'     # the space between worlds, seen through the blade
         return 'blade'
     m.extrude(at, 1.5, 14.5, 16.5, 32, 8.0, 1.5)
     return m
@@ -295,9 +305,12 @@ def trident():
     m.mat('gold', GOLD)
     m.mat('prong', ['#0a3a44', '#18808a', '#30c0c0', '#80f0e8', '#e0fffc'])
     m.mat('pearl', ['#6a6a88', '#b8bcd8', '#e8ecff', '#ffffff', '#ffffff'], 'gem', 8)
+    m.mat('kelp', ['#0a2a10', '#1a5a24', '#2e8a3a', '#56b858', '#9ae08a'], 'wrap')
+    m.mat('shell', ['#6a3a2a', '#c07a5a', '#f0b89a', '#ffdcc8', '#fff4ec'])
     rod(m, -14, 20, 0.75, 'shaft')
     rod(m, -6, 2, 1.0, 'coral')
-    for y in (8, 14): ring(m, y, 1, 1.0, 'coral')
+    ring(m, 8, 1, 1.0, 'kelp'); ring(m, 11.5, 2.5, 0.9, 'kelp')        # kelp grown over the shaft
+    m.box((6, 17.5, 6), (10, 19.5, 10), 'shell')                       # conch collar under the crossbar
     rod(m, -16, -14, 1.25, 'gold')
     m.box((1.5, 19.5, 7), (14.5, 21.5, 9), 'gold')
     m.box((6.5, 19, 6.5), (9.5, 22, 9.5), 'pearl')

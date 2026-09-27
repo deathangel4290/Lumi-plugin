@@ -125,6 +125,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       player.setVelocity(direction);
       this.plugin.getDashTracker().markDashing(player, duration + 4L);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.ENTITY_BREEZE_SHOOT, 0.6F, 1.6F);
+      this.plugin.getSoundManager().world(player.getLocation(), Sound.ENTITY_BREEZE_WIND_BURST, 0.4F, 1.8F);
       final Set<UUID> alreadyHit = new HashSet<>();
       (new BukkitRunnable() {
             int ticks = 0;
@@ -132,7 +133,10 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
             public void run() {
                if (this.ticks++ < duration && player.isOnline()) {
                   Location loc = player.getLocation();
-                  ParticleManager.spawn(Particle.CLOUD, loc, 4, 0.2, 0.1, 0.2, 0.01);
+                  ParticleManager.spawn(Particle.CLOUD, loc, 2, 0.2, 0.1, 0.2, 0.01);
+                  if (this.ticks % 2 == 0) {
+                     ParticleManager.spawn(Particle.SMALL_GUST, loc.clone().add(0.0, 0.4, 0.0), 1, 0.2, 0.1, 0.2, 0.0);
+                  }
 
                   for (Entity nearby : loc.getWorld().getNearbyEntities(loc, radius, radius, radius)) {
                      if (nearby instanceof Player target

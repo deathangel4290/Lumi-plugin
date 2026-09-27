@@ -233,8 +233,9 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
             this.enlargeImmuneUntil.put(victim.getUniqueId(), now + duration + this.abilityLong("enlarge-target-cooldown", 200L) * 50L);
             set(victim, Attribute.SCALE, this.enlargeKey, clampScale(this.ability("enlarge-scale", 1.3)));
             this.enlargeUntil.put(victim.getUniqueId(), now + duration);
-            ParticleManager.spawn(Particle.END_ROD, victim.getLocation().add(0.0, 1.0, 0.0), 12, 0.4, 0.6, 0.4, 0.02);
-            this.plugin.getSoundManager().world(victim.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.5F, 0.6F);
+            ParticleManager.spawn(Particle.WITCH, victim.getLocation().add(0.0, 1.0, 0.0), 12, 0.4, 0.6, 0.4, 0.02);
+            this.plugin.getSoundManager().world(victim.getLocation(), Sound.ENTITY_PUFFER_FISH_BLOW_UP, 0.8F, 0.8F);
+            com.legendaryweapons.managers.AnimationFx.ring(victim.getLocation(), Material.PURPLE_STAINED_GLASS, 0.3, 1.8, 8, true);
             if (victim instanceof Player enlarged) {
                HudManager.message(enlarged, Component.text("You have been enlarged!", NamedTextColor.LIGHT_PURPLE));
             }
@@ -266,7 +267,8 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
             Location loc = player.getLocation();
             ParticleManager.spawn(Particle.WITCH, loc.clone().add(0.0, 0.8, 0.0), 16, 0.4, 0.6, 0.4, 0.03);
             com.legendaryweapons.managers.AnimationFx.ring(loc, Material.PURPLE_STAINED_GLASS, 1.8, 0.2, 10, true);
-            this.plugin.getSoundManager().world(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.7F, 1.8F);
+            this.plugin.getSoundManager().world(loc, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.5F, 1.8F);
+            this.plugin.getSoundManager().world(loc, Sound.ENTITY_PUFFER_FISH_BLOW_OUT, 0.8F, 1.3F);
             HudManager.message(player, Component.text("Diminished - smaller, and so is your reach", NamedTextColor.LIGHT_PURPLE));
          }
 

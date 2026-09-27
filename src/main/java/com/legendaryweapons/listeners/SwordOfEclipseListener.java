@@ -522,7 +522,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          Location auraPoint = center.clone().add(point);
          ParticleManager.spawn(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.5F));
          if (stage >= 3) {
-            ParticleManager.spawn(Particle.ELECTRIC_SPARK, auraPoint, 1, 0.05, 0.05, 0.05, 0.02);
+            ParticleManager.spawn(Particle.END_ROD, auraPoint, 1, 0.05, 0.05, 0.05, 0.02);
          }
       }
    }
@@ -554,7 +554,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             double x = Math.cos(angle) * radius;
             double z = Math.sin(angle) * radius;
             Location orbitPoint = center.clone().add(x, 1.0, z);
-            ParticleManager.spawn(Particle.FIREWORK, orbitPoint, 1, 0.0, 0.0, 0.0, 0.05);
+            ParticleManager.spawn(Particle.END_ROD, orbitPoint, 1, 0.0, 0.0, 0.0, 0.05);
             ParticleManager.spawn(Particle.END_ROD, orbitPoint, 1, 0.0, 0.0, 0.0, 0.0);
          }
       }
@@ -611,7 +611,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double z = Math.sin(radians) * radius;
          Location vortexPoint = center.clone().add(x, 0.5, z);
          ParticleManager.spawn(Particle.SOUL, vortexPoint, 1, 0.0, 0.1, 0.0, 0.1);
-         ParticleManager.spawn(Particle.FIREWORK, vortexPoint, 1, 0.05, 0.05, 0.05, 0.05);
+         ParticleManager.spawn(Particle.END_ROD, vortexPoint, 1, 0.05, 0.05, 0.05, 0.05);
          ParticleManager.spawn(Particle.DUST, vortexPoint, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(138, 43, 226), 1.2F));
       }
    }
@@ -629,7 +629,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          Color streamColor = i % 2 == 0 ? Color.WHITE : Color.BLACK;
          ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(streamColor, 1.5F));
          if (i % 3 == 0) {
-            ParticleManager.spawn(Particle.ELECTRIC_SPARK, point, 1, 0.05, 0.05, 0.05, 0.02);
+            ParticleManager.spawn(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.02);
          }
       }
    }
@@ -643,7 +643,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location killPoint = center.clone().add(x, 2.0, z);
-         ParticleManager.spawn(Particle.HAPPY_VILLAGER, killPoint, 2, 0.1, 0.1, 0.1, 0.05);
+         ParticleManager.spawn(Particle.SQUID_INK, killPoint, 1, 0.1, 0.1, 0.1, 0.02);
       }
    }
 
@@ -662,7 +662,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       }
 
 
-      this.plugin.getSoundManager().world(center, Sound.ENTITY_PLAYER_LEVELUP, 0.9F, 0.7F);
+      this.plugin.getSoundManager().world(center, Sound.BLOCK_BEACON_ACTIVATE, 0.9F, 1.2F);
    }
 
    private void createStageRing(Location center, double radius, int stage) {
@@ -674,7 +674,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * radius;
          double z = Math.sin(angle) * radius;
          Location ringPoint = center.clone().add(x, 1.0, z);
-         ParticleManager.spawn(Particle.FIREWORK, ringPoint, 3, 0.2, 0.2, 0.2, 0.1);
+         ParticleManager.spawn(Particle.END_ROD, ringPoint, 3, 0.2, 0.2, 0.2, 0.1);
          ParticleManager.spawn(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(stageColor, 2.0F));
       }
    }
@@ -705,7 +705,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          Color beamColor = this.getStageColor(stage);
          ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(beamColor, 1.2F));
          if (i % 2 == 0) {
-            ParticleManager.spawn(Particle.FIREWORK, point, 1, 0.05, 0.05, 0.05, 0.03);
+            ParticleManager.spawn(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.03);
          }
 
          if (stage >= 3 && i % 4 == 0) {
@@ -742,7 +742,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          double x = Math.cos(angle) * distance;
          double z = Math.sin(angle) * distance;
          Location burstPoint = center.clone().add(x, 0.5, z);
-         ParticleManager.spawn(Particle.FIREWORK, burstPoint, 2, 0.1, 0.1, 0.1, 0.1);
+         ParticleManager.spawn(Particle.END_ROD, burstPoint, 2, 0.1, 0.1, 0.1, 0.1);
       }
    }
 
@@ -791,7 +791,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                   double x = Math.cos(angle) * radius;
                   double z = Math.sin(angle) * radius;
                   Location healPoint = playerLoc.clone().add(x, 0.5, z);
-                  ParticleManager.spawn(Particle.HEART, healPoint, 1, 0.1, 0.1, 0.1, 0.0);
+                  ParticleManager.spawn(Particle.END_ROD, healPoint, 1, 0.05, 0.1, 0.05, 0.01);
                }
             }
          }).runTaskLater(this.plugin, ring * 3L);

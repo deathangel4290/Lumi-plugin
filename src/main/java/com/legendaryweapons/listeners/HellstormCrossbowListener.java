@@ -102,6 +102,9 @@ public class HellstormCrossbowListener implements Listener {
          arrow.getPersistentDataContainer().set(this.explosiveKey, PersistentDataType.FLOAT, settings.explosivePower());
       }
 
+      float pitch = 0.8F + 0.12F * arrowIndex;                     // the volley climbs in pitch
+      this.plugin.getSoundManager().world(spawnLocation, Sound.ITEM_CROSSBOW_SHOOT, 0.8F, pitch);
+      this.plugin.getSoundManager().world(spawnLocation, isExplosive ? Sound.ITEM_FIRECHARGE_USE : Sound.ENTITY_BLAZE_SHOOT, isExplosive ? 0.8F : 0.35F, pitch);
       this.startArrowEffects(arrow, isExplosive);
    }
 
@@ -113,6 +116,7 @@ public class HellstormCrossbowListener implements Listener {
                Location arrowLoc = arrow.getLocation();
                World world = arrow.getWorld();
                ParticleManager.spawn(Particle.SMOKE, arrowLoc, 1, 0.1, 0.1, 0.1, 0.01);
+               ParticleManager.spawn(Particle.FLAME, arrowLoc, 1, 0.03, 0.03, 0.03, 0.0);
                if (isExplosive) {
                   ParticleManager.spawn(Particle.DUST, arrowLoc, 6, 0.35, 0.35, 0.35, 0.0, new DustOptions(Color.RED, 3.0F));
                   ParticleManager.spawn(Particle.FLAME, arrowLoc, 4, 0.2, 0.2, 0.2, 0.01);

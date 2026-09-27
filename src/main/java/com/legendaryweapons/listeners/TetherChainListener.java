@@ -128,6 +128,7 @@ public class TetherChainListener extends AbstractWeaponListener {
       Location at = target.getLocation().add(0.0, 1.0, 0.0);
       ParticleManager.spawn(Particle.CRIT, at, 10, 0.3, 0.4, 0.3, 0.1);
       this.plugin.getSoundManager().world(at, Sound.ITEM_ARMOR_EQUIP_CHAIN, 1.0F, 0.7F);
+      this.plugin.getSoundManager().world(at, Sound.BLOCK_CHAIN_HIT, 1.0F, 0.8F);
       this.plugin.getSoundManager().world(at, Sound.ENTITY_FISHING_BOBBER_RETRIEVE, 1.0F, 1.2F);
       if (target instanceof Player victim) {
          if (this.plugin.getDashTracker().isDashing(victim)) {

@@ -305,7 +305,7 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
                   }
 
                   if (this.ticks % 2 == 0) {
-                     LuminosityListener.this.plugin.getParticleManager().trail(player.getLocation(), Particle.ELECTRIC_SPARK, 3, 0.2, 0.3, 0.2, 0.03);
+                     LuminosityListener.this.plugin.getParticleManager().trail(player.getLocation(), Particle.END_ROD, 2, 0.2, 0.3, 0.2, 0.02);
                   }
 
                   if (player.isOnGround() || this.ticks >= windup + maxTicks) {
@@ -379,6 +379,11 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
 
             if (dealt > 0.0) {
                living.damage(dealt, player);
+               // "the last light a thing ever sees": whoever the blast touched stays lit up for a moment
+               int glow = this.abilityInt("supernova-glow-duration", 60);
+               if (glow > 0 && living != player) {
+                  living.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.GLOWING, glow, 0, false, false, true));
+               }
             }
 
             Vector offset = nearby.getLocation().toVector().subtract(centre.toVector());
