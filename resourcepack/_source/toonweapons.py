@@ -320,6 +320,9 @@ def titan():
                 return 'steel' if abs(x - 8) > 10 and near_poly(poly, x, y, 1.4) else 'stone'
         return None
     m.extrude(at, -6, 22, 15, 32, 8.0, 2.5)
+    for x0, y0 in ((13.5, 18.5), (13.5, 28), (1.5, 18.5), (1.5, 28)):        # bronze rivets on both faces
+        m.box((x0, y0, 6.5), (x0 + 1, y0 + 1, 9.5), 'bronze')
+    m.box((7.5, 18, 5.3), (8.5, 28, 10.7), 'magma')                         # molten seam through the bronze core
     return m
 GRIP['titans_axe'] = -8
 
@@ -371,6 +374,8 @@ def tether():
     hook = [(8, 15), (8, 24), (9, 28), (12, 30.5), (15, 29), (15.5, 25.5), (13.5, 23)]
     m.extrude(lambda x, yy: 'hook' if near_line(hook, x, yy, 1.1) else None, 6, 17, 14.5, 32, 8.0, 2.0)
     m.box((12.5, 22, 7), (14.5, 24, 9), 'hook', ('z', 45, (13.5, 23, 8)))
+    m.box((6.5, 14, 6.5), (9.5, 16, 9.5), 'dark')                            # shackle where chain meets hook
+    m.box((7, -16, 6.75), (9, -15, 9.25), 'link'); m.box((6.5, -17.5 + 1.5, 7.5), (7.25, -15, 8.5), 'link')  # pommel ring
     return m
 GRIP['tether_chain'] = -13
 

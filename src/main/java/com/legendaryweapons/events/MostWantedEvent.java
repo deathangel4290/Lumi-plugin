@@ -253,11 +253,16 @@ public class MostWantedEvent {
          if (this.config() == null || this.config().getBoolean("ban-on-death", true)) {
             this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
                Player target = Bukkit.getPlayer(id);
+               long minutes = this.config() == null ? 0L : this.config().getLong("ban-minutes", 0L);
+               Date expires = minutes > 0L ? new Date(System.currentTimeMillis() + minutes * 60000L) : null;
+               String reason = this.config() == null ? "You were the Most Wanted, and you were caught." : this.config().getString("ban-reason", "You were the Most Wanted, and you were caught.");
                if (target != null) {
-                  long minutes = this.config() == null ? 0L : this.config().getLong("ban-minutes", 0L);
-                  Date expires = minutes > 0L ? new Date(System.currentTimeMillis() + minutes * 60000L) : null;
-                  String reason = this.config() == null ? "You were the Most Wanted, and you were caught." : this.config().getString("ban-reason", "You were the Most Wanted, and you were caught.");
                   target.ban(reason, expires, "LegendaryWeapons", true);
+               } else {
+                  Bukkit.getOfflinePlayer(id).ban(reason, expires, "LegendaryWeapons");   // quit on the death screen: still banned
+               }
+
+               {
                   this.plugin.getLogger().info("[Most Wanted] Banned " + realName + " (" + id + ")" + (expires == null ? " permanently." : " until " + expires + "."));
                }
             }, 2L);
@@ -284,7 +289,9 @@ public class MostWantedEvent {
    }
 
    private void spawnChest(Location at) {
-      Block block = at.getBlock();
+      Location safe = at.clone();
+      safe.setY(Math.max(at.getWorld().getMinHeight() + 1, Math.min(at.getWorld().getMaxHeight() - 8, at.getY())));   // void deaths
+      Block block = safe.getBlock();
 
       for (int i = 0; i < 6 && !block.isPassable(); i++) {
          block = block.getRelative(0, 1, 0);
