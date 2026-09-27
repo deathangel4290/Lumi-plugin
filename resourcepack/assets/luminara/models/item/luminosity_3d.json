@@ -1453,31 +1453,31 @@
  "display": {
   "thirdperson_righthand": {
    "rotation": [
-    0,
-    -90,
-    10
+    -18.0,
+    -63.43,
+    -83.87
+   ],
+   "translation": [
+    3.48,
+    1.617,
+    7.798
    ],
    "scale": [
     0.489,
     0.489,
     0.489
-   ],
-   "translation": [
-    -0.0,
-    6.383,
-    0.08
    ]
   },
   "thirdperson_lefthand": {
    "rotation": [
-    0,
-    90,
-    -10
+    -18.0,
+    63.43,
+    83.87
    ],
    "translation": [
-    -0.0,
-    6.383,
-    0.08
+    3.48,
+    1.617,
+    7.798
    ],
    "scale": [
     0.489,

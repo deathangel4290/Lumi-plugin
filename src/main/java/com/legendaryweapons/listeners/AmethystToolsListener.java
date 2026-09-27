@@ -195,7 +195,7 @@ public class AmethystToolsListener implements Listener {
 
             block.breakNaturally(held, false, true);
             if (cost > 0) {
-               player.damageItemStack(held, cost);
+               player.damageItemStack(org.bukkit.inventory.EquipmentSlot.HAND, cost);   // Unbreaking and breaking handled by the game
             }
          } else {
             if (creative) {

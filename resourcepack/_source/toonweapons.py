@@ -163,6 +163,17 @@ def hermes():
                 return 'tip' if t > 0.7 else 'feather'
         return None
     m.extrude(wing, -1.5, 17.5, 6.5, 20, 8.0, 1.0)
+    small = [((6.8, 0.2), (3.6, 2.6), 1.0), ((6.8, -0.4), (3.4, -0.8), 0.8)]
+    def heel(x, y):
+        dx = abs(x - 8)
+        if dx < 1.5: return None
+        px = 8 - dx
+        for a, b, w in small:
+            t = max(0.0, min(1.0, ((px - a[0]) * (b[0] - a[0]) + (y - a[1]) * (b[1] - a[1])) / ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2)))
+            if seg_dist(px, y, a, b) <= w * (1 - 0.6 * t ** 2):
+                return 'tip' if t > 0.65 else 'feather'
+        return None
+    m.extrude(heel, 2.5, 13.5, -2, 4, 8.0, 0.75)
     return m
 GRIP['hermes_blade'] = 5
 
@@ -191,6 +202,10 @@ def chione():
             if seg_dist(x, y, a, b) < 1.0 - 0.7 * t: return 'frost'
         return None
     m.extrude(guard, 1, 15, 7, 14, 8.0, 1.0)
+    icicles = [(5.9, 2.2), (7.0, 1.4), (9.0, 1.6), (10.1, 2.4)]          # (x, length) hanging from the guard
+    for x0, length in icicles:
+        m.box((x0 - 0.35, 9 - length * 0.5, 7.6), (x0 + 0.35, 9, 8.4), 'frost')
+        m.box((x0 - 0.2, 9 - length, 7.75), (x0 + 0.2, 9 - length * 0.5, 8.25), 'frost')
     return m
 GRIP['chiones_blade'] = 5
 
@@ -233,11 +248,22 @@ def eclipse():
         if abs(x - 8) < 0.5: return 'seam'
         return 'light' if x < 8 else 'dark'
     m.extrude(blade, 5, 11, 10.5, 31.5, 8.0, 1.5)
-    horns = [(7, 9.5), (4.5, 10), (2.5, 12), (2, 15)], [(9, 9.5), (11.5, 10), (13.5, 12), (14, 15)]
-    m.extrude(lambda x, y: 'horn' if (5 <= x <= 11 and 9 <= y <= 10.5) or near_line(horns[0], x, y, 0.85) or near_line(horns[1], x, y, 0.85) else None,
-              0.5, 15.5, 8.5, 16, 8.0, 1.75)
-    m.box((6, 15.5, 6.75), (7.5, 17, 9.25), 'sun')
-    m.box((8.5, 21, 6.75), (10, 22.5, 9.25), 'moon')
+    m.mat('sunface', ['#b86a00', '#f0a800', '#ffd84a', '#fff0a0', '#ffffff'], 'glow', 12)
+    m.mat('moonface', ['#3a3a5a', '#8a8ab0', '#c8c8e6', '#ececff', '#ffffff'], 'metal', 4)
+    # the guard is the eclipse itself: the sun on the light side, a crescent moon on the dark side
+    def guard(x, y):
+        if 5 <= x <= 11 and 9 <= y <= 10.5: return 'gold'
+        sx, sy = 3.2, 11.0
+        d = math.hypot(x - sx, y - sy)
+        if d <= 1.9: return 'sunface'
+        ang = math.atan2(y - sy, x - sx)
+        if d <= 3.0 and abs(((ang * 8 / math.pi) + 0.5) % 2 - 1) < 0.35: return 'sunface'      # rays
+        if 4.6 <= x <= 5.2 and 9.6 <= y <= 10.2: return 'gold'
+        mx, my = 12.8, 11.0
+        if math.hypot(x - mx, y - my) <= 2.4 and math.hypot(x - (mx + 1.1), y - (my + 0.7)) > 1.9: return 'moonface'
+        if 10.8 <= x <= 11.4 and 9.6 <= y <= 10.2: return 'gold'
+        return None
+    m.extrude(guard, 0, 16, 7.5, 14.5, 8.0, 1.75)
     return m
 GRIP['sword_of_eclipse'] = 5
 
@@ -259,10 +285,10 @@ def zeus():
     rod(m, 29, 32, 0.75, 'gold')
     m.box((7, 21.5, 5.5), (9, 24, 10.5), 'sapphire')
     head = [(7, 28.5), (3, 29.5), (-1.5, 30.5), (-5.5, 29.5), (-8.5, 26.5), (-10, 22), (-9.5, 17), (-7.5, 13.5), (-5, 12.5), (-4, 15), (-2, 18), (1.5, 18.5), (7, 18)]
-    fluke = [(9, 27), (14, 29.5), (12.5, 24), (9, 22.5)]
+    fluke = [(9, 28.5), (12, 30.5), (15.5, 31), (14, 29), (15.5, 27.5), (13.5, 26.5), (14.5, 25), (12, 24.5), (9, 22.5)]
     bolt = [(3, 27), (-2, 24), (1, 22.5), (-4.5, 19.5), (-2, 18.5), (-7, 15)]
     def at(x, y):
-        if inside(fluke, x, y): return 'steel'
+        if inside(fluke, x, y): return 'gold'                 # Zeus's eagle, feathered in gold
         if not inside(head, x, y): return None
         if near_line(bolt, x, y, 0.7): return 'bolt'
         if x < -3 and near_poly(head[3:10], x, y, 1.4): return 'edge'
@@ -367,6 +393,9 @@ def veil():
     m.box((4.5, 3.5, 5.5), (8, 12.5, 6), 'light'); m.box((8, 3.5, 5.5), (11.5, 12.5, 6), 'dark')   # the two-faced mask
     m.box((5.5, 9, 5), (7, 10, 5.5), 'dark'); m.box((9, 9, 5), (10.5, 10, 5.5), 'eye')           # eyes
     m.box((8, 6, 5), (10.5, 7, 5.5), 'eye')                                                     # the lopsided smile
+    m.mat('ribbon', ['#3a0620', '#7a1040', '#b02060', '#d84a88', '#f08ab8'])
+    m.box((14, 6.5, 5.5), (15, 9.5, 10.5), 'silver')                   # clasp over the page edge
+    m.box((9.5, -2.5, 7.7), (10.5, 0.5, 8.3), 'ribbon')                # bookmark ribbon hanging out
     return m
 
 MODELS = {'scythe_of_diablo': scythe, 'luminosity': luminosity, 'ender_glaive': glaive, 'hermes_blade': hermes,

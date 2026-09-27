@@ -3247,31 +3247,31 @@
  "display": {
   "thirdperson_righthand": {
    "rotation": [
-    0,
-    -90,
-    10
+    -18.0,
+    -63.43,
+    -83.87
+   ],
+   "translation": [
+    2.655,
+    0.92,
+    6.291
    ],
    "scale": [
     0.597,
     0.597,
     0.597
-   ],
-   "translation": [
-    -0.0,
-    4.552,
-    0.403
    ]
   },
   "thirdperson_lefthand": {
    "rotation": [
-    0,
-    90,
-    -10
+    -18.0,
+    63.43,
+    83.87
    ],
    "translation": [
-    -0.0,
-    4.552,
-    0.403
+    2.655,
+    0.92,
+    6.291
    ],
    "scale": [
     0.597,

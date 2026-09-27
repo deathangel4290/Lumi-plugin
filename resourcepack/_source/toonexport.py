@@ -10,6 +10,14 @@ from bbexport import to_bbmodel
 FP_ROLL = -5
 FP_YAW = -75
 REACH = {'tether_chain': (10.0, 22.0)}
+UPRIGHT = {'scythe_of_diablo', 'ender_glaive', 'axe_of_zeus', 'titans_axe', 'lost_trident', 'luminosity'}
+
+def carried_upright(scale, grip_y):
+    """Third person for long weapons: shaft up, leaning forward and out from the body, head facing forward
+    (vanilla's sword pose left half of the haft sticking out behind the player)."""
+    from tpsim import solve_tp
+    return solve_tp([(0, 1, 0), (-1, 0, 0)], [(-0.5, 1, 0.12), (0, 0, 1)], scale, (8, grip_y, 8))
+
 G_VANILLA = np.array([-4.5, -4.5, 0.0])       # where the hand holds a vanilla sword sprite (centred units)
 
 def rnd(v): return [round(float(x), 3) for x in v]
@@ -38,7 +46,7 @@ def displays(pts, grip_y, fp_reach=10.0, tp_reach=20.0, fp_shift=(-2.0, 0.5, 0.0
           'translation': rnd(solve((0, -90, 25), (1.13, 3.2, 1.13), 0.68, (0, FP_YAW, FP_ROLL), s_fp, g) + np.array(fp_shift))}
     return {'thirdperson_righthand': tp, 'thirdperson_lefthand': mirror(tp),
             'firstperson_righthand': fp, 'firstperson_lefthand': mirror(fp),
-            'ground': fit([0, 0, 0], 10 / big, c, (0, 2, 0)),
+            'ground': fit([0, 0, 0], 10 / big, c, (0, 2, 0)),  # noqa
             'fixed': fit([0, 180, 0], 15 / big, c),
             'head': fit([0, 180, 0], 16 / big, c, (0, 13, 7)),
             'gui': fit([30, 225, 0], 15 / big, c)}
@@ -64,10 +72,12 @@ def save_texture(m, tex, path):
 
 def crossbow_displays(pts):
     mn, mx = pts.min(0), pts.max(0); c = (mn + mx) / 2 - 8; big = (mx - mn).max()
-    tp = {'rotation': [-90, 0, -60], 'translation': [2, 0.1, -3], 'scale': [0.9] * 3}
+    from tpsim import solve_tp
+    r2 = 1 / math.sqrt(2)
+    tp = solve_tp([(r2, r2, 0), (0, 0, 1)], [(0, -0.1, 1), (0, 1, 0)], 0.9, (8 - 5 * r2, 8 - 5 * r2, 8))   # level, stock forward
     from xbowpose import solve as xbow
     fp = xbow(scale=0.7, target=(0.3, -0.4, -0.6))          # stock forward, limbs level, top up
-    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': {'rotation': [-90, 0, 30], 'translation': [2, 0.1, -3], 'scale': [0.9] * 3},
+    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': mirror(tp),
             'firstperson_righthand': fp, 'firstperson_lefthand': mirror(fp),
             'ground': fit([0, 0, 0], 0.5, c, (0, 2, 0)), 'fixed': fit([0, 180, 0], 1.0, c),
             'head': fit([0, 180, 0], 1.0, c, (0, 13, 7)), 'gui': fit([0, 0, 0], 1.0, c)}
@@ -82,6 +92,9 @@ if __name__ == '__main__':
         m = build()
         pts = np.array([p for e in m.elements for q in _corners(e).values() for p in q])
         disp = book_displays(pts) if name == 'veil_of_mimicry' else displays(pts, GRIP[name], *REACH.get(name, ()))
+        if name in UPRIGHT:
+            up = carried_upright(disp['thirdperson_righthand']['scale'][0], GRIP[name])
+            disp['thirdperson_righthand'], disp['thirdperson_lefthand'] = up, mirror(up)
         ref = f'luminara:item/{name}_3d'
         out, tex = m.export(ref, disp)
         if pack != '-':

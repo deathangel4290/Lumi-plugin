@@ -8690,31 +8690,31 @@
  "display": {
   "thirdperson_righthand": {
    "rotation": [
-    0,
-    -90,
-    10
+    -18.0,
+    -63.43,
+    -83.87
+   ],
+   "translation": [
+    3.501,
+    1.636,
+    7.837
    ],
    "scale": [
     0.492,
     0.492,
     0.492
-   ],
-   "translation": [
-    -0.0,
-    6.43,
-    0.072
    ]
   },
   "thirdperson_lefthand": {
    "rotation": [
-    0,
-    90,
-    -10
+    -18.0,
+    63.43,
+    83.87
    ],
    "translation": [
-    -0.0,
-    6.43,
-    0.072
+    3.501,
+    1.636,
+    7.837
    ],
    "scale": [
     0.492,
