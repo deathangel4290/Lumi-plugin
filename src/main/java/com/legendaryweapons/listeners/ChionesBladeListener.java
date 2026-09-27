@@ -298,13 +298,13 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       final Vector facing = flat.lengthSquared() < 1.0E-4 ? new Vector(0, 0, 1) : flat.normalize();
       final Vector across = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
       final Location origin = player.getLocation().add(0.0, 0.3, 0.0);
-      com.legendaryweapons.managers.AnimationFx.spikeLine(player.getLocation(), facing, range, speed, Material.PACKED_ICE, false);
       final Set<UUID> hit = new HashSet<>();
       this.plugin.getSoundManager().world(origin, Sound.BLOCK_POWDER_SNOW_BREAK, 0.9F, 0.7F);
       this.plugin.getSoundManager().world(origin, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.6F, 0.6F);
       (new BukkitRunnable() {
             double travelled = 0.0;
             double lastFrost = -10.0;
+            double y = origin.getY();
 
             public void run() {
                if (this.travelled >= range || !player.isOnline()) {
@@ -314,14 +314,34 @@ public class ChionesBladeListener extends AbstractWeaponListener {
 
                this.travelled += speed;
                Location front = origin.clone().add(facing.clone().multiply(this.travelled));
+               // Hug the ground: climb one-block steps, drop down ledges, break on walls.
+               front.setY(this.y);
+               if (!front.getBlock().isPassable()) {
+                  if (!front.clone().add(0.0, 1.0, 0.0).getBlock().isPassable()) {
+                     ParticleManager.spawn(Particle.BLOCK, front, 12, 0.4, 0.4, 0.4, 0.0, Material.PACKED_ICE.createBlockData());
+                     this.cancel();
+                     return;
+                  }
+
+                  this.y += 1.0;
+                  front.setY(this.y);
+               } else {
+                  for (int drop = 0; drop < 3 && front.clone().add(0.0, -1.0, 0.0).getBlock().isPassable(); drop++) {
+                     this.y -= 1.0;
+                     front.setY(this.y);
+                  }
+               }
 
                for (double offset = -width; offset <= width; offset += 0.75) {
                   Location point = front.clone().add(across.clone().multiply(offset));
                   ParticleManager.spawn(Particle.SNOWFLAKE, point, 1, 0.05, 0.2, 0.05, 0.01);
                }
 
-               if (this.travelled - this.lastFrost >= width) {
+               if (this.travelled - this.lastFrost >= Math.min(width, 1.5)) {
                   this.lastFrost = this.travelled;
+                  Location ground = front.clone();
+                  ground.setY(Math.floor(front.getY() - 0.3));                 // top of the block the wave runs over
+                  com.legendaryweapons.managers.AnimationFx.spikes(ground, Material.PACKED_ICE, 3, Math.min(width, 1.2) * 0.5, 1.1, 12, false);
                   ChionesBladeListener.this.frost.add(new Frost(front.getWorld(), front.getX(), front.getY() - 0.3, front.getZ(), width, System.currentTimeMillis() + frostMillis));
                }
 

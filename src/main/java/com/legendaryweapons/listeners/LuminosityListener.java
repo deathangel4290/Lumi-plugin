@@ -38,7 +38,7 @@ import org.bukkit.util.Vector;
  * Dash: 2 charges, each comes back 8s after it is spent; spending the last one locks dashing for
  * 3s. SuperNova: charged by hitting players (not mobs), drains out of combat, and telegraphs
  * itself with a wind-up and a warning ring so nobody is deleted without seeing it coming. Its
- * damage goes through armour and is capped at a fraction of the target's max health.
+ * damage falls off with distance and is capped at a fraction of the target's max health.
  *
  * The slam runs as a repeating task. Every exit path now goes through finish() in a finally
  * block: previously an exception in detonate() (Particle.FLASH without its Color data on 1.21.9+)
@@ -270,6 +270,9 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
                try {
                   if (detonate && player.isOnline() && !player.isDead()) {
                      LuminosityListener.this.detonate(player, power, radius);
+                  } else if (!detonate && player.isOnline() && !player.isDead()) {
+                     // cancelled before landing (weapon switched): the meter is not wasted
+                     LuminosityListener.this.plugin.getChargeMeter().set(player, ULTIMATE_KEY, power * max, max);
                   }
                } finally {
                   // Leave the fall-damage shield up for one more second in case the landing packet lags.
@@ -370,6 +373,10 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
       for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0 + 2.0, radius)) {
          if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {
             double distance = nearby.getLocation().distance(centre);
+            if (distance > radius) {
+               continue;                                // the search box has corners; the blast is round
+            }
+
             double falloff = Math.max(0.0, 1.0 - distance / radius);
             double dealt = damage * falloff * falloff;
             AttributeInstance maxHealth = living.getAttribute(Attribute.MAX_HEALTH);

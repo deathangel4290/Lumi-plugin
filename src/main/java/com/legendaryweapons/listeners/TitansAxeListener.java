@@ -119,7 +119,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                }
             }
 
-            if (victim instanceof Player blocking && blocking.isBlocking()) {
+            if (victim instanceof Player blocking && blocking.isBlocking() && this.canAffect(attacker, blocking)) {
                final int disable = this.abilityInt("shield-break-duration", 160);
                // One tick later so vanilla's own 5s axe disable cannot overwrite the longer one.
                this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
@@ -189,9 +189,9 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                   .append(Component.text(" - not ready", NamedTextColor.GRAY))
             );
          } else {
-            this.plugin.getChargeMeter().consume(player, CHARGE_KEY);
+            double spent = this.plugin.getChargeMeter().consume(player, CHARGE_KEY);
             this.plugin.getCooldownManager().setWithItemFeedback(player, SLAM_COOLDOWN_KEY, this.abilityLong("slam-cooldown", 600L), this.weaponMaterial());
-            this.windUp(player);
+            this.windUp(player, spent);
          }
 
          return true;
@@ -199,7 +199,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
    }
 
    /** The tell: the axe is raised with a grinding charge-up and the ground ring closes in. */
-   private void windUp(final Player player) {
+   private void windUp(final Player player, final double spent) {
       final int ticks = Math.max(0, this.abilityInt("slam-windup", 12));
       final double radius = this.ability("slam-radius", 6.0);
       final UUID id = player.getUniqueId();
@@ -212,8 +212,13 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
          public void run() {
             if (!player.isOnline() || player.isDead() || !TitansAxeListener.this.isHolding(player)) {
                TitansAxeListener.this.windingUp.remove(id);
-               HudManager.message(player, Component.text("Slam interrupted", NamedTextColor.GRAY));
                this.cancel();
+               // An interrupted slam never landed: give the charge and the cooldown back.
+               TitansAxeListener.this.plugin.getChargeMeter().set(player, CHARGE_KEY, spent, TitansAxeListener.this.max());
+               TitansAxeListener.this.plugin.getCooldownManager().clear(player, SLAM_COOLDOWN_KEY, TitansAxeListener.this.weaponMaterial());
+               if (player.isOnline()) {
+                  HudManager.message(player, Component.text("Slam interrupted - charge kept", NamedTextColor.GRAY));
+               }
             } else if (this.elapsed++ >= ticks) {
                TitansAxeListener.this.windingUp.remove(id);
                this.cancel();
@@ -247,6 +252,10 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
       for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0, radius)) {
          if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {
             double distance = nearby.getLocation().distance(centre);
+            if (distance > radius) {
+               continue;                                // the search box has corners; the blast is round
+            }
+
             double falloff = Math.max(0.0, 1.0 - distance / radius);
             if (damage > 0.0 && falloff > 0.0) {
                living.damage(damage * falloff, player);
