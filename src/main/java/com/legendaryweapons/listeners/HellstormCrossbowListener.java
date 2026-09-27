@@ -57,34 +57,39 @@ public class HellstormCrossbowListener implements Listener {
          Player player = (Player)event.getEntity();
          ItemStack bow = event.getBow();
          if (this.weaponManager.isLegendaryWeapon(bow) && "hellstorm".equals(this.weaponManager.getWeaponKey(bow))) {
-            event.setCancelled(true);
             HellstormCrossbowListener.Settings settings = this.settings();
-            if (this.plugin.getCooldownManager().tryUse(player, "hellstorm", settings.cooldownTicks())) {
-               this.fireHellstorm(player, settings);
+            // Between volleys it is still a crossbow: let the normal shot through instead of eating it,
+            // which made the weapon do nothing at all for the whole cooldown.
+            if (this.plugin.getCooldownManager().isOnCooldown(player, WEAPON_KEY)) {
+               return;
             }
+
+            event.setCancelled(true);
+            this.plugin.getCooldownManager().set(player, WEAPON_KEY, settings.cooldownTicks());
+            this.fireHellstorm(player, settings);
          }
       }
    }
 
    private void fireHellstorm(final Player player, final HellstormCrossbowListener.Settings settings) {
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.ORANGE_STAINED_GLASS, 0.3, 1.5, 6, true);
-      Location eyeLocation = player.getEyeLocation();
-      final Vector direction = eyeLocation.getDirection();
-
+      // each arrow leaves along wherever the player is aiming at that moment, so a volley can be walked onto a target
       for (int i = 0; i < settings.arrowCount(); i++) {
          final int arrowIndex = i;
          (new BukkitRunnable() {
             public void run() {
-               HellstormCrossbowListener.this.fireSingleArrow(player, direction, arrowIndex, settings);
+               if (player.isOnline() && !player.isDead()) {
+                  HellstormCrossbowListener.this.fireSingleArrow(player, player.getEyeLocation().getDirection(), arrowIndex, settings);
+               }
             }
-         }).runTaskLater(this.plugin, i * 5L);
+         }).runTaskLater(this.plugin, i * settings.intervalTicks());
       }
    }
 
    private void fireSingleArrow(Player player, Vector direction, int arrowIndex, HellstormCrossbowListener.Settings settings) {
       boolean isExplosive = arrowIndex == settings.arrowCount() - 1;
       Location spawnLocation = player.getEyeLocation().clone();
-      Arrow arrow = player.getWorld().spawnArrow(spawnLocation, direction, 2.5F, 0.0F);
+      Arrow arrow = player.getWorld().spawnArrow(spawnLocation, direction, settings.arrowSpeed(), 0.0F);
       arrow.setShooter(player);
       arrow.setFireTicks(settings.fireTicks());
       arrow.setCritical(true);
@@ -150,17 +155,20 @@ public class HellstormCrossbowListener implements Listener {
       }
    }
 
-   private record Settings(int arrowCount, int fireTicks, float explosivePower, double normalDamage, double explosiveDamage, long cooldownTicks) {
+   private record Settings(int arrowCount, int fireTicks, float explosivePower, double normalDamage, double explosiveDamage, long cooldownTicks,
+                           long intervalTicks, float arrowSpeed) {
       static HellstormCrossbowListener.Settings from(ConfigurationSection section) {
          return section == null
-            ? new HellstormCrossbowListener.Settings(5, 200, 3.0F, 6.0, 18.0, 600L)
+            ? new HellstormCrossbowListener.Settings(5, 200, 3.0F, 6.0, 18.0, 600L, 3L, 3.2F)
             : new HellstormCrossbowListener.Settings(
                Math.max(1, section.getInt("arrow-count", 5)),
                section.getInt("fire-ticks", 200),
                (float)section.getDouble("explosive-arrow-power", 3.0),
                section.getDouble("normal-arrow-damage", 6.0),
                section.getDouble("explosive-arrow-damage", 18.0),
-               section.getLong("cooldown", 600L)
+               section.getLong("cooldown", 600L),
+               Math.max(1L, section.getLong("volley-interval", 3L)),
+               (float)Math.max(0.5, section.getDouble("arrow-speed", 3.2))
             );
       }
    }

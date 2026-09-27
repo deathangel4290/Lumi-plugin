@@ -161,7 +161,7 @@ def chione():
     m.mat('grip', ['#0e1a30', '#22385a', '#3a5a88', '#5a82b0', '#8ab0d8'], 'wrap')
     m.mat('silver', SILVER)
     m.mat('ice', ['#12305a', '#2a6aa8', '#5aaee0', '#a0e0ff', '#f0ffff'])
-    m.mat('frost', ['#3a78a8', '#c0ecff', '#e8faff', '#ffffff', '#ffffff'])
+    m.mat('frost', ['#3a78a8', '#7cbce8', '#b4e2fa', '#dcf4ff', '#ffffff'])
     m.mat('gem', ['#1a4a80', '#3a90d0', '#80d8ff', '#c8f4ff', '#ffffff'], 'gem', 10)
     sword_base(m, 'grip', 'silver')
     m.box((5.5, 9, 6.5), (10.5, 10.5, 9.5), 'silver')

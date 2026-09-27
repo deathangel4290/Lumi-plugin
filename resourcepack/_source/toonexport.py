@@ -65,9 +65,10 @@ def save_texture(m, tex, path):
 def crossbow_displays(pts):
     mn, mx = pts.min(0), pts.max(0); c = (mn + mx) / 2 - 8; big = (mx - mn).max()
     tp = {'rotation': [-90, 0, -60], 'translation': [2, 0.1, -3], 'scale': [0.9] * 3}
-    fp = {'rotation': [-80, -10, -35], 'translation': [-2, 4.5, -1], 'scale': [0.55] * 3}
+    from xbowpose import solve as xbow
+    fp = xbow(scale=0.7, target=(0.3, -0.4, -0.6))          # stock forward, limbs level, top up
     return {'thirdperson_righthand': tp, 'thirdperson_lefthand': {'rotation': [-90, 0, 30], 'translation': [2, 0.1, -3], 'scale': [0.9] * 3},
-            'firstperson_righthand': fp, 'firstperson_lefthand': {'rotation': [-80, 10, 35], 'translation': [-2, 4.5, -1], 'scale': [0.55] * 3},
+            'firstperson_righthand': fp, 'firstperson_lefthand': mirror(fp),
             'ground': fit([0, 0, 0], 0.5, c, (0, 2, 0)), 'fixed': fit([0, 180, 0], 1.0, c),
             'head': fit([0, 180, 0], 1.0, c, (0, 13, 7)), 'gui': fit([0, 0, 0], 1.0, c)}
 

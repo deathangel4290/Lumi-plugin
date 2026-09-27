@@ -279,13 +279,16 @@ weapons:
       - ""
       - "§7Cooldown  §f»  §f{s:cooldown}"
       - "§8Arrows fly flat and never drop."
+      - "§8Shoots normal bolts while the volley recharges."
     abilities:
       arrow-count: 5
       normal-arrow-damage: 4.0
       explosive-arrow-damage: 12.0
       explosive-arrow-power: 2.5
       fire-ticks: 100
-      cooldown: 600                     # 30s
+      volley-interval: 3                # ticks between volley arrows (was 5)
+      arrow-speed: 3.2                  # vanilla crossbow is 3.15
+      cooldown: 600                     # 30s; between volleys it shoots normal bolts
     enchantments:
       - "QUICK_CHARGE:3"
       - "MULTISHOT:1"

@@ -42,8 +42,7 @@ def paint_face(M, face, w, h, salt=0):
         for u in range(w):
             k = base
             if M.kind == 'wrap' and face not in ('up', 'down'):
-                if (u + v) % 4 == 0: k -= 1
-                elif (u + v) % 4 == 1: k += 1
+                if (u + v) % 4 == 0: k -= 1                # simple diagonal strap lines
             elif M.kind == 'wood' and face not in ('up', 'down'):
                 if u % 3 == 1 and (_hash(u, v // 3, salt) % 3 == 0): k -= 1
             elif M.kind == 'stone':
@@ -66,6 +65,10 @@ def paint_face(M, face, w, h, salt=0):
     return img
 
 
+def _mix(a, b, t):
+    return tuple(int(round(a[k] + (b[k] - a[k]) * t)) for k in range(3))
+
+
 def paint_sprite(model, grid, nx, ny):
     """grid[j][i] (j = row from the bottom) -> material name or None."""
     img = Image.new('RGBA', (nx, ny))
@@ -75,25 +78,27 @@ def paint_sprite(model, grid, nx, ny):
             name = grid[j][i]
             if name is None: continue
             M = model.mats[name]; r = M.r
-            if any(not solid(i + a, j + b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                c = r[0]
-            elif M.kind == 'glow':
+            # Soft shading, no black outline: a bright rim where the edge faces up/left, a deeper
+            # rim where it faces down/right, a mid tone inside, lifting slightly toward the tip.
+            edge4 = [(a, b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)) if not solid(i + a, j + b)]
+            if M.kind == 'glow':
                 same = all(solid(i + a, j + b) and grid[j + b][i + a] == name for a in (-1, 0, 1) for b in (-1, 0, 1))
                 c = r[4] if same else r[3]
             elif M.kind == 'gem':
-                c = r[3] if solid(i - 1, j + 1) and grid[j + 1][i - 1] == name else r[4]
+                c = r[2] if edge4 and all(a > 0 or b < 0 for a, b in edge4) else r[3] if edge4 else r[4]
+            elif edge4:
+                c = r[4] if any(a < 0 or b > 0 for a, b in edge4) else r[1]
             else:
-                ring1 = [(a, b) for a in (-1, 0, 1) for b in (-1, 0, 1) if not solid(i + a, j + b)]
                 ring2 = [(a, b) for a in range(-2, 3) for b in range(-2, 3) if not solid(i + a, j + b)]
-                if ring1:
-                    c = r[4] if any(a < 0 or b > 0 for a, b in ring1) else r[1]
+                if ring2 and any(a < 0 or b > 0 for a, b in ring2):
+                    c = r[3]
                 elif ring2:
-                    c = r[3] if any(a < 0 or b > 0 for a, b in ring2) else r[2]
+                    c = _mix(r[1], r[2], 0.5)
                 else:
-                    c = r[2]
-                if M.kind == 'stone' and c == r[2]:
+                    c = _mix(r[2], r[3], 0.45 * j / max(1, ny - 1))
+                if M.kind == 'stone' and not ring2:
                     n = _hash(i // 2, j // 2, 7) % 6
-                    c = r[1] if n == 0 else r[3] if n == 1 else r[2]
+                    c = r[1] if n == 0 else r[3] if n == 1 else c
             img.putpixel((i, ny - 1 - j), c + (255,))
     return img
 
