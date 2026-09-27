@@ -119,7 +119,14 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       final double radius = this.ability("dash-hit-radius", 1.6);
       final int slowDuration = this.abilityInt("dash-slowness-duration", 60);
       final int slowAmplifier = this.abilityInt("dash-slowness-amplifier", 1);
-      Vector direction = player.getLocation().getDirection().setY(0.0).normalize().multiply(power);
+      Vector direction = player.getLocation().getDirection().setY(0.0);
+      if (direction.lengthSquared() < 1.0E-4) {
+         // looking straight up or down: dash the way the body faces (normalize() of zero was NaN)
+         double yaw = Math.toRadians(player.getLocation().getYaw());
+         direction = new Vector(-Math.sin(yaw), 0.0, Math.cos(yaw));
+      }
+
+      direction.normalize().multiply(power);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_STAINED_GLASS, 0.4, 1.8, 6, false);
       direction.setY(lift);
       player.setVelocity(direction);

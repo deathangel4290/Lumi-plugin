@@ -236,7 +236,7 @@ weapons:
       - "§8Light and dark held in one edge."
       - ""
       - "§7Grows every {n:kills-per-stage} player kills  §f»  §7up to §d+{n:stage-4-damage-bonus} §7damage"
-      - "§7Charged hits  §f»  §7{pct:blindness-chance} chance to blind"
+      - "§7Charged hits  §f»  §7{pct:blindness-chance} chance to blind for §f{s:blindness-duration}"
       - "§7Ability (after {n:kills-per-stage}x3 kills)  §f»  §7split in two for {s:dual-wield-duration}"
       - "§7Kills while split  §f»  §d+1 heart §7(max 3)"
       - ""
@@ -245,6 +245,7 @@ weapons:
     abilities:
       kills-per-stage: 3
       blindness-chance: 0.25
+      blindness-duration: 60           # ticks (was a fixed 5s)
       stage-1-damage-bonus: 0
       stage-2-damage-bonus: 1
       stage-3-damage-bonus: 2

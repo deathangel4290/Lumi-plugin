@@ -30,11 +30,8 @@ public class TrustListener implements Listener {
          Player damager = null;
          if (event.getDamager() instanceof Player) {
             damager = (Player)event.getDamager();
-         } else if (event.getDamager() instanceof Arrow) {
-            Arrow arrow = (Arrow)event.getDamager();
-            if (arrow.getShooter() instanceof Player) {
-               damager = (Player)arrow.getShooter();
-            }
+         } else if (event.getDamager() instanceof org.bukkit.entity.Projectile projectile && projectile.getShooter() instanceof Player shooter) {
+            damager = shooter;                    // any projectile: arrows, bolts, thrown glaives and tridents
          }
 
          if (damager != null && !damager.equals(victim) && this.trustManager.isMutuallyTrusted(damager, victim)) {

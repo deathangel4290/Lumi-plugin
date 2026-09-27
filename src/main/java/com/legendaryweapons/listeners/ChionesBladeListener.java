@@ -155,7 +155,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
             if (combo >= required) {
                this.plugin.getComboTracker().reset(attacker, COMBO_KEY);
                if (this.isImmune(victim)) {
-                  HudManager.message(attacker, Component.text(victim.getName() + " is still thawing - immune", NamedTextColor.GRAY));
+                  HudManager.message(attacker, Component.text(this.plugin.getEventManager().publicName(victim) + " is still thawing - immune", NamedTextColor.GRAY));
                } else if (this.canAffect(attacker, victim)) {
                   this.freeze(victim, attacker);
                }
@@ -201,7 +201,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
          HudManager.message(frozenPlayer, Component.text("❄ Frozen!", NamedTextColor.AQUA));
       }
 
-      HudManager.message(source, Component.text("Froze " + (target instanceof Player p ? p.getName() : "target"), NamedTextColor.AQUA));
+      HudManager.message(source, Component.text("Froze " + (target instanceof Player p ? this.plugin.getEventManager().publicName(p) : "target"), NamedTextColor.AQUA));
    }
 
    private void addModifier(LivingEntity target, Attribute attribute, NamespacedKey key) {

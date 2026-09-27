@@ -63,7 +63,7 @@ public class ScytheOfDiabloListener implements Listener {
       }
    }
 
-   @EventHandler
+   @EventHandler(ignoreCancelled = true)          // a blocked hit (no-PvP region, trusted player) builds nothing
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
@@ -71,6 +71,10 @@ public class ScytheOfDiabloListener implements Listener {
          ItemStack weapon = damager.getInventory().getItemInMainHand();
          if (this.weaponManager.isLegendaryWeapon(weapon) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(weapon))) {
             ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("scythe-of-diablo");
+            if (abilities == null) {
+               abilities = new org.bukkit.configuration.file.YamlConfiguration();   // defaults below
+            }
+
             long currentTime = System.currentTimeMillis();
             if (this.lastHitMap.containsKey(damager.getUniqueId())) {
                long lastHit = this.lastHitMap.get(damager.getUniqueId());
@@ -84,9 +88,11 @@ public class ScytheOfDiabloListener implements Listener {
             boolean isBackstab = false;
             boolean isSweep = false;
             if (victim instanceof Player) {
-               Vector damagerDirection = damager.getLocation().getDirection();
-               Vector victimDirection = victim.getLocation().getDirection();
-               if (damagerDirection.dot(victimDirection) > 0.0) {
+               // Behind means the attacker stands in the victim's rear arc (within ~70 degrees of straight
+               // behind), not merely that both face roughly the same way -- that counted side hits.
+               Vector facing = victim.getLocation().getDirection().setY(0.0);
+               Vector toAttacker = damager.getLocation().toVector().subtract(victim.getLocation().toVector()).setY(0.0);
+               if (facing.lengthSquared() > 1.0E-4 && toAttacker.lengthSquared() > 1.0E-4 && facing.normalize().dot(toAttacker.normalize()) < -0.34) {
                   double backstabMultiplier = abilities.getDouble("backstab-damage-multiplier", 1.5);
                   event.setDamage(event.getDamage() * backstabMultiplier);
                   isBackstab = true;

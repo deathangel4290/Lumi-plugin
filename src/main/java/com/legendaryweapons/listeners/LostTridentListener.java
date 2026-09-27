@@ -304,7 +304,13 @@ public class LostTridentListener implements Listener, WeaponAbility {
          long cooldown = abilities != null ? abilities.getLong("water-wall-cooldown", 160L) : 160L;
          final double push = abilities != null ? abilities.getDouble("water-wall-push", 0.9) : 0.9;
          if (this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "atlantis-water-wall", cooldown)) {
-            final Vector facing = player.getLocation().getDirection().setY(0.0).normalize();
+            Vector flat = player.getLocation().getDirection().setY(0.0);
+            if (flat.lengthSquared() < 1.0E-4) {
+               double yaw = Math.toRadians(player.getLocation().getYaw());       // looking straight down
+               flat = new Vector(-Math.sin(yaw), 0.0, Math.cos(yaw));
+            }
+
+            final Vector facing = flat.normalize();
             Vector perpendicular = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
             Block targetBlock = player.getTargetBlockExact(12);
             final Location anchor;

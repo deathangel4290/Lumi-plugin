@@ -394,7 +394,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       }
    }
 
-   @EventHandler
+   @EventHandler(ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Trident) {
          Trident trident = (Trident)event.getDamager();

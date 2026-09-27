@@ -135,10 +135,10 @@ public class TetherChainListener extends AbstractWeaponListener {
             long lock = this.abilityLong("dash-lock-duration", 60L);
             this.plugin.getDashTracker().lock(victim, lock);
             HudManager.message(victim, Component.text("Chained! You cannot dash for " + HudManager.seconds(lock / 20.0), NamedTextColor.RED));
-            HudManager.message(owner, Component.text("Caught " + victim.getName() + " mid-dash!", NamedTextColor.GOLD));
+            HudManager.message(owner, Component.text("Caught " + this.plugin.getEventManager().publicName(victim) + " mid-dash!", NamedTextColor.GOLD));
          } else {
             HudManager.message(victim, Component.text("You have been hooked!", NamedTextColor.GRAY));
-            HudManager.message(owner, Component.text("Hooked " + victim.getName(), NamedTextColor.GRAY));
+            HudManager.message(owner, Component.text("Hooked " + this.plugin.getEventManager().publicName(victim), NamedTextColor.GRAY));
          }
       }
    }

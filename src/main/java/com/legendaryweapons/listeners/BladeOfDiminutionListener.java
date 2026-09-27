@@ -225,7 +225,8 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
-      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && event.getEntity() instanceof LivingEntity victim) {
+      // Players only: a mob whose chunk unloaded mid-enlarge kept the giant size saved on it for good.
+      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && event.getEntity() instanceof Player victim) {
          long now = System.currentTimeMillis();
          Long immune = this.enlargeImmuneUntil.get(victim.getUniqueId());
          if ((immune == null || immune <= now) && !(Math.random() >= this.ability("enlarge-chance", 0.12)) && this.canAffect(attacker, victim)) {

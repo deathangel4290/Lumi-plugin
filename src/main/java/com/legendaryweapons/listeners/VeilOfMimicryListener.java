@@ -108,7 +108,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    }
 
    private void failMorph(Player player, Player witness) {
-      HudManager.message(player, Component.text(witness.getName() + " is watching you - the morph fails.", NamedTextColor.RED));
+      HudManager.message(player, Component.text(this.plugin.getEventManager().publicName(witness) + " is watching you - the morph fails.", NamedTextColor.RED));
       this.plugin.getSoundManager().self(player, Sound.BLOCK_FIRE_EXTINGUISH, 0.7F, 1.3F);
       ParticleManager.spawn(Particle.SMOKE, player.getLocation().add(0.0, 1.0, 0.0), 12, 0.3, 0.5, 0.3, 0.02);
       this.plugin.getCooldownManager().setWithHeldItemFeedback(player, COOLDOWN_KEY, this.abilityLong("failed-morph-cooldown", 200L));

@@ -412,7 +412,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       }
    }
 
-   @EventHandler
+   @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)   // after trust/region checks
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
@@ -420,6 +420,10 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          ItemStack weapon = damager.getInventory().getItemInMainHand();
          if (this.weaponManager.isLegendaryWeapon(weapon) && "sword-of-eclipse".equals(this.weaponManager.getWeaponKey(weapon))) {
             ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse");
+            if (abilities == null) {
+               abilities = new org.bukkit.configuration.file.YamlConfiguration();
+            }
+
             int kills = this.killTracker.getOrDefault(damager.getUniqueId(), 0);
             int killsPerStage = abilities.getInt("kills-per-stage", 10);
             int stage = Math.min(4, kills / killsPerStage + 1);
@@ -427,8 +431,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             event.setDamage(event.getDamage() + damageBonus);
             this.createAttackEffects(damager, victim, stage);
             double blindnessChance = abilities.getDouble("blindness-chance", 0.25);
-            if (damager.getAttackCooldown() > 0.9F && Math.random() < blindnessChance) {
-               victim.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 100, 0));
+            if (damager.getAttackCooldown() > 0.9F && Math.random() < blindnessChance && this.plugin.getProtectionManager().canAffect(damager, victim)) {
+               victim.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, abilities.getInt("blindness-duration", 60), 0));
                this.createBlindnessEffect(victim.getLocation());
             }
 
