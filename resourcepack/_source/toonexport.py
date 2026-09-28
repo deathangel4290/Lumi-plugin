@@ -16,7 +16,7 @@ def carried_upright(scale, grip_y):
     """Third person for long weapons: shaft up, leaning forward and out from the body, head facing forward
     (vanilla's sword pose left half of the haft sticking out behind the player)."""
     from tpsim import solve_tp
-    return solve_tp([(0, 1, 0), (-1, 0, 0)], [(-0.5, 1, 0.12), (0, 0, 1)], scale, (8, grip_y, 8))
+    return solve_tp([(0, 1, 0), (-1, 0, 0)], [(-0.08, 1, 0.18), (0, 0, 1)], scale, (8, grip_y, 8))
 
 G_VANILLA = np.array([-4.5, -4.5, 0.0])       # where the hand holds a vanilla sword sprite (centred units)
 
@@ -70,13 +70,29 @@ def save_texture(m, tex, path):
         tex.save(path)
         if os.path.exists(mcmeta): os.remove(mcmeta)
 
-def crossbow_displays(pts):
+def crossbow_displays(pts, state='standby'):
     mn, mx = pts.min(0), pts.max(0); c = (mn + mx) / 2 - 8; big = (mx - mn).max()
-    from tpsim import solve_tp
+    import tpsim
+    from xbowstates import cancel, charged_extra, charging_extra
     r2 = 1 / math.sqrt(2)
-    tp = solve_tp([(r2, r2, 0), (0, 0, 1)], [(0, -0.1, 1), (0, 1, 0)], 0.9, (8 - 5 * r2, 8 - 5 * r2, 8))   # level, stock forward
+    stock, top, grip = (r2, r2, 0), (0, 0, 1), (8 - 5 * r2, 8 - 5 * r2, 8)
+    # Third person: each state is solved against the arm pose vanilla uses for it, so the crossbow
+    # is level at the side when idle, pointed down-forward while drawing, and aimed when loaded.
+    if state in ('arrow', 'firework'):
+        tpsim.use_arm_pose(*tpsim.CROSSBOW_HOLD); tp = tpsim.solve_tp([stock, top], [(0.05, 0, 1), (0, 1, 0)], 0.9, grip)
+    elif state.startswith('pulling'):
+        tpsim.use_arm_pose(*tpsim.CROSSBOW_CHARGE); tp = tpsim.solve_tp([stock, top], [(0.1, -0.35, 1), (0, 1, 0)], 0.9, grip)
+    else:
+        tpsim.use_arm_pose(*tpsim.ITEM_POSE); tp = tpsim.solve_tp([stock, top], [(0, -0.1, 1), (0, 1, 0)], 0.9, grip)
+    tpsim.use_arm_pose(*tpsim.ITEM_POSE)
     from xbowpose import solve as xbow
     fp = xbow(scale=0.7, target=(0.3, -0.4, -0.6))          # stock forward, limbs level, top up
+    # First person: vanilla slides a loaded crossbow to the screen centre and swings a drawing one
+    # around; cancel both so the Hellstorm stays where it is in every state.
+    if state in ('arrow', 'firework'):
+        fp = cancel(fp, charged_extra())
+    elif state.startswith('pulling'):
+        fp = cancel(fp, charging_extra())
     return {'thirdperson_righthand': tp, 'thirdperson_lefthand': mirror(tp),
             'firstperson_righthand': fp, 'firstperson_lefthand': mirror(fp),
             'ground': fit([0, 0, 0], 0.5, c, (0, 2, 0)), 'fixed': fit([0, 180, 0], 1.0, c),
@@ -103,8 +119,11 @@ if __name__ == '__main__':
             if name == 'lost_trident':
                 thr = copy.deepcopy(out)
                 g = np.array([0.0, GRIP[name] - 8, 0.0]); s = disp['thirdperson_righthand']['scale'][0]
-                t = {'rotation': [0, -90, -170], 'scale': [s] * 3,
-                     'translation': rnd(solve((0, -90, 55), (0, 4, 0.5), 0.85, (0, -90, -170), s, g))}
+                # THROW_SPEAR raises the arm straight overhead: aim the prongs forward and a little up
+                import tpsim
+                tpsim.use_arm_pose(-math.pi, 0.0)
+                t = tpsim.solve_tp([(0, 1, 0), (1, 0, 0)], [(0, 0.3, 1), (1, 0, 0)], s, (8, GRIP[name], 8))
+                tpsim.use_arm_pose(*tpsim.ITEM_POSE)
                 thr['display']['thirdperson_righthand'] = t; thr['display']['thirdperson_lefthand'] = mirror(t)
                 # first person: the vanilla spear charge pose tilts the arm; aim the prongs at the crosshair
                 from spearpose import solve as spear
@@ -119,7 +138,7 @@ if __name__ == '__main__':
         for st in XBOW_STATES:
             m = hellstorm(st)
             pts = np.array([p for e in m.elements for q in _corners(e).values() for p in q])
-            out, tex = m.export(f'luminara:item/hellstorm_3d_{st}', crossbow_displays(pts))
+            out, tex = m.export(f'luminara:item/hellstorm_3d_{st}', crossbow_displays(pts, st))
             if pack != '-':
                 save_texture(m, tex, f'{pack}/assets/luminara/textures/item/hellstorm_3d_{st}.png')
                 json.dump(out, open(f'{pack}/assets/luminara/models/item/hellstorm_3d_{st}.json', 'w'), indent=1)

@@ -88,3 +88,13 @@ def solve_tp(model_axes, world_axes, scale, grip, target=None):
     g = (np.array(grip, float) - 8) / 16
     t = 16 * (local - Rm @ (scale * g))
     return {'rotation': rot, 'translation': [round(float(v), 3) for v in t], 'scale': [scale] * 3}
+
+def use_arm_pose(xrot, yrot):
+    """Swap the right-arm pose (radians, as HumanoidModel sets them) for the solver and renderer."""
+    global ARM, HAND
+    ARM = ENTITY @ T(-5 / 16, 2 / 16, 0) @ RZYX(0, yrot, xrot)
+    HAND = ARM @ R(-90, 0, 0) @ R(0, 180, 0) @ T(1 / 16, 0.125, -0.625)
+
+ITEM_POSE = (-math.pi / 10, 0.0)
+CROSSBOW_HOLD = (-math.pi / 2 + 0.1, -0.3)          # AnimationUtils.animateCrossbowHold, head level
+CROSSBOW_CHARGE = (-0.97079635, -0.8)                 # AnimationUtils.animateCrossbowCharge (right arm)
