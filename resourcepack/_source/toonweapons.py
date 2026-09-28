@@ -73,27 +73,32 @@ GRIP['scythe_of_diablo'] = -2
 
 # ---------------------------------------------------------------- Luminosity (sun hammer)
 def luminosity():
+    """Sun hammer. Shorter haft than before; a stepped head with sun-faced striking ends."""
     m = Model()
     m.mat('grip', ['#2a1606', '#5a3212', '#8a5424', '#b67a3e', '#d8a066'], 'wrap')
     m.mat('band', GOLD)
     m.mat('head', ['#5a3a06', '#b07a10', '#e8b020', '#ffd84a', '#fff4b0'])
     m.mat('rim', ['#3e2604', '#7a5008', '#b88216', '#e8b43a', '#ffe08a'])
     m.mat('sun', ['#c06000', '#ff9a00', '#ffcc30', '#ffee80', '#ffffff'], 'glow', 15)
-    rod(m, -12, 22, 1.0, 'grip')
-    for y in (-2, 6, 14): ring(m, y, 1, 1.5, 'band')
-    rod(m, -15, -12, 1.75, 'band')
-    m.box((0, 21.5, 4.5), (16, 30.5, 11.5), 'head')
-    for x0 in (-2.5, 16):
-        m.box((x0, 20.5, 3.5), (x0 + 2.5, 31.5, 12.5), 'rim')
-    m.box((6.5, 30.5, 6.5), (9.5, 32, 9.5), 'rim')
-    for x0 in (2.5, 12.5):                                               # sun belts wrapping the head
+    rod(m, -4, 20, 1.0, 'grip')                                        # haft (was 34 long, now 24)
+    for y in (4, 12): ring(m, y, 1, 1.4, 'band')
+    rod(m, -6, -4, 1.6, 'band')                                        # pommel
+    m.box((7.25, -6.75, 7.25), (8.75, -6, 8.75), 'sun')                # ember in the pommel
+    rod(m, 18.5, 21.5, 1.6, 'band')                                    # collar
+    m.box((2, 21.5, 4.5), (14, 30.5, 11.5), 'head')                    # the block
+    for x0 in (0.5, 14):                                               # stepped end caps
+        m.box((x0, 22.5, 5.5), (x0 + 1.5, 29.5, 10.5), 'rim')
+    for x0, x1 in ((-0.1, 0.5), (15.5, 16.1)):                         # sun faces on the striking ends
+        m.box((x0, 24, 6.5), (x1, 28, 9.5), 'sun')
+        m.box((x0, 23, 7.5), (x1, 29, 8.5), 'sun')
+        m.box((x0, 25.5, 5.8), (x1, 26.5, 10.2), 'sun')
+    for x0 in (4.5, 10.5):                                             # glowing bands round the head
         m.box((x0, 21.2, 4.2), (x0 + 1, 30.8, 11.8), 'sun')
-    for z0, z1 in ((4, 4.5), (11.5, 12)):
-        m.box((5, 23, z0), (11, 29, z1), 'sun')
-        m.box((7.5, 29, z0), (8.5, 30.5, z1), 'sun'); m.box((7.5, 21.5, z0), (8.5, 23, z1), 'sun')
-        m.box((3, 25.5, z0), (5, 26.5, z1), 'sun'); m.box((11, 25.5, z0), (13, 26.5, z1), 'sun')
+    m.box((6.5, 23.5, 4.2), (9.5, 28.5, 4.5), 'rim'); m.box((6.5, 23.5, 11.5), (9.5, 28.5, 11.8), 'rim')   # front/back plates
+    m.box((7.25, 24.75, 4.0), (8.75, 27.25, 4.25), 'sun'); m.box((7.25, 24.75, 11.75), (8.75, 27.25, 12.0), 'sun')
+    m.box((6.75, 30.5, 6.75), (9.25, 32, 9.25), 'rim', ('y', 45, (8, 31.25, 8)))   # diamond crown
     return m
-GRIP['luminosity'] = -8
+GRIP['luminosity'] = 0
 
 # ---------------------------------------------------------------- Ender Glaive
 def glaive():

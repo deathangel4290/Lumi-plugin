@@ -27,6 +27,23 @@ def solve(rot_v, t_v, s_v, rot_m, s_m, grip):
     target = np.array(t_v) + rot_xyz(*rot_v) @ (s_v * G_VANILLA)
     return target - rot_xyz(*rot_m) @ (s_m * grip)
 
+THIRD = {   # model axes -> world axes for the RIGHT hand (+x is the player's left); the left hand mirrors
+    'sword':   ([(0, 1, 0), (0, 0, 1)], [(0, 0.65, 1), (-1, 0, 0)]),     # ready stance: blade forward-up, flat outward
+    'upright': ([(0, 1, 0), (-1, 0, 0)], [(0, 1, 0.25), (0, 0, 1)]),     # carried like a staff, head facing forward
+    'tether':  ([(0, 1, 0), (1, 0, 0)], [(0, 1, 0.3), (0, 0, 1)]),       # chain up, hook facing forward
+    'book':    ([(0, 1, 0), (0, 0, -1)], [(0, 1, 0), (-0.5, 0, 0.85)]),  # cover facing forward and out
+}
+
+def third_person(kind, scale, grip, pose=None):
+    import tpsim
+    model_axes, world = THIRD[kind]
+    return tpsim.solve_both(model_axes, world, scale, grip, pose)
+
+def same(t):
+    """The game negates a lefthand rotation's y/z and translation x, so storing the right-hand values
+    gives the true mirror image (our old mirror() stored the negated values: not mirrored at all)."""
+    return copy.deepcopy(t)
+
 def mirror(t):
     r = t['rotation']
     return {'rotation': [r[0], -r[1], -r[2]], 'translation': t['translation'], 'scale': t['scale']}
@@ -79,12 +96,11 @@ def crossbow_displays(pts, state='standby'):
     # Third person: each state is solved against the arm pose vanilla uses for it, so the crossbow
     # is level at the side when idle, pointed down-forward while drawing, and aimed when loaded.
     if state in ('arrow', 'firework'):
-        tpsim.use_arm_pose(*tpsim.CROSSBOW_HOLD); tp = tpsim.solve_tp([stock, top], [(0.05, 0, 1), (0, 1, 0)], 0.9, grip)
+        tp, tpl = tpsim.solve_both([stock, top], [(0.05, 0, 1), (0, 1, 0)], 0.9, grip, tpsim.CROSSBOW_HOLD)
     elif state.startswith('pulling'):
-        tpsim.use_arm_pose(*tpsim.CROSSBOW_CHARGE); tp = tpsim.solve_tp([stock, top], [(0.1, -0.35, 1), (0, 1, 0)], 0.9, grip)
+        tp, tpl = tpsim.solve_both([stock, top], [(0.1, -0.35, 1), (0, 1, 0)], 0.9, grip, tpsim.CROSSBOW_CHARGE)
     else:
-        tpsim.use_arm_pose(*tpsim.ITEM_POSE); tp = tpsim.solve_tp([stock, top], [(0, -0.1, 1), (0, 1, 0)], 0.9, grip)
-    tpsim.use_arm_pose(*tpsim.ITEM_POSE)
+        tp, tpl = tpsim.solve_both([stock, top], [(0, -0.1, 1), (0, 1, 0)], 0.9, grip)
     from xbowpose import solve as xbow
     fp = xbow(scale=0.7, target=(0.3, -0.4, -0.6))          # stock forward, limbs level, top up
     # First person: vanilla slides a loaded crossbow to the screen centre and swings a drawing one
@@ -93,8 +109,8 @@ def crossbow_displays(pts, state='standby'):
         fp = cancel(fp, charged_extra())
     elif state.startswith('pulling'):
         fp = cancel(fp, charging_extra())
-    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': mirror(tp),
-            'firstperson_righthand': fp, 'firstperson_lefthand': mirror(fp),
+    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': tpl,
+            'firstperson_righthand': fp, 'firstperson_lefthand': same(fp),
             'ground': fit([0, 0, 0], 0.5, c, (0, 2, 0)), 'fixed': fit([0, 180, 0], 1.0, c),
             'head': fit([0, 180, 0], 1.0, c, (0, 13, 7)), 'gui': fit([0, 0, 0], 1.0, c)}
 
@@ -108,9 +124,10 @@ if __name__ == '__main__':
         m = build()
         pts = np.array([p for e in m.elements for q in _corners(e).values() for p in q])
         disp = book_displays(pts) if name == 'veil_of_mimicry' else displays(pts, GRIP[name], *REACH.get(name, ()))
-        if name in UPRIGHT:
-            up = carried_upright(disp['thirdperson_righthand']['scale'][0], GRIP[name])
-            disp['thirdperson_righthand'], disp['thirdperson_lefthand'] = up, mirror(up)
+        kind = 'book' if name == 'veil_of_mimicry' else 'upright' if name in UPRIGHT else 'tether' if name == 'tether_chain' else 'sword'
+        grip = (8, 6, 8) if kind == 'book' else (8, GRIP[name], 8)
+        disp['thirdperson_righthand'], disp['thirdperson_lefthand'] = third_person(kind, disp['thirdperson_righthand']['scale'][0], grip)
+        disp['firstperson_lefthand'] = same(disp['firstperson_righthand'])
         ref = f'luminara:item/{name}_3d'
         out, tex = m.export(ref, disp)
         if pack != '-':
@@ -121,14 +138,12 @@ if __name__ == '__main__':
                 g = np.array([0.0, GRIP[name] - 8, 0.0]); s = disp['thirdperson_righthand']['scale'][0]
                 # THROW_SPEAR raises the arm straight overhead: aim the prongs forward and a little up
                 import tpsim
-                tpsim.use_arm_pose(-math.pi, 0.0)
-                t = tpsim.solve_tp([(0, 1, 0), (1, 0, 0)], [(0, 0.3, 1), (1, 0, 0)], s, (8, GRIP[name], 8))
-                tpsim.use_arm_pose(*tpsim.ITEM_POSE)
-                thr['display']['thirdperson_righthand'] = t; thr['display']['thirdperson_lefthand'] = mirror(t)
+                tr, tl = tpsim.solve_both([(0, 1, 0), (1, 0, 0)], [(0, 0.3, 1), (1, 0, 0)], s, (8, GRIP[name], 8), (-math.pi, 0.0))
+                thr['display']['thirdperson_righthand'] = tr; thr['display']['thirdperson_lefthand'] = tl
                 # first person: the vanilla spear charge pose tilts the arm; aim the prongs at the crosshair
                 from spearpose import solve as spear
                 f = spear(disp['firstperson_righthand']['scale'][0], GRIP[name], forward=(-0.18, 0.12, -1.0))
-                thr['display']['firstperson_righthand'] = f; thr['display']['firstperson_lefthand'] = mirror(f)
+                thr['display']['firstperson_righthand'] = f; thr['display']['firstperson_lefthand'] = same(f)
                 json.dump(thr, open(f'{pack}/assets/luminara/models/item/{name}_3d_throwing.json', 'w'), indent=1)
         to_bbmodel(out, tex, f'{name}_3d', f'{bb}/{name}_3d.bbmodel')
         shows.append(showcase(out, tex, yaw=28, pitch=12, size=300))

@@ -98,3 +98,63 @@ def use_arm_pose(xrot, yrot):
 ITEM_POSE = (-math.pi / 10, 0.0)
 CROSSBOW_HOLD = (-math.pi / 2 + 0.1, -0.3)          # AnimationUtils.animateCrossbowHold, head level
 CROSSBOW_CHARGE = (-0.97079635, -0.8)                 # AnimationUtils.animateCrossbowCharge (right arm)
+
+# ---------------------------------------------------------------- calibrated against in-game screenshots
+# Screenshots of the Scythe, Axe of Zeus and Sword of Eclipse held in the left hand showed items turned a
+# quarter turn about the vertical at the hand compared with the plain chain above (held items face the
+# camera from the front, they do not point at it). The chain below adds that turn: +90 degrees for the
+# left hand, mirrored (-90) for the right. It also confirmed that the game negates a lefthand
+# transform's y/z rotation (and x translation), so a true mirror stores the RIGHT values in lefthand.
+def hand_chain(left, pose=None):
+    xr, yr = pose if pose is not None else ITEM_POSE
+    sx = 1 if left else -1
+    arm = ENTITY @ T(sx * 5 / 16, 2 / 16, 0) @ RZYX(0, -yr if left else yr, xr)
+    h = arm @ R(-90, 0, 0) @ R(0, 180, 0) @ T((-1 if left else 1) / 16, 0.125, -0.625)
+    p = h[:3, 3].copy()
+    C = np.eye(4); C[:3, :3] = R(0, 90 if left else -90, 0)[:3, :3]
+    return T(*p) @ C @ T(*(-p)) @ h
+
+def _grip_target(H):
+    M = H @ T(0, 4 / 16, 0.5 / 16) @ R(0, -90, 55) @ S(0.85, 0.85, 0.85)
+    return (M @ np.array([-4.5 / 16, -4.5 / 16, 0, 1]))[:3]
+
+def solve_hand(model_axes, world_axes, scale, grip, left=False, pose=None):
+    """Effective transform for one hand, world axes given for THAT hand."""
+    def frame(a, b):
+        a = np.array(a, float); a /= np.linalg.norm(a)
+        b = np.array(b, float); b -= b.dot(a) * a; b /= np.linalg.norm(b)
+        return np.c_[a, b, np.cross(a, b)]
+    H = hand_chain(left, pose)
+    Rw = frame(*world_axes) @ frame(*model_axes).T
+    Rh = H[:3, :3]
+    Ri = np.linalg.solve(Rh, Rw)
+    rot = _euler(Ri)
+    Rm = rot_xyz(*rot)
+    local = np.linalg.solve(Rh, _grip_target(H) - H[:3, 3])
+    t = 16 * (local - Rm @ (scale * ((np.array(grip, float) - 8) / 16)))
+    return {'rotation': rot, 'translation': [round(float(v), 3) for v in t], 'scale': [scale] * 3}
+
+def solve_both(model_axes, world_axes_right, scale, grip, pose=None):
+    """(thirdperson_righthand, thirdperson_lefthand) JSON. World axes are given for the right hand
+    (+x = the player's left); the left hand gets the mirror image."""
+    right = solve_hand(model_axes, world_axes_right, scale, grip, False, pose)
+    mirrored = [(-a[0], a[1], a[2]) for a in world_axes_right]
+    eff = solve_hand(model_axes, mirrored, scale, grip, True, pose)
+    left = {'rotation': [eff['rotation'][0], -eff['rotation'][1], -eff['rotation'][2]],
+            'translation': [-eff['translation'][0], eff['translation'][1], eff['translation'][2]], 'scale': eff['scale']}
+    return right, left
+
+def render_hand(model_json, tex, left=False, pose=None, **kw):
+    """Render with the calibrated chain; applies the game's lefthand negation."""
+    global HAND
+    d = model_json['display']['thirdperson_lefthand' if left else 'thirdperson_righthand']
+    rot, tr = list(d['rotation']), list(d['translation'])
+    if left:
+        rot = [rot[0], -rot[1], -rot[2]]; tr = [-tr[0], tr[1], tr[2]]
+    saved = HAND
+    HAND = hand_chain(left, pose)
+    js = dict(model_json); js['display'] = {'thirdperson_righthand': {'rotation': rot, 'translation': tr, 'scale': d['scale']}}
+    try:
+        return render(js, tex, **kw)
+    finally:
+        HAND = saved
