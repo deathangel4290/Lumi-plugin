@@ -185,7 +185,7 @@ public class CustomItems implements Listener {
    }
 
    private ItemStack allInOnePotion(int amount) {
-      ItemStack potion = new ItemStack(Material.POTION, Math.max(1, amount));
+      ItemStack potion = new ItemStack(Material.SPLASH_POTION, Math.max(1, amount));   // thrown, like every loot potion
       PotionMeta meta = (PotionMeta)potion.getItemMeta();
       meta.displayName(Component.text("All-in-One Potion", NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
       // Particles off: five effects' worth of swirls (Resistance is purple) float in front of the drinker's camera.
