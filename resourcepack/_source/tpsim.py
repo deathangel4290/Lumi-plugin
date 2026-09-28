@@ -100,19 +100,15 @@ CROSSBOW_HOLD = (-math.pi / 2 + 0.1, -0.3)          # AnimationUtils.animateCros
 CROSSBOW_CHARGE = (-0.97079635, -0.8)                 # AnimationUtils.animateCrossbowCharge (right arm)
 
 # ---------------------------------------------------------------- calibrated against in-game screenshots
-# Screenshots of the Scythe, Axe of Zeus and Sword of Eclipse held in the left hand showed items turned a
-# quarter turn about the vertical at the hand compared with the plain chain above (held items face the
-# camera from the front, they do not point at it). The chain below adds that turn: +90 degrees for the
-# left hand, mirrored (-90) for the right. It also confirmed that the game negates a lefthand
-# transform's y/z rotation (and x translation), so a true mirror stores the RIGHT values in lefthand.
+# The plain vanilla chain, for either arm (the left arm chain is the x-mirror of the right one). A
+# right-hand screenshot of the Hermes Blade confirmed it: an earlier quarter-turn 'correction' here made
+# swords point across the body. The game negates a lefthand transform's y/z rotation and x translation.
 def hand_chain(left, pose=None):
     xr, yr = pose if pose is not None else ITEM_POSE
     sx = 1 if left else -1
     arm = ENTITY @ T(sx * 5 / 16, 2 / 16, 0) @ RZYX(0, -yr if left else yr, xr)
     h = arm @ R(-90, 0, 0) @ R(0, 180, 0) @ T((-1 if left else 1) / 16, 0.125, -0.625)
-    p = h[:3, 3].copy()
-    C = np.eye(4); C[:3, :3] = R(0, 90 if left else -90, 0)[:3, :3]
-    return T(*p) @ C @ T(*(-p)) @ h
+    return h
 
 def _grip_target(H):
     M = H @ T(0, 4 / 16, 0.5 / 16) @ R(0, -90, 55) @ S(0.85, 0.85, 0.85)

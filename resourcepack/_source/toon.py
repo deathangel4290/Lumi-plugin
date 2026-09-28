@@ -354,14 +354,17 @@ def showcase(model_json, tex, yaw=30, pitch=15, size=320, pad=14):
     return raster(model_json, tex, proj, size, size)
 
 
-def first_person(model_json, tex, W=480, H=270, fov=70):
-    """Right-hand first-person view, following ItemInHandRenderer (arm offset 0.56, -0.52, -0.72)."""
-    t = model_json['display']['firstperson_righthand']
-    R = rot_xyz(*t['rotation']); s = np.array(t['scale']); tr = np.array(t['translation']) / 16
+def first_person(model_json, tex, W=480, H=270, fov=70, left=False):
+    """First-person view, following ItemInHandRenderer (arm offset +-0.56, -0.52, -0.72). The left hand
+    uses the lefthand values the way the game does: y/z rotation and x translation negated."""
+    t = model_json['display']['firstperson_lefthand' if left else 'firstperson_righthand']
+    r = list(t['rotation']); tr = np.array(t['translation'], float) / 16
+    if left: r = [r[0], -r[1], -r[2]]; tr[0] = -tr[0]
+    R = rot_xyz(*r); s = np.array(t['scale'])
     f = (H / 2) / math.tan(math.radians(fov / 2))
 
     def proj(q):
-        p = ((q - 8) / 16 * s) @ R.T + tr + np.array([0.56, -0.52, -0.72])
+        p = ((q - 8) / 16 * s) @ R.T + tr + np.array([-0.56 if left else 0.56, -0.52, -0.72])
         return W / 2 + p[:, 0] / -p[:, 2] * f, H / 2 - p[:, 1] / -p[:, 2] * f, -p[:, 2]
     img = raster(model_json, tex, proj, W, H, bg=(120, 160, 210))
     px = img.load()

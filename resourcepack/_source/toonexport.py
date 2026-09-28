@@ -37,12 +37,23 @@ THIRD = {   # model axes -> world axes for the RIGHT hand (+x is the player's le
 def third_person(kind, scale, grip, pose=None):
     import tpsim
     model_axes, world = THIRD[kind]
-    return tpsim.solve_both(model_axes, world, scale, grip, pose)
+    right = tpsim.solve_hand(model_axes, world, scale, grip, False, pose)
+    return right, (same(right) if kind == 'book' else flipz(right))
 
 def same(t):
     """The game negates a lefthand rotation's y/z and translation x, so storing the right-hand values
     gives the true mirror image (our old mirror() stored the negated values: not mirrored at all)."""
     return copy.deepcopy(t)
+
+def flipz(t):
+    """Left-hand transform that shows the true mirror image of the right hand. The game renders the
+    lefthand values as M*F*M (M = x-mirror); the left arm chain is M*C*M. Our models are symmetric
+    front-to-back (z), not side to side, so the mirror image is the model spun 180 degrees about y:
+    F = right * Ry(180). Storing the right values (same) only works for side-to-side symmetric models:
+    it flipped scythe and axe heads outward."""
+    from tpsim import _euler
+    M = rot_xyz(*t['rotation']) @ rot_xyz(0, 180, 0)
+    return {'rotation': _euler(M), 'translation': list(t['translation']), 'scale': list(t['scale'])}
 
 def mirror(t):
     r = t['rotation']
@@ -109,8 +120,8 @@ def crossbow_displays(pts, state='standby'):
         fp = cancel(fp, charged_extra())
     elif state.startswith('pulling'):
         fp = cancel(fp, charging_extra())
-    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': tpl,
-            'firstperson_righthand': fp, 'firstperson_lefthand': same(fp),
+    return {'thirdperson_righthand': tp, 'thirdperson_lefthand': flipz(tp),
+            'firstperson_righthand': fp, 'firstperson_lefthand': flipz(fp),
             'ground': fit([0, 0, 0], 0.5, c, (0, 2, 0)), 'fixed': fit([0, 180, 0], 1.0, c),
             'head': fit([0, 180, 0], 1.0, c, (0, 13, 7)), 'gui': fit([0, 0, 0], 1.0, c)}
 
@@ -127,7 +138,7 @@ if __name__ == '__main__':
         kind = 'book' if name == 'veil_of_mimicry' else 'upright' if name in UPRIGHT else 'tether' if name == 'tether_chain' else 'sword'
         grip = (8, 6, 8) if kind == 'book' else (8, GRIP[name], 8)
         disp['thirdperson_righthand'], disp['thirdperson_lefthand'] = third_person(kind, disp['thirdperson_righthand']['scale'][0], grip)
-        disp['firstperson_lefthand'] = same(disp['firstperson_righthand'])
+        disp['firstperson_lefthand'] = (same if kind == 'book' else flipz)(disp['firstperson_righthand'])
         ref = f'luminara:item/{name}_3d'
         out, tex = m.export(ref, disp)
         if pack != '-':
@@ -139,11 +150,11 @@ if __name__ == '__main__':
                 # THROW_SPEAR raises the arm straight overhead: aim the prongs forward and a little up
                 import tpsim
                 tr, tl = tpsim.solve_both([(0, 1, 0), (1, 0, 0)], [(0, 0.3, 1), (1, 0, 0)], s, (8, GRIP[name], 8), (-math.pi, 0.0))
-                thr['display']['thirdperson_righthand'] = tr; thr['display']['thirdperson_lefthand'] = tl
+                thr['display']['thirdperson_righthand'] = tr; thr['display']['thirdperson_lefthand'] = flipz(tr)
                 # first person: the vanilla spear charge pose tilts the arm; aim the prongs at the crosshair
                 from spearpose import solve as spear
                 f = spear(disp['firstperson_righthand']['scale'][0], GRIP[name], forward=(-0.18, 0.12, -1.0))
-                thr['display']['firstperson_righthand'] = f; thr['display']['firstperson_lefthand'] = same(f)
+                thr['display']['firstperson_righthand'] = f; thr['display']['firstperson_lefthand'] = flipz(f)
                 json.dump(thr, open(f'{pack}/assets/luminara/models/item/{name}_3d_throwing.json', 'w'), indent=1)
         to_bbmodel(out, tex, f'{name}_3d', f'{bb}/{name}_3d.bbmodel')
         shows.append(showcase(out, tex, yaw=28, pitch=12, size=300))

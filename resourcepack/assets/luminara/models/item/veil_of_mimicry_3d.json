@@ -1308,11 +1308,11 @@
   "thirdperson_righthand": {
    "rotation": [
     72.0,
-    59.53,
+    -30.47,
     -0.0
    ],
    "translation": [
-    0.0,
+    -0.0,
     -1.018,
     2.39
    ],
@@ -1325,8 +1325,8 @@
   "thirdperson_lefthand": {
    "rotation": [
     72.0,
-    59.53,
-    0.0
+    -30.47,
+    -0.0
    ],
    "translation": [
     -0.0,
