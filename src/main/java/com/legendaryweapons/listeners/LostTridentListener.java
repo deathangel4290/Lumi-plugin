@@ -21,6 +21,10 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.Particle.DustOptions;
+import org.bukkit.Particle.DustTransition;
+import com.legendaryweapons.managers.AnimationFx;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
@@ -45,7 +49,6 @@ public class LostTridentListener implements Listener, WeaponAbility {
    private static final String WALL_COOLDOWN_KEY = "atlantis-water-wall";
    private final LegendaryWeapons plugin;
    private final WeaponManager weaponManager;
-   private final Map<UUID, BukkitRunnable> tridentEffects = new HashMap<>();
    /** Water placed by live walls. It must never flow: flowing water next to two sources makes new sources
     *  the wall doesn't know about, and those were left behind forever after the wall ended. */
    private final Set<Block> wallWater = new HashSet<>();
@@ -102,33 +105,26 @@ public class LostTridentListener implements Listener, WeaponAbility {
                trident.setItemStack(tridentItem);
             }
 
-            this.flyModel(trident, tridentItem);
             trident.getPersistentDataContainer().set(this.tridentKey, PersistentDataType.BYTE, (byte)1);
-            this.startTridentEffects(trident, player);
-            this.createLaunchEffects(player.getLocation(), trident.getVelocity());
+            this.flyModel(trident, tridentItem);
+            this.throwBurst(player, trident.getVelocity());
          }
       }
    }
 
    @EventHandler
    public void onProjectileHit(ProjectileHitEvent event) {
-      if (event.getEntity() instanceof Trident) {
-         Trident trident = (Trident)event.getEntity();
-         if (this.tridentEffects.containsKey(trident.getUniqueId())) {
-            this.tridentEffects.get(trident.getUniqueId()).cancel();
-            this.tridentEffects.remove(trident.getUniqueId());
-         }
-
-         if (trident.getPersistentDataContainer().has(this.tridentKey, PersistentDataType.BYTE)) {
-            Player shooter = trident.getShooter() instanceof Player p ? p : null;
-            this.createEpicWaterPulse(trident.getLocation(), shooter);
-         }
+      if (event.getEntity() instanceof Trident trident && trident.getPersistentDataContainer().has(this.tridentKey, PersistentDataType.BYTE)) {
+         Player shooter = trident.getShooter() instanceof Player p ? p : null;
+         this.createEpicWaterPulse(trident.getLocation(), shooter);
       }
    }
 
    /**
     * A thrown trident is drawn with vanilla's fixed trident model whatever the item is, so hide the
-    * entity and fly the Atlantis model on it (out, stuck, and all the way home on loyalty).
+    * entity and fly the Atlantis model on it (out, stuck, and all the way home on loyalty). The model
+    * points along its flight, rolls about its shaft while it moves, and leaves a thin twin-strand
+    * wake of water: readable from a distance, never a wall of particles in anyone's face.
     */
    private void flyModel(final Trident trident, ItemStack look) {
       for (Player viewer : trident.getWorld().getPlayers()) {
@@ -140,9 +136,14 @@ public class LostTridentListener implements Listener, WeaponAbility {
          d.setItemStack(look.clone());
          d.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
          d.setTeleportDuration(1);
+         d.setShadowRadius(0.0F);
       });
+      final DustTransition foam = new DustTransition(Color.fromRGB(120, 235, 255), Color.fromRGB(235, 255, 255), 0.7F);
+      final DustOptions deep = new DustOptions(Color.fromRGB(20, 120, 210), 0.7F);
       (new BukkitRunnable() {
          int life = 0;
+         float roll = 0.0F;
+         org.joml.Quaternionf pointing = new org.joml.Quaternionf();
 
          public void run() {
             if (!trident.isValid() || !display.isValid() || this.life++ > 1200) {
@@ -160,149 +161,107 @@ public class LostTridentListener implements Listener, WeaponAbility {
                return;
             }
 
-            display.teleport(trident.getLocation());
+            Location at = trident.getLocation();
+            display.teleport(at);
             Vector v = trident.getVelocity();
-            if (v.lengthSquared() > 1.0E-3) {
-               org.joml.Quaternionf pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F, (float)v.getX(), (float)v.getY(), (float)v.getZ());
+            double speed = v.length();
+            if (speed > 0.05) {
+               this.pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F, (float)v.getX(), (float)v.getY(), (float)v.getZ());
+               this.roll += (float)Math.min(0.6, speed * 0.25);
                org.bukkit.util.Transformation now = display.getTransformation();
-               display.setTransformation(new org.bukkit.util.Transformation(now.getTranslation(), pointing, now.getScale(), now.getRightRotation()));
+               display.setInterpolationDelay(0);
+               display.setInterpolationDuration(1);
+               display.setTransformation(new org.bukkit.util.Transformation(now.getTranslation(), new org.joml.Quaternionf(this.pointing).rotateY(this.roll), now.getScale(), now.getRightRotation()));
+            }
+
+            if (speed > 0.25) {
+               LostTridentListener.this.wake(at, v, this.life, foam, deep);
             }
          }
       }).runTaskTimer(this.plugin, 1L, 1L);
    }
 
-   private void startTridentEffects(final Trident trident, Player player) {
-      final UUID tridentId = trident.getUniqueId();
-      BukkitRunnable effectTask = new BukkitRunnable() {
-         int ticks = 0;
+   /** Two strands spiralling round the flight path just behind the trident, with the odd drip. */
+   private void wake(Location at, Vector velocity, int tick, DustTransition foam, DustOptions deep) {
+      Vector dir = velocity.clone().normalize();
+      Vector side = Math.abs(dir.getY()) > 0.95 ? new Vector(1, 0, 0) : dir.clone().crossProduct(new Vector(0, 1, 0)).normalize();
+      Vector up = side.clone().crossProduct(dir).normalize();
+      double angle = tick * 0.9;
+      double radius = 0.22;
 
-         public void run() {
-            if (trident != null && trident.isValid() && !trident.isOnGround()) {
-               Location tridentLoc = trident.getLocation();
-               World world = trident.getWorld();
-               if (this.ticks % 2 == 0) {
-                  ParticleManager.spawn(Particle.DRIPPING_WATER, tridentLoc, 2, 0.1, 0.1, 0.1, 0.02);
-                  ParticleManager.spawn(Particle.NAUTILUS, tridentLoc, 1, 0.2, 0.2, 0.2, 0.1);
-               }
-               if (this.ticks % 3 == 0) {
-                  ParticleManager.spawn(Particle.BUBBLE_POP, tridentLoc, 2, 0.3, 0.3, 0.3, 0.05);
-               }
-
-               if (this.ticks % 10 == 0) {
-                  LostTridentListener.this.createPulsingAura(tridentLoc);
-               }
-
-               LostTridentListener.this.createVortexTrail(tridentLoc, this.ticks);
-               if (this.ticks % 5 == 0) {
-                  LostTridentListener.this.createBubbleStream(tridentLoc, trident.getVelocity());
-               }
-
-               if (this.ticks % 20 == 0) {
-                  LostTridentListener.this.plugin.getSoundManager().ambient(tridentLoc, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.3F, 1.5F);
-               }
-
-               this.ticks++;
-            } else {
-               LostTridentListener.this.tridentEffects.remove(tridentId);
-               this.cancel();
-            }
-         }
-      };
-      effectTask.runTaskTimer(this.plugin, 1L, 1L);
-      this.tridentEffects.put(tridentId, effectTask);
-   }
-
-   private void createLaunchEffects(final Location location, Vector direction) {
-      World world = location.getWorld();
-      ParticleManager.spawn(Particle.SPLASH, location, 50, 1.0, 1.0, 1.0, 0.3);
-      ParticleManager.spawn(Particle.DRIPPING_WATER, location, 30, 0.8, 0.8, 0.8, 0.2);
-
-      for (int i = 0; i < 3; i++) {
-         final int layer = i;
-         (new BukkitRunnable() {
-            public void run() {
-               double radius = 1.0 + layer * 0.5;
-               LostTridentListener.this.createEnergyRing(location, radius, Color.AQUA);
-            }
-         }).runTaskLater(this.plugin, i * 2L);
-      }
-
-      this.plugin.getSoundManager().world(location, Sound.ITEM_TRIDENT_THROW, 0.8F, 0.9F);
-   }
-
-   private void createPulsingAura(Location center) {
-      World world = center.getWorld();
-
-      for (double radius = 0.5; radius <= 1.5; radius += 0.5) {
-         for (int i = 0; i < 12; i++) {
-            double angle = i * 3.141592653589793 / 6.0;
-            double x = Math.cos(angle) * radius;
-            double z = Math.sin(angle) * radius;
-            Location auraPoint = center.clone().add(x, 0.0, z);
-            ParticleManager.spawn(Particle.DUST, auraPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(Color.fromRGB(0, 150, 255), 1.5F));
+      for (int strand = 0; strand < 2; strand++) {
+         double a = angle + strand * Math.PI;
+         Vector ring = side.clone().multiply(Math.cos(a) * radius).add(up.clone().multiply(Math.sin(a) * radius));
+         Location point = at.clone().subtract(dir.clone().multiply(0.45)).add(ring);
+         if (strand == 0) {
+            ParticleManager.spawn(Particle.DUST_COLOR_TRANSITION, point, 1, 0.0, 0.0, 0.0, 0.0, foam);
+         } else {
+            ParticleManager.spawn(Particle.DUST, point, 1, 0.0, 0.0, 0.0, 0.0, deep);
          }
       }
 
-      ParticleManager.spawn(Particle.END_ROD, center, 3, 0.2, 0.2, 0.2, 0.05);
-   }
+      if (tick % 2 == 0) {
+         ParticleManager.spawn(Particle.FALLING_WATER, at.clone().subtract(dir.clone().multiply(0.8)), 1, 0.05, 0.05, 0.05, 0.0);
+      }
 
-   private void createVortexTrail(Location center, int tick) {
-      World world = center.getWorld();
-      double time = tick * 0.3;
-
-      for (int i = 0; i < 3; i++) {
-         double radius = 0.3 + i * 0.2;
-
-         for (int j = 0; j < 8; j++) {
-            double angle = time + j * 3.141592653589793 / 4.0;
-            double x = Math.cos(angle) * radius;
-            double z = Math.sin(angle) * radius;
-            Location vortexPoint = center.clone().add(-x, 0.1, -z);
-            ParticleManager.spawn(Particle.DRIPPING_WATER, vortexPoint, 1, 0.0, 0.0, 0.0, 0.0);
-            if (j % 2 == 0) {
-               ParticleManager.spawn(Particle.BUBBLE_POP, vortexPoint, 1, 0.1, 0.1, 0.1, 0.0);
-            }
-         }
+      if (tick % 5 == 0) {
+         ParticleManager.spawn(Particle.BUBBLE_POP, at.clone().subtract(dir.clone().multiply(0.6)), 1, 0.08, 0.08, 0.08, 0.01);
       }
    }
 
-   private void createBubbleStream(Location center, Vector direction) {
-      World world = center.getWorld();
-      Vector perpendicular1 = new Vector(-direction.getZ(), 0.0, direction.getX()).normalize().multiply(0.4);
-      Vector perpendicular2 = new Vector(direction.getZ(), 0.0, -direction.getX()).normalize().multiply(0.4);
+   /** The release: a small ring of water snaps off the hand and spray follows the throw. */
+   private void throwBurst(Player player, Vector velocity) {
+      Vector dir = velocity.clone().normalize();
+      Location hand = player.getEyeLocation().subtract(0.0, 0.35, 0.0).add(dir.clone().multiply(1.1));
+      Vector side = Math.abs(dir.getY()) > 0.95 ? new Vector(1, 0, 0) : dir.clone().crossProduct(new Vector(0, 1, 0)).normalize();
+      Vector up = side.clone().crossProduct(dir).normalize();
+      DustOptions ring = new DustOptions(Color.fromRGB(110, 225, 255), 0.8F);
 
-      for (int i = 0; i < 5; i++) {
-         double offset = i * 0.3;
-         Location streamPoint1 = center.clone().add(perpendicular1).add(direction.clone().multiply(-offset));
-         Location streamPoint2 = center.clone().add(perpendicular2).add(direction.clone().multiply(-offset));
-         ParticleManager.spawn(Particle.BUBBLE_COLUMN_UP, streamPoint1, 2, 0.1, 0.1, 0.1, 0.05);
-         ParticleManager.spawn(Particle.BUBBLE_COLUMN_UP, streamPoint2, 2, 0.1, 0.1, 0.1, 0.05);
+      for (int i = 0; i < 14; i++) {
+         double a = Math.PI * 2 * i / 14;
+         Location point = hand.clone().add(side.clone().multiply(Math.cos(a) * 0.45)).add(up.clone().multiply(Math.sin(a) * 0.45));
+         ParticleManager.spawn(Particle.DUST, point, 1, 0.0, 0.0, 0.0, 0.0, ring);
       }
+
+      for (int i = 0; i < 6; i++) {
+         ParticleManager.spawn(Particle.SPLASH, hand.clone().add(dir.clone().multiply(i * 0.35)), 2, 0.08, 0.08, 0.08, 0.05);
+      }
+
+      this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 0.8F, 0.9F);
+      this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_1, 0.25F, 1.6F);
    }
 
    private void createEnergyRing(Location center, double radius, Color color) {
-      World world = center.getWorld();
+      int points = (int)Math.max(12, Math.min(28, radius * 7));
 
-      for (int i = 0; i < 16; i++) {
-         double angle = i * 3.141592653589793 / 8.0;
-         double x = Math.cos(angle) * radius;
-         double z = Math.sin(angle) * radius;
-         Location ringPoint = center.clone().add(x, 0.5, z);
-         ParticleManager.spawn(Particle.DUST, ringPoint, 2, 0.1, 0.1, 0.1, 0.0, new DustOptions(color, 2.0F));
+      for (int i = 0; i < points; i++) {
+         double angle = Math.PI * 2 * i / points;
+         Location ringPoint = center.clone().add(Math.cos(angle) * radius, 0.15, Math.sin(angle) * radius);
+         ParticleManager.spawn(Particle.DUST, ringPoint, 1, 0.0, 0.0, 0.0, 0.0, new DustOptions(color, 1.2F));
       }
    }
 
+   /**
+    * Sneak + ability: a curved wall of water rises in front of you, row by row. While it stands it
+    * shoves people clear, slows enemies wading through it, and stops enemy arrows, tridents and
+    * pearls dead. You and trusted players shoot straight through, and you get Dolphin's Grace near it.
+    * When it ends it crashes forward as a wave.
+    */
    private void createWaterWall(final Player player) {
       if (player.getWorld().getEnvironment() == Environment.NETHER) {
          com.legendaryweapons.managers.HudManager.message(player, Component.text("The water boils away here.", NamedTextColor.RED));
          this.plugin.getSoundManager().self(player, Sound.BLOCK_FIRE_EXTINGUISH, 0.6F, 1.4F);
       } else {
          ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("lost-trident-of-atlantis");
-         final int width = abilities != null ? abilities.getInt("water-wall-width", 7) : 7;
-         final int height = abilities != null ? abilities.getInt("water-wall-height", 4) : 4;
-         long duration = abilities != null ? abilities.getLong("water-wall-duration", 80L) : 80L;
-         long cooldown = abilities != null ? abilities.getLong("water-wall-cooldown", 160L) : 160L;
-         final double push = abilities != null ? abilities.getDouble("water-wall-push", 0.9) : 0.9;
+         final int width = abilities.getInt("water-wall-width", 7);
+         final int height = abilities.getInt("water-wall-height", 4);
+         final long duration = abilities.getLong("water-wall-duration", 100L);
+         long cooldown = abilities.getLong("water-wall-cooldown", 160L);
+         final double push = abilities.getDouble("water-wall-push", 0.9);
+         final boolean blockProjectiles = abilities.getBoolean("water-wall-blocks-projectiles", true);
+         final int slowTicks = abilities.getInt("water-wall-slowness", 30);
+         final double crashDamage = abilities.getDouble("water-wall-crash-damage", 4.0);
+         final double crashRange = abilities.getDouble("water-wall-crash-range", 5.0);
          if (this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "atlantis-water-wall", cooldown)) {
             Vector flat = player.getLocation().getDirection().setY(0.0);
             if (flat.lengthSquared() < 1.0E-4) {
@@ -311,7 +270,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
             }
 
             final Vector facing = flat.normalize();
-            Vector perpendicular = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
+            final Vector perpendicular = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
             Block targetBlock = player.getTargetBlockExact(12);
             final Location anchor;
             if (targetBlock != null && !targetBlock.getType().isAir()) {
@@ -322,56 +281,187 @@ public class LostTridentListener implements Listener, WeaponAbility {
                anchor = ahead;
             }
 
-            this.createWaterWallEffects(anchor, facing);
-            final List<Block> waterBlocks = new ArrayList<>();
-            int half = Math.max(0, width / 2);
+            final Set<Block> wall = new HashSet<>();
+            final int half = Math.max(0, width / 2);
+            // rise: one row every 2 ticks, bottom first
+            for (int h = 0; h < height; h++) {
+               final int row = h;
+               this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+                  for (int w = -half; w <= half; w++) {
+                     double edge = (double)Math.abs(w) / Math.max(1, half);
+                     int columnHeight = Math.max(1, (int)Math.round(height - edge * (height / 3.0)));
+                     if (row >= columnHeight) {
+                        continue;
+                     }
 
-            for (int w = -half; w <= half; w++) {
-               double edge = (double)Math.abs(w) / Math.max(1, half);
-               int columnHeight = Math.max(1, (int)Math.round(height - edge * (height / 3.0)));
-               Vector bow = facing.clone().multiply(edge * 1.2);
-
-               for (int h = 0; h < columnHeight; h++) {
-                  Location blockLoc = anchor.clone().add(perpendicular.clone().multiply(w)).add(bow).add(0.0, h, 0.0);
-                  Block block = blockLoc.getBlock();
-                  if (block.getType().isAir() && this.plugin.getProtectionManager().canBuild(player, blockLoc)) {
-                     LostTridentListener.this.wallWater.add(block);
-                     block.setType(Material.WATER);
-                     waterBlocks.add(block);
+                     Location blockLoc = anchor.clone().add(perpendicular.clone().multiply(w)).add(facing.clone().multiply(edge * 1.2)).add(0.0, row, 0.0);
+                     Block block = blockLoc.getBlock();
+                     if (block.getType().isAir() && this.plugin.getProtectionManager().canBuild(player, blockLoc)) {
+                        this.wallWater.add(block);
+                        wall.add(block);
+                        block.setType(Material.WATER);
+                        if (w % 2 == 0) {
+                           ParticleManager.spawn(Particle.SPLASH, blockLoc.clone().add(0.5, 1.0, 0.5), 3, 0.3, 0.05, 0.3, 0.05);
+                        }
+                     }
                   }
+
+                  this.plugin.getSoundManager().world(anchor, Sound.ITEM_BUCKET_EMPTY, 0.5F, 0.8F + row * 0.15F);
+               }, row * 2L);
+            }
+
+            this.createWaterWallEffects(anchor);
+            this.pushEntitiesFromWall(anchor, facing, width, height, push, player);
+            (new BukkitRunnable() {
+               int tick = 0;
+
+               public void run() {
+                  if (this.tick++ >= duration) {
+                     this.cancel();
+                     LostTridentListener.this.crash(player, wall, anchor, facing, perpendicular, width, crashRange, crashDamage);
+                     return;
+                  }
+
+                  if (blockProjectiles) {
+                     LostTridentListener.this.stopProjectiles(player, wall, anchor, width, height);
+                  }
+
+                  if (this.tick % 10 == 0) {
+                     LostTridentListener.this.pushEntitiesFromWall(anchor, facing, width, height, push * 0.5, player);
+                     LostTridentListener.this.wade(player, wall, anchor, width, height, slowTicks);
+                  }
+
+                  if (this.tick % 5 == 0) {
+                     LostTridentListener.this.shimmer(wall);
+                  }
+               }
+            }).runTaskTimer(this.plugin, 1L, 1L);
+         }
+      }
+   }
+
+   /** Enemy projectiles that would pass through the wall splash to a stop in it. */
+   private void stopProjectiles(Player owner, Set<Block> wall, Location anchor, int width, int height) {
+      if (wall.isEmpty()) {
+         return;
+      }
+
+      double reach = width / 2.0 + 6.0;
+      for (Entity entity : anchor.getWorld().getNearbyEntities(anchor.clone().add(0.0, height / 2.0, 0.0), reach, height + 4.0, reach)) {
+         if (!(entity instanceof org.bukkit.entity.Projectile projectile) || entity.isOnGround()) {
+            continue;
+         }
+
+         if (projectile.getShooter() instanceof Entity source && (source.equals(owner) || !this.plugin.getProtectionManager().canAffect(owner, source))) {
+            continue;                                                          // yours or a trusted player's
+         }
+
+         Vector v = projectile.getVelocity();
+         double length = v.length();
+         if (length < 0.05) {
+            continue;
+         }
+
+         Location from = projectile.getLocation();
+         Vector step = v.clone().multiply(0.25 / length);
+         int steps = (int)Math.ceil(length / 0.25) + 1;
+         for (int i = 0; i <= steps; i++) {
+            Location probe = from.clone().add(step.clone().multiply(i));
+            if (wall.contains(probe.getBlock())) {
+               projectile.teleport(probe.clone().subtract(step));
+               projectile.setVelocity(v.clone().multiply(-0.05).setY(-0.1));
+               ParticleManager.spawn(Particle.SPLASH, probe, 12, 0.25, 0.25, 0.25, 0.1);
+               this.plugin.getSoundManager().world(probe, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.6F, 1.3F);
+               break;
+            }
+         }
+      }
+   }
+
+   /** Enemies inside the wall are slowed; the owner swims fast near it. */
+   private void wade(Player owner, Set<Block> wall, Location anchor, int width, int height, int slowTicks) {
+      double reach = width / 2.0 + 2.0;
+      for (Entity entity : anchor.getWorld().getNearbyEntities(anchor, reach, height + 1.0, reach)) {
+         if (!(entity instanceof LivingEntity living)) {
+            continue;
+         }
+
+         if (entity.equals(owner)) {
+            owner.addPotionEffect(new PotionEffect(PotionEffectType.DOLPHINS_GRACE, 30, 0, true, false, true));
+         } else if (slowTicks > 0 && this.plugin.getProtectionManager().canAffect(owner, entity)
+               && (wall.contains(living.getLocation().getBlock()) || wall.contains(living.getEyeLocation().getBlock()))) {
+            living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowTicks, 1, true, true, true));
+         }
+      }
+   }
+
+   private void shimmer(Set<Block> wall) {
+      int n = 0;
+      for (Block block : wall) {
+         if (n++ % 3 == 0) {
+            ParticleManager.spawn(Particle.BUBBLE_POP, block.getLocation().add(0.5, 0.5, 0.5), 1, 0.3, 0.3, 0.3, 0.0);
+         }
+      }
+   }
+
+   /** The wall's end: the water drains and a low wave rolls forward, away from the caster. */
+   private void crash(final Player owner, Set<Block> wall, final Location anchor, final Vector facing, final Vector perpendicular, int width, final double range, final double damage) {
+      for (Block block : wall) {
+         this.wallWater.remove(block);
+         if (block.getType() == Material.WATER) {
+            block.setType(Material.AIR);
+         }
+      }
+
+      if (!owner.isOnline()) {
+         return;
+      }
+
+      final double halfWidth = width / 2.0 + 0.5;
+      final Set<UUID> hit = new HashSet<>();
+      this.plugin.getSoundManager().world(anchor, Sound.ITEM_TRIDENT_RIPTIDE_2, 0.7F, 0.9F);
+      (new BukkitRunnable() {
+         int step = 0;
+
+         public void run() {
+            if (this.step >= 5) {
+               this.cancel();
+               return;
+            }
+
+            double front = range * (this.step + 1) / 5.0;
+            for (double w = -halfWidth; w <= halfWidth; w += 0.7) {
+               Location crest = anchor.clone().add(facing.clone().multiply(front)).add(perpendicular.clone().multiply(w));
+               ParticleManager.spawn(Particle.SPLASH, crest.clone().add(0.0, 0.4, 0.0), 2, 0.2, 0.2, 0.2, 0.05);
+               if (this.step % 2 == 0) {
+                  ParticleManager.spawn(Particle.FALLING_WATER, crest.clone().add(0.0, 0.9, 0.0), 1, 0.2, 0.1, 0.2, 0.0);
                }
             }
 
-            this.pushEntitiesFromWall(anchor, facing, width, height, push, player);
-            this.createOngoingWallEffects(anchor, width, height, perpendicular, duration);
-            long pushInterval = 10L;
-            final int pushes = (int)Math.max(1L, duration / 10L);
-            (new BukkitRunnable() {
-               int done = 0;
+            for (Entity entity : anchor.getWorld().getNearbyEntities(anchor, range + halfWidth, 3.0, range + halfWidth)) {
+               if (!(entity instanceof LivingEntity living) || entity.equals(owner) || hit.contains(entity.getUniqueId())
+                     || !LostTridentListener.this.plugin.getProtectionManager().canAffect(owner, entity)) {
+                  continue;
+               }
 
-               public void run() {
-                  if (this.done++ >= pushes) {
-                     this.cancel();
-                  } else {
-                     LostTridentListener.this.pushEntitiesFromWall(anchor, facing, width, height, push * 0.5, player);
-                  }
+               Vector offset = entity.getLocation().toVector().subtract(anchor.toVector());
+               double along = offset.dot(facing);
+               if (along < -0.5 || along > front + 0.8 || Math.abs(offset.dot(perpendicular)) > halfWidth) {
+                  continue;
                }
-            }).runTaskTimer(this.plugin, 10L, 10L);
-            (new BukkitRunnable() {
-               public void run() {
-                  for (Block block : waterBlocks) {
-                     LostTridentListener.this.wallWater.remove(block);
-                     if (block.getType() == Material.WATER) {
-                        ParticleManager.spawn(Particle.CLOUD, block.getLocation().add(0.5, 0.5, 0.5), 2, 0.2, 0.2, 0.2, 0.05);
-                        block.setType(Material.AIR);
-                     }
-                  }
+
+               hit.add(entity.getUniqueId());
+               if (damage > 0.0) {
+                  living.damage(damage, owner);
                }
-            }).runTaskLater(this.plugin, duration);
-            this.plugin.getSoundManager().world(anchor, Sound.ITEM_BUCKET_EMPTY, 0.8F, 0.8F);
-            ParticleManager.spawn(Particle.SWEEP_ATTACK, anchor, 10, 2.0, 2.0, 2.0, 0.1);
+
+               entity.setVelocity(facing.clone().multiply(1.1).setY(0.35));
+               ParticleManager.spawn(Particle.SPLASH, entity.getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.4, 0.3, 0.1);
+            }
+
+            this.step++;
          }
-      }
+      }).runTaskTimer(this.plugin, 0L, 1L);
    }
 
    @EventHandler(ignoreCancelled = true)
@@ -406,85 +496,40 @@ public class LostTridentListener implements Listener, WeaponAbility {
       }
    }
 
-   private void createWaterWallEffects(final Location location, Vector direction) {
-      final World world = location.getWorld();
-
-      for (int i = 0; i < 3; i++) {
-         final int layer = i;
-         (new BukkitRunnable() {
-            public void run() {
-               double radius = 2.0 + layer * 1.0;
-               ParticleManager.spawn(Particle.DRIPPING_WATER, location, 30, radius, 1.0, radius, 0.2);
-               LostTridentListener.this.createEnergyRing(location, radius, Color.BLUE);
-            }
-         }).runTaskLater(this.plugin, i * 5L);
-      }
-
+   private void createWaterWallEffects(final Location location) {
+      AnimationFx.ring(location, Material.LIGHT_BLUE_STAINED_GLASS, 0.6, 3.0, 8, false);
       this.plugin.getSoundManager().world(location, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.7F, 1.1F);
    }
 
-   private void createOngoingWallEffects(final Location location, final int width, final int height, final Vector perpendicular, final long duration) {
-      final World world = location.getWorld();
-      BukkitRunnable wallEffectTask = new BukkitRunnable() {
-         int ticks = 0;
-
-         public void run() {
-            if (this.ticks * 2 >= duration) {
-               this.cancel();
-            } else {
-               for (int w = -width / 2; w <= width / 2; w++) {
-                  for (int h = 0; h < height; h++) {
-                     Location effectLoc = location.clone().add(perpendicular.clone().multiply(w)).add(0.0, h, 0.0);
-                     ParticleManager.spawn(Particle.DRIPPING_WATER, effectLoc, 1, 0.3, 0.1, 0.3, 0.0);
-                     if (this.ticks % 10 == 0) {
-                        ParticleManager.spawn(Particle.BUBBLE_POP, effectLoc, 1, 0.2, 0.2, 0.2, 0.0);
-                     }
-                  }
-               }
-
-               if (this.ticks % 5 == 0) {
-                  LostTridentListener.this.createWallOutline(location, width, height, perpendicular);
-               }
-
-               this.ticks++;
-            }
-         }
-      };
-      wallEffectTask.runTaskTimer(this.plugin, 5L, 5L);
-   }
-
-   private void createWallOutline(Location location, int width, int height, Vector perpendicular) {
-      World world = location.getWorld();
-
-      for (int w = -width / 2; w <= width / 2; w++) {
-         Location bottom = location.clone().add(perpendicular.clone().multiply(w));
-         Location top = bottom.clone().add(0.0, height, 0.0);
-         ParticleManager.spawn(Particle.DUST, bottom, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(0, 100, 200), 1.0F));
-         ParticleManager.spawn(Particle.DUST, top, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.fromRGB(0, 100, 200), 1.0F));
-      }
-   }
-
+   /** Impact: a tight splash crown and a ring of water running out along the ground. */
    private void createEpicWaterPulse(final Location location, final Player shooter) {
       ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("lost-trident-of-atlantis");
-      final double radius = abilities != null ? abilities.getDouble("pulse-radius", 4.0) : 4.0;
-      final double knockback = abilities != null ? abilities.getDouble("water-pulse-knockback", 1.5) : 1.5;
-      final double pulseDamage = abilities != null ? abilities.getDouble("pulse-damage", 6.0) : 6.0;
-      this.createPrePulseEffects(location);
+      final double radius = abilities.getDouble("pulse-radius", 4.0);
+      final double knockback = abilities.getDouble("water-pulse-knockback", 1.5);
+      final double pulseDamage = abilities.getDouble("pulse-damage", 6.0);
+      ParticleManager.spawn(Particle.NAUTILUS, location, 10, 0.4, 0.4, 0.4, 0.3);
+      this.plugin.getSoundManager().ambient(location, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5F, 1.2F);
       (new BukkitRunnable() {
          public void run() {
-            ParticleManager.spawn(Particle.SPLASH, location, 200, radius, radius / 2.0, radius, 0.5);
-            ParticleManager.spawn(Particle.DRIPPING_WATER, location, 100, radius, radius / 2.0, radius, 0.3);
-
-            for (double r = 1.0; r <= radius; r++) {
-               LostTridentListener.this.createEnergyRing(location, r, Color.AQUA);
+            Location ground = location.clone();
+            AnimationFx.ring(ground, Material.LIGHT_BLUE_STAINED_GLASS, 0.5, radius, 8, false);
+            for (int i = 0; i < 16; i++) {                                     // crown
+               double a = Math.PI * 2 * i / 16;
+               Location lip = location.clone().add(Math.cos(a) * 0.7, 0.2, Math.sin(a) * 0.7);
+               ParticleManager.spawn(Particle.SPLASH, lip, 3, 0.05, 0.3, 0.05, 0.15);
             }
 
-            ParticleManager.spawn(Particle.BUBBLE_POP, location, 50, radius, radius / 2.0, radius, 0.2);
-            ParticleManager.spawn(Particle.BUBBLE_COLUMN_UP, location, 30, radius, radius / 2.0, radius, 0.3);
+            LostTridentListener.this.createEnergyRing(location, radius * 0.5, Color.fromRGB(90, 210, 255));
+            LostTridentListener.this.createEnergyRing(location, radius, Color.fromRGB(30, 130, 220));
+            ParticleManager.spawn(Particle.BUBBLE_COLUMN_UP, location, 12, 0.6, 0.3, 0.6, 0.2);
             LostTridentListener.this.plugin.getSoundManager().world(location, Sound.ENTITY_FISHING_BOBBER_SPLASH, 0.9F, 0.8F);
 
             for (Entity entity : location.getWorld().getNearbyEntities(location, radius, radius, radius)) {
                if (entity instanceof LivingEntity living && !entity.equals(shooter) && (shooter == null || LostTridentListener.this.plugin.getProtectionManager().canAffect(shooter, entity))) {
+                  if (entity.getLocation().distanceSquared(location) > radius * radius) {
+                     continue;
+                  }
+
                   if (pulseDamage > 0.0) {
                      if (shooter != null) {
                         living.damage(pulseDamage, shooter);
@@ -499,49 +544,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
                   ParticleManager.spawn(Particle.SPLASH, entity.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
                }
             }
-
-            LostTridentListener.this.createLingeringPulseEffects(location, radius);
          }
-      }).runTaskLater(this.plugin, 3L);
-   }
-
-   private void createPrePulseEffects(final Location location) {
-      final World world = location.getWorld();
-
-      for (int i = 3; i > 0; i--) {
-         final int size = i;
-         (new BukkitRunnable() {
-            public void run() {
-               LostTridentListener.this.createEnergyRing(location, (double)size, Color.BLUE);
-               LostTridentListener.this.plugin.getSoundManager().ambient(location, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.5F, 0.5F + size * 0.2F);
-            }
-         }).runTaskLater(this.plugin, (3 - i) * 2L);
-      }
-
-      for (int i = 0; i < 3; i++) {
-         final int intensity = i;
-         (new BukkitRunnable() {
-            public void run() {
-               ParticleManager.spawn(Particle.NAUTILUS, location, 12, 0.6, 0.6, 0.6, 0.4);
-               ParticleManager.spawn(Particle.END_ROD, location, 5 + intensity * 3, 0.3, 0.3, 0.3, 0.1);
-            }
-         }).runTaskLater(this.plugin, i * 1L);
-      }
-   }
-
-   private void createLingeringPulseEffects(final Location location, final double radius) {
-      final World world = location.getWorld();
-
-      for (int i = 0; i < 5; i++) {
-         (new BukkitRunnable() {
-            public void run() {
-               for (int j = 0; j < 3; j++) {
-                  Vector offset = new Vector((Math.random() - 0.5) * radius * 2.0, Math.random() * radius, (Math.random() - 0.5) * radius * 2.0);
-                  Location dripLoc = location.clone().add(offset);
-                  ParticleManager.spawn(Particle.DRIPPING_WATER, dripLoc, 1, 0.0, 0.0, 0.0, 0.0);
-               }
-            }
-         }).runTaskLater(this.plugin, 10L + i * 5L);
-      }
+      }).runTaskLater(this.plugin, 2L);
    }
 }

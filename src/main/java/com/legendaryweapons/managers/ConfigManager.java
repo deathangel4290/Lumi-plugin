@@ -27,7 +27,7 @@ public class ConfigManager {
    private FileConfiguration config;
 
    /** Bump when shipped defaults change enough that an old config.yml would misrepresent the plugin. */
-   public static final int CONFIG_VERSION = 2;
+   public static final int CONFIG_VERSION = 3;
    private static final Pattern PLACEHOLDER = Pattern.compile("\\{(s|n|h|pct|x):([a-z0-9-]+)}");
 
    public ConfigManager(LegendaryWeapons plugin) {
@@ -187,6 +187,15 @@ public class ConfigManager {
 
    public int getWeaponCustomModelData(String weaponKey) {
       return this.config.getInt("weapons." + weaponKey + ".custom-model-data", 0);
+   }
+
+   /**
+    * Optional melee stats, as the tooltip shows them: {attack damage, attack speed}. Null when the
+    * weapon keeps its material's vanilla stats.
+    */
+   public double[] getWeaponMelee(String weaponKey) {
+      ConfigurationSection melee = this.config.getConfigurationSection("weapons." + weaponKey + ".melee");
+      return melee == null ? null : new double[]{melee.getDouble("attack-damage", 1.0), melee.getDouble("attack-speed", 4.0)};
    }
 
    public int getWeaponPowerTier(String weaponKey) {

@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -75,6 +78,7 @@ public class WeaponManager {
          }
 
          enchantments.forEach((enchant, level) -> meta.addEnchant(enchant, level, true));
+         this.applyMelee(meta, weaponKey);
          NamespacedKey key = new NamespacedKey(this.plugin, "legendary-weapon");
          meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, weaponKey);
          meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, this.revision(weaponKey));
@@ -84,9 +88,26 @@ public class WeaponManager {
       return weapon;
    }
 
-   /** A fingerprint of the configured name, lore and model; items carrying an older one get refreshed. */
+   /**
+    * Configured melee stats replace the material's own. The modifiers use vanilla's base ids so the
+    * tooltip shows them as plain "8 Attack Damage / 1.6 Attack Speed" like a sword (a player's base
+    * damage is 1 and base speed 4, hence the offsets).
+    */
+   private void applyMelee(ItemMeta meta, String weaponKey) {
+      double[] melee = this.configManager.getWeaponMelee(weaponKey);
+      if (melee != null) {
+         meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE);
+         meta.removeAttributeModifier(Attribute.ATTACK_SPEED);
+         meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(NamespacedKey.minecraft("base_attack_damage"), melee[0] - 1.0, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+         meta.addAttributeModifier(Attribute.ATTACK_SPEED, new AttributeModifier(NamespacedKey.minecraft("base_attack_speed"), melee[1] - 4.0, AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.MAINHAND));
+      }
+   }
+
+   /** A fingerprint of the configured name, lore, model and melee stats; items carrying an older one get refreshed. */
    private int revision(String weaponKey) {
+      double[] melee = this.configManager.getWeaponMelee(weaponKey);
       return (this.configManager.getWeaponDisplayName(weaponKey)
+            + (melee == null ? "" : melee[0] + "/" + melee[1])
             + this.configManager.getWeaponLore(weaponKey)
             + this.configManager.getWeaponCustomModelData(weaponKey)
             + this.configManager.getWeaponPowerTier(weaponKey))
@@ -94,7 +115,7 @@ public class WeaponManager {
    }
 
    /**
-    * Brings an existing legendary's name, lore and model up to date with the config, so balance
+    * Brings an existing legendary's name, lore, model and melee stats up to date with the config, so balance
     * changes show up on weapons players already own. Enchantments, durability and anything else
     * a player added are left alone. Returns true if the item changed.
     */
@@ -119,6 +140,7 @@ public class WeaponManager {
                   meta.setDisplayName(fresh.getDisplayName());
                   meta.setLore(fresh.getLore());
                   meta.setCustomModelDataComponent(fresh.getCustomModelDataComponent());
+                  this.applyMelee(meta, weaponKey);
                   meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, current);
                   item.setItemMeta(meta);
                   return true;

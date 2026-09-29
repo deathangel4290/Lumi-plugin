@@ -24,7 +24,7 @@
 #  config-v<old>-backup.yml and replaced with these defaults. Copy custom edits back by hand.
 #
 # ============================================================================
-config-version: 2
+config-version: 3
 
 
 # ============================================================================
@@ -307,12 +307,16 @@ weapons:
     material: TRIDENT
     custom-model-data: 6
     power-tier: 2
+    melee:                              # swings like a sword, hits like a netherite sword
+      attack-damage: 8.0
+      attack-speed: 1.6
     lore:
       - "§8Dredged from a city that drowned."
       - ""
       - "§7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts"
       - "§7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}"
-      - "§8  Shoves anyone near it clear."
+      - "§8  Stops enemy arrows and pearls, slows anyone wading"
+      - "§8  through, then crashes forward for §3{h:water-wall-crash-damage} hearts§8."
       - ""
       - "§7Wall cooldown  §f»  §f{s:water-wall-cooldown}"
       - "§8The water boils away in the Nether."
@@ -322,9 +326,13 @@ weapons:
       water-pulse-knockback: 1.5
       water-wall-width: 7
       water-wall-height: 4
-      water-wall-duration: 80           # 4s
+      water-wall-duration: 100          # 5s
       water-wall-push: 0.9
       water-wall-cooldown: 160          # 8s
+      water-wall-blocks-projectiles: true   # enemy arrows, tridents and pearls stop in the wall
+      water-wall-slowness: 30           # ticks of Slowness II on enemies inside the wall
+      water-wall-crash-damage: 4.0      # the wave when the wall ends
+      water-wall-crash-range: 5.0
     enchantments:
       - "LOYALTY:3"
       - "IMPALING:5"
