@@ -24,7 +24,7 @@
 #  config-v<old>-backup.yml and replaced with these defaults. Copy custom edits back by hand.
 #
 # ============================================================================
-config-version: 3
+config-version: 4
 
 
 # ============================================================================
@@ -701,7 +701,7 @@ events:
 
   supply-drops:
     border-margin: 50.0       # stay this far inside the world border
-    max-radius: 0.0           # >0 also caps the distance from the border centre
+    max-radius: 2000.0        # drops land at most this far from the border centre (0 = anywhere in the border)
     fall-seconds: 3.0
     beam-minutes: 10.0        # beam shows until opened or this long
     # Weights are relative within a tier: everyday loot is common, the good stuff is rare.

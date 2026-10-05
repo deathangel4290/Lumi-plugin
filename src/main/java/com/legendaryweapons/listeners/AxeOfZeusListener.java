@@ -50,7 +50,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
     * Axes owed to a player, stored on the player so it survives a logout or restart mid-flight
     * (the thrown axe used to be deleted if its owner left while it was in the air).
     */
-   private final NamespacedKey owedKey;
+   private final com.legendaryweapons.managers.OwedItems owedAxes;
 
    @Override
    public String weaponKey() {
@@ -72,20 +72,11 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
       this.axeKey = new NamespacedKey(plugin, "zeus-axe");
-      this.owedKey = new NamespacedKey(plugin, "zeus-axes-owed");
+      this.owedAxes = new com.legendaryweapons.managers.OwedItems(plugin, "zeus-axes-owed");
    }
 
    private int owed(Player player) {
-      Integer value = player.getPersistentDataContainer().get(this.owedKey, PersistentDataType.INTEGER);
-      return value == null ? 0 : value;
-   }
-
-   private void setOwed(Player player, int value) {
-      if (value <= 0) {
-         player.getPersistentDataContainer().remove(this.owedKey);
-      } else {
-         player.getPersistentDataContainer().set(this.owedKey, PersistentDataType.INTEGER, value);
-      }
+      return this.owedAxes.count(player);
    }
 
    private boolean inFlightFor(UUID owner) {
@@ -145,7 +136,10 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       if (this.weaponManager.isLegendaryWeapon(mainHand) && "axe-of-zeus".equals(this.weaponManager.getWeaponKey(mainHand))) {
          long cooldown = (long)this.ability("throw-cooldown", 200.0);
          if (this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "axe-of-zeus-throw", cooldown)) {
-            this.setOwed(player, this.owed(player) + 1);
+            // the player's own axe flies and comes back: enchantments, name and all
+            ItemStack thrown = mainHand.clone();
+            thrown.setAmount(1);
+            this.owedAxes.push(player, thrown);
             this.thrownFrom.put(player.getUniqueId(), player.getInventory().getHeldItemSlot());
             if (mainHand.getAmount() > 1) {
                mainHand.setAmount(mainHand.getAmount() - 1);
@@ -153,12 +147,12 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                player.getInventory().setItemInMainHand(null);
             }
 
-            this.launchAxe(player);
+            this.launchAxe(player, thrown);
          }
       }
    }
 
-   private void launchAxe(Player player) {
+   private void launchAxe(Player player, ItemStack thrown) {
       Location startLoc = player.getEyeLocation().clone();
       Vector direction = startLoc.getDirection().normalize();
       ItemDisplay axeDisplay = (ItemDisplay)player.getWorld().spawnEntity(startLoc, EntityType.ITEM_DISPLAY);
@@ -167,12 +161,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       // FIXED = the model's item-frame size; with no transform the 3D axe rendered three blocks tall
       axeDisplay.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
       axeDisplay.setTeleportDuration(1);                               // client smooths the per-tick moves
-      ItemStack axeItem = this.weaponManager.createWeapon("axe-of-zeus");
-      if (axeItem == null || axeItem.getType().isAir()) {
-         axeItem = new ItemStack(Material.NETHERITE_AXE);
-      }
-
-      axeDisplay.setItemStack(axeItem);
+      axeDisplay.setItemStack(thrown.clone());
       axeDisplay.getPersistentDataContainer().set(this.axeKey, PersistentDataType.BYTE, (byte)1);
       axeDisplay.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "zeus-owner"), PersistentDataType.STRING, player.getUniqueId().toString());
       this.axeOwners.put(axeDisplay.getUniqueId(), player.getUniqueId());
@@ -370,14 +359,8 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    }
 
    private void giveAxeBack(Player player) {
-      int owed = this.owed(player);
-      if (owed <= 0) {
-         return;                                                 // nothing owed: never mint a second axe
-      }
-
-      this.setOwed(player, owed - 1);
-      ItemStack axe = this.weaponManager.createWeapon("axe-of-zeus");
-      if (axe != null && !axe.getType().isAir()) {
+      ItemStack axe = this.owedAxes.pop(player, () -> this.weaponManager.createWeapon("axe-of-zeus"));
+      if (axe != null && !axe.getType().isAir()) {                // null: nothing owed, never mint a second axe
          Integer slot = this.thrownFrom.remove(player.getUniqueId());
          if (slot != null && slot >= 0 && slot < 9) {
             ItemStack there = player.getInventory().getItem(slot);

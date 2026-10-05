@@ -23,7 +23,9 @@ public class TrustListener implements Listener {
       this.weaponManager = weaponManager;
    }
 
-   @EventHandler
+   // LOW: cancel before any weapon listener (NORMAL and up) reacts to the hit, so a blocked hit on a
+   // trusted player never builds combos, charge or procs.
+   @EventHandler(priority = org.bukkit.event.EventPriority.LOW)
    public void onPlayerDamage(EntityDamageByEntityEvent event) {
       if (event.getEntity() instanceof Player) {
          Player victim = (Player)event.getEntity();
@@ -40,7 +42,7 @@ public class TrustListener implements Listener {
                return;
             }
 
-            if (event.getDamager() instanceof Arrow && this.configManager.isPreventProjectileDamage()) {
+            if (event.getDamager() instanceof org.bukkit.entity.Projectile && this.configManager.isPreventProjectileDamage()) {
                event.setCancelled(true);
             }
          }

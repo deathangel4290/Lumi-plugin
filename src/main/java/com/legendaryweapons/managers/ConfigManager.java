@@ -27,7 +27,7 @@ public class ConfigManager {
    private FileConfiguration config;
 
    /** Bump when shipped defaults change enough that an old config.yml would misrepresent the plugin. */
-   public static final int CONFIG_VERSION = 3;
+   public static final int CONFIG_VERSION = 4;
    private static final Pattern PLACEHOLDER = Pattern.compile("\\{(s|n|h|pct|x):([a-z0-9-]+)}");
 
    public ConfigManager(LegendaryWeapons plugin) {

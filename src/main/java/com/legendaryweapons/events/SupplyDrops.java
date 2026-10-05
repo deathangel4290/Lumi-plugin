@@ -87,7 +87,7 @@ public class SupplyDrops {
       WorldBorder border = world.getWorldBorder();
       double margin = this.section() == null ? 50.0 : this.section().getDouble("border-margin", 50.0);
       double half = Math.max(8.0, border.getSize() / 2.0 - margin);
-      double cap = this.section() == null ? 0.0 : this.section().getDouble("max-radius", 0.0);
+      double cap = this.section() == null ? 2000.0 : this.section().getDouble("max-radius", 2000.0);
       if (cap > 0.0) {
          half = Math.min(half, cap);
       }

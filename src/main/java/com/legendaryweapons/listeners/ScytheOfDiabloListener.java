@@ -63,7 +63,7 @@ public class ScytheOfDiabloListener implements Listener {
       }
    }
 
-   @EventHandler(ignoreCancelled = true)          // a blocked hit (no-PvP region, trusted player) builds nothing
+   @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)   // a blocked hit (no-PvP region, trusted player) builds nothing
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
@@ -183,13 +183,6 @@ public class ScytheOfDiabloListener implements Listener {
                ScytheOfDiabloListener.this.createDarkEnergyRing(victimLoc, radius);
             }
          }).runTaskLater(this.plugin, ring * 2L);
-      }
-
-      if (victimLoc.getWorld().getPlayers().stream().anyMatch(p -> p.getLocation().distance(victimLoc) < 3.0)) {
-         for (Player nearby : victimLoc.getWorld().getPlayers()) {
-            if (nearby.getLocation().distance(victimLoc) < 10.0) {
-            }
-         }
       }
    }
 

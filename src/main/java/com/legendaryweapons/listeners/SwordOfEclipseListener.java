@@ -58,6 +58,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
    private final HashMap<UUID, Boolean> hasSwordInHand = new HashMap<>();
    private final HashMap<UUID, Double> grantedHealth = new HashMap<>();
    private final HashMap<UUID, Integer> mainSlot = new HashMap<>();
+   /** The player's own sword while it is split, so it comes back with their enchants and name. */
+   private final HashMap<UUID, ItemStack> originalSword = new HashMap<>();
    private final NamespacedKey splitSwordKey;
    private static final double DEFAULT_MAX_HEALTH = 20.0;
    private static final String DUAL_WIELD_COOLDOWN_KEY = "eclipse-dual-wield";
@@ -337,7 +339,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       } else {
          ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse");
          int kills = this.killTracker.getOrDefault(uuid, 0);
-         int requiredKills = abilities.getInt("kills-per-stage", 10) * 3;
+         int requiredKills = abilities.getInt("kills-per-stage", 3) * 3;
          if (kills >= requiredKills) {
             long cooldownTime = abilities.getLong("dual-wield-cooldown", 1200L);
             if (!this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "eclipse-dual-wield", cooldownTime)) {
@@ -394,7 +396,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       }
 
       if (droppedSplitSword) {
-         drops.add(this.weaponManager.getWeapon("sword-of-eclipse"));
+         ItemStack original = this.originalSword.get(uuid);
+         drops.add(original != null ? original.clone() : this.weaponManager.getWeapon("sword-of-eclipse"));
       }
    }
 
@@ -454,7 +457,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             }
 
             int kills = this.killTracker.getOrDefault(damager.getUniqueId(), 0);
-            int killsPerStage = abilities.getInt("kills-per-stage", 10);
+            int killsPerStage = Math.max(1, abilities.getInt("kills-per-stage", 3));
             int stage = Math.min(4, kills / killsPerStage + 1);
             double damageBonus = abilities.getDouble("stage-" + stage + "-damage-bonus", 0.0);
             event.setDamage(event.getDamage() + damageBonus);
@@ -493,7 +496,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       } else {
          this.hasSwordInHand.put(uuid, true);
          final int kills = this.killTracker.getOrDefault(uuid, 0);
-         final int killsPerStage = this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 10);
+         final int killsPerStage = Math.max(1, this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 3));
          final int stage = Math.min(4, kills / killsPerStage + 1);
          BukkitRunnable stageTask = new BukkitRunnable() {
             int ticks = 0;
@@ -626,7 +629,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
 
       this.createCosmicSoulStream(deathLoc, killer.getLocation());
       this.createKillCountEffect(killer.getLocation(), kills);
-      int killsPerStage = this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 10);
+      int killsPerStage = Math.max(1, this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 3));
       if (kills % killsPerStage == 0) {
          this.createStageUpEffect(killer.getLocation(), kills / killsPerStage + 1);
       }
@@ -890,14 +893,17 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_CONCRETE, 0.4, 2.4, 10, true);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_CONCRETE, 2.4, 0.4, 10, false);
       this.mainSlot.put(uuid, player.getInventory().getHeldItemSlot());
+      ItemStack held = player.getInventory().getItemInMainHand();
+      ItemStack original = this.isRealEclipse(held) ? held.clone() : this.weaponManager.getWeapon("sword-of-eclipse");
+      this.originalSword.put(uuid, original);
       ItemStack previousOffhand = player.getInventory().getItemInOffHand();
       this.offhandCache.put(uuid, previousOffhand == null || previousOffhand.getType().isAir() ? null : previousOffhand.clone());
-      ItemStack lightSword = this.weaponManager.getWeapon("sword-of-eclipse").clone();
+      ItemStack lightSword = original.clone();
       ItemMeta lightMeta = lightSword.getItemMeta();
       lightMeta.setDisplayName("§f§lLight Sword");
       lightMeta.getPersistentDataContainer().set(this.splitSwordKey, PersistentDataType.BYTE, (byte)1);
       lightSword.setItemMeta(lightMeta);
-      ItemStack darkSword = this.weaponManager.getWeapon("sword-of-eclipse").clone();
+      ItemStack darkSword = original.clone();
       ItemMeta darkMeta = darkSword.getItemMeta();
       darkMeta.setDisplayName("§8§lDark Sword");
       darkMeta.getPersistentDataContainer().set(this.splitSwordKey, PersistentDataType.BYTE, (byte)1);
@@ -930,7 +936,11 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
          // Remove BOTH halves wherever they ended up, then give back exactly one real sword and the
          // old off-hand item -- into their old slots when those are free, never over another item.
          this.stripSplitSwords(player);
-         ItemStack sword = this.weaponManager.getWeapon("sword-of-eclipse");
+         ItemStack sword = this.originalSword.remove(uuid);
+         if (sword == null) {
+            sword = this.weaponManager.getWeapon("sword-of-eclipse");
+         }
+
          Integer slot = this.mainSlot.remove(uuid);
          ItemStack inSlot = slot == null ? null : player.getInventory().getItem(slot);
          if (slot != null && (inSlot == null || inSlot.getType().isAir())) {

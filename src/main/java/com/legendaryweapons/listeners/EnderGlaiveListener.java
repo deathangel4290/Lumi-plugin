@@ -42,7 +42,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
    /** trident -> the display that shows the real glaive model flying in its place */
    private final HashMap<UUID, org.bukkit.entity.ItemDisplay> glaiveDisplays = new HashMap<>();
    /** Glaives owed to a player, kept on the player so a logout or restart mid-flight can't lose one. */
-   private final NamespacedKey owedKey;
+   private final com.legendaryweapons.managers.OwedItems owedGlaives;
 
    @Override
    public String weaponKey() {
@@ -64,33 +64,16 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
       this.glaiveKey = new NamespacedKey(plugin, "ender-glaive");
-      this.owedKey = new NamespacedKey(plugin, "glaives-owed");
-   }
-
-   private int owed(Player player) {
-      Integer value = player.getPersistentDataContainer().get(this.owedKey, PersistentDataType.INTEGER);
-      return value == null ? 0 : value;
-   }
-
-   private void setOwed(Player player, int value) {
-      if (value <= 0) {
-         player.getPersistentDataContainer().remove(this.owedKey);
-      } else {
-         player.getPersistentDataContainer().set(this.owedKey, PersistentDataType.INTEGER, value);
-      }
+      this.owedGlaives = new com.legendaryweapons.managers.OwedItems(plugin, "glaives-owed");
    }
 
    @EventHandler
    public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
       Player player = event.getPlayer();
-      int owed = this.owed(player);
-      if (owed > 0 && !this.tridentOwners.containsValue(player.getUniqueId())) {
-         this.setOwed(player, 0);
-         for (int i = 0; i < owed; i++) {
-            ItemStack glaive = this.weaponManager.createWeapon("ender-glaive");
-            if (glaive != null) {
-               player.getInventory().addItem(glaive).values().forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
-            }
+      if (this.owedGlaives.count(player) > 0 && !this.tridentOwners.containsValue(player.getUniqueId())) {
+         ItemStack glaive;
+         while ((glaive = this.owedGlaives.pop(player, () -> this.weaponManager.createWeapon("ender-glaive"))) != null) {
+            player.getInventory().addItem(glaive).values().forEach(left -> player.getWorld().dropItem(player.getLocation(), left));
          }
       }
 
@@ -264,7 +247,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       trident.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "glaive-damage"), PersistentDataType.DOUBLE, baseDamage);
       this.tridentOwners.put(trident.getUniqueId(), player.getUniqueId());
       this.glaiveItems.put(trident.getUniqueId(), glaiveItem);
-      this.setOwed(player, this.owed(player) + 1);
+      this.owedGlaives.push(player, glaiveItem);
       // The thrown entity would render as a vanilla trident; hide it and fly the glaive model instead.
       for (Player viewer : player.getWorld().getPlayers()) {
          viewer.hideEntity(this.plugin, trident);
@@ -309,6 +292,8 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
             org.joml.Quaternionf pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F,
                (float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
             org.bukkit.util.Transformation now = display.getTransformation();
+            display.setInterpolationDelay(0);
+            display.setInterpolationDuration(1);
             display.setTransformation(new org.bukkit.util.Transformation(now.getTranslation(), pointing, now.getScale(), now.getRightRotation()));
          }
       }
@@ -325,7 +310,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
          ItemStack glaiveItem = this.glaiveItems.get(tridentId);
          Player player = Bukkit.getPlayer(playerId);
          if (player != null && player.isOnline()) {
-            this.setOwed(player, this.owed(player) - 1);            // offline owners keep it owed until they rejoin
+            this.owedGlaives.pop(player, () -> null);                  // offline owners keep it owed until they rejoin
             HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack[]{glaiveItem});
             if (leftover.isEmpty()) {
                this.plugin.getSoundManager().self(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1.2F);
@@ -394,7 +379,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       }
    }
 
-   @EventHandler(ignoreCancelled = true)
+   @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
       if (event.getDamager() instanceof Trident) {
          Trident trident = (Trident)event.getDamager();

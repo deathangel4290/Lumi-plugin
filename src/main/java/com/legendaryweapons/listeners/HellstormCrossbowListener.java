@@ -111,8 +111,15 @@ public class HellstormCrossbowListener implements Listener {
    private void startArrowEffects(final Arrow arrow, final boolean isExplosive) {
       final UUID arrowId = arrow.getUniqueId();
       BukkitRunnable effectTask = new BukkitRunnable() {
+         int life = 0;
+
          public void run() {
-            if (arrow != null && arrow.isValid() && !arrow.isOnGround()) {
+            // No gravity: a volley fired at the sky would fly (and tick) forever. 5s is ~300 blocks.
+            if (arrow.isValid() && !arrow.isOnGround() && this.life++ >= 100) {
+               arrow.remove();
+            }
+
+            if (arrow.isValid() && !arrow.isOnGround()) {
                Location arrowLoc = arrow.getLocation();
                World world = arrow.getWorld();
                ParticleManager.spawn(Particle.SMOKE, arrowLoc, 1, 0.1, 0.1, 0.1, 0.01);
