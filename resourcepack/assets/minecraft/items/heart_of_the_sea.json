@@ -1,0 +1,20 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 210,
+        "model": {
+          "type": "minecraft:model",
+          "model": "luminara:item/boss_heart"
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/heart_of_the_sea"
+    }
+  }
+}

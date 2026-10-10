@@ -27,10 +27,12 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
- * Admin-run events: Bounty Hunt, King of the Hill, Supply Drops and Most Wanted. None of them
- * start on their own; everything goes through /lwevent. State that has to survive a restart
- * (the hill centre, a pending/active Most Wanted, rewards owed to offline winners) lives in
- * events.yml. Running bounty hunts and KotH rounds end on shutdown.
+ * Events: Bounty Hunt, King of the Hill, Supply Drops, Most Wanted, Fallen Star, Blood Moon and
+ * Outposts, tied together by Season Renown, the reward chest (/rewards) and carry objectives
+ * (Boss Heart / Star Core). The Event Director (director.*) starts events on a schedule; admins
+ * can still run any of them with /lwevent. State that has to survive a restart (the hill centre,
+ * a pending/active Most Wanted, the Director's plan, a crater to heal, rewards owed to offline
+ * winners) lives in events.yml. Running bounty hunts and KotH rounds end on shutdown.
  */
 public class EventManager implements Listener {
    private final LegendaryWeapons plugin;
@@ -39,6 +41,14 @@ public class EventManager implements Listener {
    private final KothEvent koth;
    private final SupplyDrops supplyDrops;
    private final MostWantedEvent mostWanted;
+   private final RewardVault vault;
+   private final SeasonManager season;
+   private final RelicManager relics;
+   private final FallenStarEvent fallenStar;
+   private final BloodMoonEvent bloodMoon;
+   private final OutpostManager outposts;
+   private final TokenShop tokenShop;
+   private final EventDirector director;
    private final File file;
    private final YamlConfiguration data;
 
@@ -49,9 +59,19 @@ public class EventManager implements Listener {
       this.koth = new KothEvent(plugin, this);
       this.supplyDrops = new SupplyDrops(plugin, this);
       this.mostWanted = new MostWantedEvent(plugin, this);
+      this.vault = new RewardVault(plugin);
+      this.season = new SeasonManager(plugin, this);
+      this.relics = new RelicManager(plugin, this);
+      this.fallenStar = new FallenStarEvent(plugin, this);
+      this.bloodMoon = new BloodMoonEvent(plugin, this);
+      this.outposts = new OutpostManager(plugin, this);
+      this.tokenShop = new TokenShop(plugin);
+      this.director = new EventDirector(plugin, this);
       this.file = new File(plugin.getDataFolder(), "events.yml");
       this.data = YamlConfiguration.loadConfiguration(this.file);
       this.mostWanted.load(this.data.getConfigurationSection("most-wanted"));
+      this.director.load(this.data.getConfigurationSection("director"));
+      this.fallenStar.recover(this.data.getConfigurationSection("fallen-star"));
       String hill = this.data.getString("koth.center");
       if (hill != null) {
          String[] parts = hill.split(";");
@@ -85,6 +105,38 @@ public class EventManager implements Listener {
       return this.mostWanted;
    }
 
+   public RewardVault vault() {
+      return this.vault;
+   }
+
+   public SeasonManager season() {
+      return this.season;
+   }
+
+   public RelicManager relics() {
+      return this.relics;
+   }
+
+   public FallenStarEvent fallenStar() {
+      return this.fallenStar;
+   }
+
+   public BloodMoonEvent bloodMoon() {
+      return this.bloodMoon;
+   }
+
+   public OutpostManager outposts() {
+      return this.outposts;
+   }
+
+   public TokenShop tokenShop() {
+      return this.tokenShop;
+   }
+
+   public EventDirector director() {
+      return this.director;
+   }
+
    public boolean isMostWanted(Player player) {
       return this.mostWanted.isWanted(player);
    }
@@ -100,6 +152,15 @@ public class EventManager implements Listener {
       this.data.set("koth.center", hill == null || hill.getWorld() == null ? null : hill.getWorld().getName() + ";" + hill.getBlockX() + ";" + hill.getBlockY() + ";" + hill.getBlockZ());
       ConfigurationSection mw = this.data.getConfigurationSection("most-wanted");
       this.mostWanted.save(mw != null ? mw : this.data.createSection("most-wanted"));
+      if (this.director != null) {
+         ConfigurationSection dir = this.data.getConfigurationSection("director");
+         this.director.save(dir != null ? dir : this.data.createSection("director"));
+      }
+
+      if (this.fallenStar != null) {
+         ConfigurationSection star = this.data.getConfigurationSection("fallen-star");
+         this.fallenStar.save(star != null ? star : this.data.createSection("fallen-star"));
+      }
 
       try {
          this.file.getParentFile().mkdirs();
@@ -121,6 +182,11 @@ public class EventManager implements Listener {
       this.bounty.stop(false);
       this.koth.shutdown();
       this.mostWanted.shutdown();
+      this.relics.shutdown();
+      this.fallenStar.shutdown();
+      this.bloodMoon.stop();
+      this.outposts.shutdown();
+      this.season.save();
       this.save();
    }
 
@@ -141,6 +207,9 @@ public class EventManager implements Listener {
             this.bounty.onJoin(player);
             this.koth.onJoin(player);
             this.mostWanted.onJoinAny(player);
+            this.relics.onJoin(player);
+            this.bloodMoon.onJoin(player);
+            this.vault.remind(player);
             List<String> owed = this.data.getStringList("pending-rewards." + player.getUniqueId());
             if (!owed.isEmpty()) {
                this.data.set("pending-rewards." + player.getUniqueId(), null);
@@ -167,6 +236,8 @@ public class EventManager implements Listener {
       this.bounty.onKill(victim, killer);
       this.mostWanted.onDeath(victim, killer);
       this.koth.onKill(victim, killer);
+      this.season.onDeath(victim, killer);
+      this.bloodMoon.onPlayerDeath(victim, killer);
    }
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

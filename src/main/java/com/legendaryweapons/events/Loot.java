@@ -221,6 +221,20 @@ public final class Loot {
       }
    }
 
+   /** Build reward entries (same "ITEM [amount]" format as tables) into items. */
+   public List<ItemStack> build(List<String> specs) {
+      List<ItemStack> out = new ArrayList<>();
+      for (String spec : specs) {
+         Entry entry = this.parseEntry(spec);
+         ItemStack item = entry == null ? null : this.item(entry.item(), roll(entry.min(), entry.max()));
+         if (item != null) {
+            out.add(item);
+         }
+      }
+
+      return out;
+   }
+
    /** Give reward entries (same "ITEM [amount]" format as tables) to a player, dropping overflow. */
    public void give(Player player, List<String> rewards) {
       for (String reward : rewards) {

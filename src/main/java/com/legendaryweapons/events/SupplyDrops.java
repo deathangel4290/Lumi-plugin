@@ -84,49 +84,8 @@ public class SupplyDrops {
    }
 
    private Location findSpot(World world) {
-      WorldBorder border = world.getWorldBorder();
-      double margin = this.section() == null ? 50.0 : this.section().getDouble("border-margin", 50.0);
-      double half = Math.max(8.0, border.getSize() / 2.0 - margin);
-      double cap = this.section() == null ? 2000.0 : this.section().getDouble("max-radius", 2000.0);
-      if (cap > 0.0) {
-         half = Math.min(half, cap);
-      }
-
-      Location centre = border.getCenter();
-
-      for (int attempt = 0; attempt < 24; attempt++) {
-         int x = (int)Math.floor(centre.getX() + (ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * half);
-         int z = (int)Math.floor(centre.getZ() + (ThreadLocalRandom.current().nextDouble() * 2.0 - 1.0) * half);
-         Block ground = this.groundAt(world, x, z);
-         if (ground != null) {
-            return ground.getLocation().add(0.0, 1.0, 0.0);
-         }
-      }
-
-      return null;
-   }
-
-   /** Top solid, non-liquid block with two free blocks above. The Nether is scanned below its roof. */
-   private Block groundAt(World world, int x, int z) {
-      int top = world.getEnvironment() == Environment.NETHER ? Math.min(120, world.getMaxHeight() - 1) : world.getHighestBlockYAt(x, z);
-
-      for (int y = top; y > world.getMinHeight() + 1; y--) {
-         Block block = world.getBlockAt(x, y, z);
-         Material type = block.getType();
-         if (!type.isAir()) {
-            if (block.isLiquid() || type == Material.LAVA || type == Material.WATER) {
-               if (world.getEnvironment() != Environment.NETHER) {
-                  return null;
-               }
-            } else if (!type.isSolid() || type.name().endsWith("_LEAVES")) {
-               continue;
-            } else if (block.getRelative(0, 1, 0).isPassable() && block.getRelative(0, 2, 0).isPassable() && !block.getRelative(0, 1, 0).isLiquid()) {
-               return block;
-            }
-         }
-      }
-
-      return null;
+      return SafeSpots.find(world, this.section() == null ? 50.0 : this.section().getDouble("border-margin", 50.0),
+         this.section() == null ? 2000.0 : this.section().getDouble("max-radius", 2000.0));
    }
 
    private void drop(final Location landing, final String tier) {
@@ -203,6 +162,7 @@ public class SupplyDrops {
          for (Drop drop : this.drops) {
             if (!drop.opened && drop.location.equals(block)) {
                drop.opened = true;
+               this.manager.season().renown(player, "supply-drop-claimed", 1.0, "for claiming a supply drop");
                Bukkit.broadcast(Component.text("📦 " + this.manager.publicName(player) + " claimed the supply drop at " + block.getBlockX() + ", " + block.getBlockZ() + ".", NamedTextColor.AQUA));
                return;
             }

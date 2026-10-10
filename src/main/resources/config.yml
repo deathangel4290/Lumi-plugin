@@ -827,6 +827,271 @@ events:
         - "FRAGMENT_T3 1 w2"
         - "FRAGMENT_T4 1 w1"
 
+  # --------------------------------------------------------------------------
+  #  Shared-fight scoring (Fallen Star guardians now, bosses next).
+  #  Score = your share of all damage x damage-weight + your share of mechanics
+  #  (objectives, kills of adds, shields) x mechanic-weight + your share of
+  #  support (holding ground, carrying, protecting) x support-weight.
+  #  Players under min-share get nothing, so one tag at the end earns nothing.
+  # --------------------------------------------------------------------------
+  contribution:
+    damage-weight: 0.6
+    mechanic-weight: 0.2
+    support-weight: 0.2
+    min-share: 0.03
+
+  # --------------------------------------------------------------------------
+  #  Carry objectives. When a boss dies or a Fallen Star is cleared, its relic
+  #  drops. Whoever holds it for hold-seconds claims it; anyone can kill the
+  #  carrier and take it. The carrier glows, has it over their head, is on
+  #  everyone's boss bar and has their position announced every ping-seconds.
+  # --------------------------------------------------------------------------
+  relics:
+    ping-seconds: 10
+    ping-accuracy: 6            # +/- blocks of error on the position pings
+    ground-timeout-seconds: 180 # nobody picks it up for this long -> it is lost
+    block-teleports: true       # carriers cannot pearl, chorus, use portals or /home
+    block-elytra: true
+    boss-heart:
+      hold-seconds: 60
+      rewards:
+        rolls: "3-5"
+        guaranteed:
+          - "LUMINARA_TOKEN 8-12"
+          - "FRAGMENT_T3 1"
+        items:
+          - "ENCHANTED_GOLDEN_APPLE 1-2 w6"
+          - "NETHERITE_INGOT 1 w5"
+          - "ALL_IN_ONE_POTION 1 w5"
+          - "FRAGMENT_T3 1 w4"
+          - "LUMINOSITY_FRAGMENT 1 w2"
+          - "FRAGMENT_T4 1 w1"
+    star-core:
+      hold-seconds: 45
+      rewards:
+        rolls: "2-4"
+        guaranteed:
+          - "LUMINARA_TOKEN 4-6"
+          - "FRAGMENT_T2 1"
+        items:
+          - "GOLDEN_APPLE 4-8 w8"
+          - "DIAMOND 4-8 w8"
+          - "NETHERITE_SCRAP 1-2 w5"
+          - "ALL_IN_ONE_POTION 1 w4"
+          - "FRAGMENT_T3 1 w3"
+          - "LUMINOSITY_FRAGMENT 1 w1"
+
+  # --------------------------------------------------------------------------
+  #  Fallen Star: /lwevent fallenstar start, or the Director.
+  #  Where it fell is revealed in stages: biome at once, rough distance after
+  #  reveal-distance-seconds, coordinates after reveal-coords-seconds (or as
+  #  soon as someone finds it). The crater only forms on natural terrain and
+  #  heals restore-minutes after the core is taken.
+  # --------------------------------------------------------------------------
+  fallen-star:
+    border-margin: 64.0
+    max-radius: 1500.0          # lands at most this far from the border centre
+    crater-radius: 6.0
+    crater-depth: 3
+    reveal-distance-seconds: 30
+    reveal-coords-seconds: 60
+    trigger-radius: 20.0        # a player this close wakes the guardians
+    guardian-health-multiplier: 1.5   # +15% more for every player past 2
+    wave-timeout-seconds: 120   # the next wave comes anyway after this long
+    max-minutes: 25             # burns out if nobody finishes it
+    restore-minutes: 5
+    restore-minutes-failed: 1
+    waves:
+      - ["HUSK 4", "SKELETON 3", "SPIDER 2"]
+      - ["VINDICATOR 2", "BLAZE 2", "WITHER_SKELETON 2"]
+      - ["RAVAGER 1", "EVOKER 1", "WITHER_SKELETON 3"]
+    rewards:                    # contribution payout when the core is freed (into /rewards)
+      participant:
+        rolls: "2-3"
+        guaranteed:
+          - "LUMINARA_TOKEN 1-2"
+        items:
+          - "GOLDEN_APPLE 2-4 w6"
+          - "EXPERIENCE_BOTTLE 8-16 w6"
+          - "DIAMOND 2-4 w4"
+          - "FRAGMENT_T1 1 w3"
+      top3:
+        rolls: "1-2"
+        items:
+          - "LUMINARA_TOKEN 2 w4"
+          - "FRAGMENT_T2 1 w3"
+          - "NETHERITE_SCRAP 1 w2"
+      top1:
+        rolls: "1"
+        items:
+          - "LUMINARA_TOKEN 3 w3"
+          - "FRAGMENT_T2 2 w2"
+
+  # --------------------------------------------------------------------------
+  #  Blood Moon: /lwevent bloodmoon start, or the Director. Rises at the next
+  #  nightfall, sets at dawn. Killing a player puts a Renown bounty on you.
+  # --------------------------------------------------------------------------
+  blood-moon:
+    spawn-multiplier: 1.8       # monster cap x this, spawn attempts every tick
+    health-multiplier: 1.5
+    damage-multiplier: 1.3
+    elite-chance: 0.03
+    elite-health-multiplier: 3.0
+    elite-damage-multiplier: 1.8
+    red-tint: 0.35              # red screen-edge tint, 0 = off, 0.9 max
+    elite-drops:
+      - "LUMINARA_TOKEN 1"
+      - "GOLDEN_APPLE 1-2"
+    bounty-reward:              # extra prize for collecting a blood bounty
+      - "LUMINARA_TOKEN 1"
+
+
+# ============================================================================
+#  Event Director -- the server starts events, players react.
+#  Once a day per window it picks ONE event from the window's weighted list and
+#  a random time inside the window, then counts down in chat. Players know
+#  something happens 9-11 PM, not what or exactly when.
+#  Events: supplydrop[:early|mid|late], bounty, koth (needs a hill), fallenstar,
+#  bloodmoon. days: ALL, WEEKDAYS, WEEKEND or MON, TUE, ...
+# ============================================================================
+director:
+  enabled: true
+  timezone: ""                  # e.g. "America/New_York"; empty = the server's clock
+  world: ""                     # empty = the main world
+  min-players: 3                # waits (5 min at a time) until this many are on
+  announce-minutes: [10, 5, 1]
+  supply-tier: mid
+  supply-count: 2
+  windows:
+    afternoon:
+      days: [ALL]
+      from: "16:00"
+      to: "18:00"
+      events:
+        "supplydrop:early": 3
+        "supplydrop:mid": 2
+        bounty: 2
+    evening:
+      days: [ALL]
+      from: "19:00"
+      to: "20:30"
+      events:
+        koth: 3
+        fallenstar: 3
+        bounty: 2
+        "supplydrop:mid": 1
+    prime:
+      days: [ALL]
+      from: "21:00"
+      to: "23:00"
+      events:
+        fallenstar: 3
+        koth: 2
+        bloodmoon: 2
+        "supplydrop:late": 1
+
+
+# ============================================================================
+#  Season Renown -- one score every event feeds (/renown, /renown top <board>).
+#  /lwevent season reset confirm ends the season and pays the top three.
+# ============================================================================
+season:
+  notify: true                  # "+10 Renown for ..." chat lines
+  kill-repeat-minutes: 10       # the same killer/victim pair only counts once per this long
+  renown:
+    pvp-kill: 10
+    bounty-claimed: 25
+    bounty-win: 100
+    koth-point: 0.2             # per King of the Hill point (300 points = 60)
+    koth-win: 100
+    supply-drop-claimed: 15
+    relic-steal: 25             # killing a relic carrier and taking it
+    boss-heart-claimed: 200
+    star-core-claimed: 150
+    fallen-star-guardian: 2
+    fallen-star-participation: 20
+    fallen-star-pool: 120       # split by contribution score
+    blood-moon-elite: 10
+    blood-bounty: 40            # added to a blood-moon killer's bounty per kill
+    blood-bounty-survived: 30   # surviving the night with a bounty on you
+    outpost-capture: 30
+    outpost-hour: 15
+  rewards:                      # season end, top three by Renown (into /rewards)
+    first:
+      - "LUMINOSITY_FRAGMENT 2"
+      - "FRAGMENT_T4 1"
+      - "LUMINARA_TOKEN 40"
+    second:
+      - "LUMINOSITY_FRAGMENT 1"
+      - "FRAGMENT_T3 2"
+      - "LUMINARA_TOKEN 25"
+    third:
+      - "FRAGMENT_T3 1"
+      - "LUMINARA_TOKEN 15"
+
+
+# ============================================================================
+#  Outposts -- permanent capture points (/outposts). Admins place them with
+#  /lwevent outpost create <name> <type> [radius] standing at the centre.
+#  Income is small on purpose so whoever takes one first cannot snowball.
+# ============================================================================
+outposts:
+  radius: 6.0
+  vertical-range: 5.0
+  capture-seconds: 60           # an empty outpost; taking someone else's costs this again to neutralise
+  max-per-player: 2
+  income-minutes: 60            # minutes the owner is online per payout
+  income-requires-online: true
+  label-height: 3.0
+  types:
+    plains:
+      display: "Plains Outpost"
+      income:
+        - "LUMINARA_TOKEN 1"
+        - "IRON_INGOT 4-8"
+        - "BREAD 6-12"
+    nether:
+      display: "Nether Outpost"
+      income:
+        - "LUMINARA_TOKEN 1"
+        - "QUARTZ 8-16"
+        - "GOLD_INGOT 2-6"
+        - "BLAZE_ROD 1-2"
+    end:
+      display: "End Outpost"
+      income:
+        - "LUMINARA_TOKEN 2"
+        - "SHULKER_SHELL 1"
+        - "CHORUS_FRUIT 4-8"
+    ancient:
+      display: "Ancient City Outpost"
+      income:
+        - "LUMINARA_TOKEN 2"
+        - "ECHO_SHARD 1-2"
+        - "EXPERIENCE_BOTTLE 4-8"
+
+
+# ============================================================================
+#  Token shop (/tokenshop). "ITEM [amount] @ cost" in the loot format.
+#  Kept to consumables, materials and fragments: events should not mint power
+#  faster than the rituals do.
+# ============================================================================
+token-shop:
+  offers:
+    - "GOLDEN_APPLE 4 @ 1"
+    - "EXPERIENCE_BOTTLE 16 @ 1"
+    - "SPLASH_POTION:STRONG_HEALING 2 @ 2"
+    - "WIND_CHARGE 8 @ 2"
+    - "FRAGMENT_T1 1 @ 3"
+    - "NAME_TAG 1 @ 2"
+    - "DIAMOND 4 @ 4"
+    - "NETHERITE_SCRAP 1 @ 6"
+    - "FRAGMENT_T2 1 @ 8"
+    - "ALL_IN_ONE_POTION 1 @ 10"
+    - "ENCHANTED_GOLDEN_APPLE 1 @ 16"
+    - "FRAGMENT_T3 1 @ 24"
+    - "LUMINOSITY_FRAGMENT 1 @ 45"
+
 
 # ============================================================================
 #  Trust system -- stops your own team eating your abilities

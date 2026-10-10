@@ -2,7 +2,7 @@ name: LegendaryWeapons
 version: ${project.version}
 main: com.legendaryweapons.LegendaryWeapons
 api-version: 1.21
-description: Luminara legendary weapons, rituals, fragments and admin-run events.
+description: Luminara legendary weapons, rituals, fragments, events, outposts and seasons.
 softdepend: [WorldGuard, Towny]
 commands:
   recipes:
@@ -50,9 +50,24 @@ commands:
     usage: /lwtest <reset|finishrituals|fragments|give>
     permission: legendaryweapons.admin
   lwevent:
-    description: Starts and stops the admin-run events.
-    usage: /lwevent <bounty|koth|supplydrop|mostwanted|status|stopall>
+    description: Starts and stops events, and runs the Event Director, outposts and seasons.
+    usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|season|status|stopall>
     permission: legendaryweapons.admin
+  renown:
+    description: Season Renown, your stats and the leaderboards.
+    usage: /renown [player] | /renown top [category]
+    aliases: [season, leaderboard, lb]
+  rewards:
+    description: Opens your reward chest (event prizes, outpost income).
+    usage: /rewards
+    aliases: [rewardchest]
+  tokenshop:
+    description: Spend Luminara Tokens.
+    usage: /tokenshop
+    aliases: [tokens]
+  outposts:
+    description: Lists every outpost and who holds it.
+    usage: /outposts
   trust:
     description: Trusts a player.
     usage: /trust <player>

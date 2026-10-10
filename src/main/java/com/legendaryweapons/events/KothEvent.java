@@ -194,6 +194,7 @@ public class KothEvent {
 
    private void award(Player player, int amount, String why) {
       if (amount > 0) {
+         this.manager.season().add(player, SeasonManager.Stat.RENOWN, amount * this.manager.season().renownFor("koth-point"));
          int total = this.points.merge(player.getUniqueId(), amount, Integer::sum);
          this.names.put(player.getUniqueId(), this.manager.publicName(player));
          if (why != null) {
@@ -443,6 +444,7 @@ public class KothEvent {
             for (Map.Entry<UUID, Integer> entry : ranked) {
                if (entry.getValue() == best) {
                   winners.add(this.names.getOrDefault(entry.getKey(), "?"));
+                  this.manager.season().give(entry.getKey(), this.names.getOrDefault(entry.getKey(), "?"), this.manager.season().renownFor("koth-win"));
                   Player winner = Bukkit.getPlayer(entry.getKey());
                   if (winner != null) {
                      this.manager.loot().give(winner, rewards);

@@ -46,5 +46,10 @@ public class CommandManager {
       EventCommand eventCommand = new EventCommand(this.plugin);
       this.plugin.getCommand("lwevent").setExecutor(eventCommand);
       this.plugin.getCommand("lwevent").setTabCompleter(eventCommand);
+      com.legendaryweapons.commands.PlayerEventCommand playerEvents = new com.legendaryweapons.commands.PlayerEventCommand(this.plugin);
+      for (String name : new String[]{"renown", "rewards", "tokenshop", "outposts"}) {
+         this.plugin.getCommand(name).setExecutor(playerEvents);
+         this.plugin.getCommand(name).setTabCompleter(playerEvents);
+      }
    }
 }

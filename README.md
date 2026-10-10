@@ -68,7 +68,18 @@ anything harder than `tools.max-hardness`, and wear the tool (Unbreaking applies
 * `acquisition:` in the config switches ritual crafting, fragment requirements, one-per-server
   legendaries and fusion on or off.
 
-## Events (all started by an admin)
+## Events
+
+The **Event Director** (`director` in the config, on by default) runs events by itself: each
+time window picks one event at random from its weighted list and a random time inside the window,
+then counts down in chat (10, 5, 1 minutes). Players know *something* happens in the evening, not
+what or exactly when. It waits for `director.min-players`. Admins can still start anything by hand.
+
+| Command | What it does |
+|---|---|
+| `/lwevent director on\|off\|status\|skip\|run <event>` | Control the Director; `run` starts e.g. `fallenstar`, `bloodmoon`, `supplydrop:late` now. |
+| `/lwevent fallenstar start [world]` | A meteor crashes at a random spot on natural ground. Its location is revealed in stages (biome, then distance from spawn, then coordinates). The crater holds the sealed **Star Core**; the first players to arrive wake waves of guardians. Clearing the last wave frees the core as a carry objective. Guardian fighters are paid by contribution. The crater heals a few minutes later (only blocks nobody changed). |
+| `/lwevent bloodmoon start [world]` | Rises at the next nightfall, sets at dawn: more and stronger monsters, rare glowing Blood-Touched elites, double drops and XP, a red screen-edge tint, no sleeping, and killing a player puts a Renown bounty on your head until dawn. |
 
 | Command | What it does |
 |---|---|
@@ -76,15 +87,40 @@ anything harder than `tools.max-hardness`, and wear the tool (Unbreaking applies
 | `/lwevent koth marker` → place it → `/lwevent koth start [min]` | King of the Hill with points: holding the hill alone, hold streaks, captures and hill kills all score (`events.koth.points`). First to `win-points` wins, else the top score when time runs out. A glowing ring on the ground marks the hill (red while contested) with a light column over the centre, and a floating leaderboard sits above it. Winner gets a Luminosity Fragment. |
 | `/lwevent supplydrop <early\|mid\|late> [count] [world]` | Crates fall at random safe spots inside the world border, with a beam until claimed. Loot tables per tier are in the config. |
 | `/lwevent mostwanted set <name>` → `confirm` | The named player is anonymous from the moment they join (no join message, neutral name, default skin). After an admin confirms, they get 20 hearts and Speed II and their rough position is broadcast regularly. On death: a blast throws players back, a loot chest appears with a Luminosity Fragment in the centre, and they are banned (`events.most-wanted.ban-on-death`). |
-| `/lwevent status`, `/lwevent stopall` | Overview; stop bounty + KotH without prizes. |
+| `/lwevent outpost ...`, `/lwevent season status\|reset confirm\|give <player> <n>` | Outposts and the season. |
+| `/lwevent status`, `/lwevent stopall` | Overview of everything; stop bounty, KotH, Fallen Star and Blood Moon without prizes. |
 
 Winners who are offline when an event ends get their prize the next time they join.
+
+### Shared fights, carry objectives, outposts and seasons
+
+* **Contribution** — shared fights (Fallen Star guardians now, bosses next) score everyone on
+  damage (60%), mechanics (20%) and support/objectives (20%). Everyone above 3% gets a reward;
+  the top three and the top contributor get more. Prizes go to the **reward chest** (`/rewards`),
+  so nothing is lost to a full inventory or being offline. Players can only take items out.
+* **Carry objectives** — the **Boss Heart** and the **Star Core** drop on the ground. Whoever
+  holds one for 45-60 seconds claims the big reward. The carrier glows through walls, has it
+  floating over their head, is on everyone's boss bar and has their position announced; anyone
+  can kill them and take it. No pearls, chorus fruit, elytra, portals or teleport commands while
+  carrying. Logging out drops it.
+* **Outposts** — `/lwevent outpost create <name> <plains|nether|end|ancient> [radius]`. Stand in
+  one alone (you + players you mutually trust count as one side) to capture it; someone else's is
+  neutralised first. Owners earn a small hourly income (tokens + resources, into `/rewards`) while
+  online, at most 2 outposts each. `/outposts` lists them.
+* **Luminara Tokens** — event currency from outposts, relics, Fallen Stars and Blood Moon elites.
+  Spend them in `/tokenshop` (consumables, materials, fragments only).
+* **Season Renown** — every event, objective and PvP kill earns Renown (`season.renown`).
+  `/renown` shows your stats and ranks; `/renown top <renown|kills|deaths|boss|bounties|outposts|hearts|stars>`
+  shows a board. `/lwevent season reset confirm` ends the season, archives it, and pays the top
+  three. The same killer/victim pair only counts once per 10 minutes.
 
 ## Commands
 
 | Command | Who | |
 |---|---|---|
 | `/recipes`, `/binds`, `/wpspark` | everyone | recipe book, ability keybind, fire ability from a client keybind |
+| `/renown [player]`, `/renown top [board]` | everyone | season stats and leaderboards |
+| `/rewards`, `/tokenshop`, `/outposts` | everyone | reward chest, token shop, outpost list |
 | `/lwfx <full\|reduced\|minimal\|off>` | everyone | your own particle level |
 | `/gui` | admin | take any weapon, fragment or tool |
 | `/resetcd [player]` | admin | clear cooldowns, dash charges/locks, freeze immunity |

@@ -32,7 +32,7 @@ import org.bukkit.potion.PotionEffectType;
  * never stand in for it.
  *
  * Recipe and loot tables refer to them by token: FRAGMENT_T1..FRAGMENT_T4, LUMINOSITY_FRAGMENT,
- * HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE.
+ * HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE, LUMINARA_TOKEN.
  */
 public class CustomItems implements Listener {
    public static final String LUMINOSITY_FRAGMENT = "luminosity-fragment";
@@ -41,6 +41,10 @@ public class CustomItems implements Listener {
    public static final String AMETHYST_PICKAXE = "amethyst-pickaxe";
    public static final String AMETHYST_SHOVEL = "amethyst-shovel";
    public static final String AMETHYST_AXE = "amethyst-axe";
+   public static final String LUMINARA_TOKEN = "luminara-token";
+   /** Event objects: only ever shown (ground item, halo), never given to a player. */
+   public static final String BOSS_HEART = "boss-heart";
+   public static final String STAR_CORE = "star-core";
    private static final TextColor[] TIER_COLOURS = new TextColor[]{
       NamedTextColor.GRAY, NamedTextColor.GREEN, NamedTextColor.AQUA, TextColor.color(255, 190, 60)
    };
@@ -76,13 +80,14 @@ public class CustomItems implements Listener {
             case "AMETHYST_PICKAXE" -> AMETHYST_PICKAXE;
             case "AMETHYST_SHOVEL" -> AMETHYST_SHOVEL;
             case "AMETHYST_AXE" -> AMETHYST_AXE;
+            case "LUMINARA_TOKEN", "TOKEN" -> LUMINARA_TOKEN;
             default -> null;
          };
       }
    }
 
    public static List<String> allIds() {
-      return List.of("fragment-t1", "fragment-t2", "fragment-t3", "fragment-t4", LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE);
+      return List.of("fragment-t1", "fragment-t2", "fragment-t3", "fragment-t4", LUMINOSITY_FRAGMENT, HILL_MARKER, ALL_IN_ONE_POTION, AMETHYST_PICKAXE, AMETHYST_SHOVEL, AMETHYST_AXE, LUMINARA_TOKEN);
    }
 
    public String idOf(ItemStack item) {
@@ -110,6 +115,9 @@ public class CustomItems implements Listener {
             case AMETHYST_PICKAXE -> "Amethyst Pickaxe";
             case AMETHYST_SHOVEL -> "Amethyst Shovel";
             case AMETHYST_AXE -> "Amethyst Axe";
+            case LUMINARA_TOKEN -> "Luminara Token";
+            case BOSS_HEART -> "Boss Heart";
+            case STAR_CORE -> "Star Core";
             default -> id;
          };
       }
@@ -141,6 +149,14 @@ public class CustomItems implements Listener {
             case AMETHYST_PICKAXE -> this.tool(Material.NETHERITE_PICKAXE, 301, id, false);
             case AMETHYST_SHOVEL -> this.tool(Material.NETHERITE_SHOVEL, 302, id, false);
             case AMETHYST_AXE -> this.tool(Material.NETHERITE_AXE, 303, id, true);
+            case LUMINARA_TOKEN -> this.build(Material.GOLD_NUGGET, 212, id, amount, Component.text(this.displayName(id), TextColor.color(255, 200, 60)), List.of(
+               line("Event currency.", NamedTextColor.DARK_GRAY),
+               Component.empty(),
+               line("Earned from outposts, bosses and events.", NamedTextColor.GRAY),
+               line("Spend it at /tokenshop", NamedTextColor.GOLD)
+            ));
+            case BOSS_HEART -> this.build(Material.HEART_OF_THE_SEA, 210, id, 1, Component.text(this.displayName(id), TextColor.color(190, 90, 255)), List.of());
+            case STAR_CORE -> this.build(Material.NETHER_STAR, 211, id, 1, Component.text(this.displayName(id), TextColor.color(255, 215, 80)), List.of());
             default -> null;
          };
       }

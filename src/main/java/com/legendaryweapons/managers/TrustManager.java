@@ -70,4 +70,10 @@ public class TrustManager {
    public boolean isMutuallyTrusted(Player player1, Player player2) {
       return this.isTrusted(player1, player2) && this.isTrusted(player2, player1);
    }
+
+   /** Same as above for players who may be offline (outpost owners). */
+   public boolean isMutuallyTrusted(java.util.UUID a, java.util.UUID b) {
+      return this.trustDataConfig.getStringList("trusted." + a).contains(b.toString())
+         && this.trustDataConfig.getStringList("trusted." + b).contains(a.toString());
+   }
 }
