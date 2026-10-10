@@ -27,8 +27,14 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Swaps a player's name and skin using Paper's profile API. The player keeps their own UUID, so
- * bans, permissions, inventories and every UUID-keyed log stay attached to the real account.
+ * Disguises using Paper's profile API. The player keeps their own UUID, so bans, permissions,
+ * inventories and every UUID-keyed log stay attached to the real account.
+ *
+ * Veil disguises change only what other players see -- skin, the name over their head, the tab
+ * list, chat and death messages -- and keep the real name on the server profile. Two players can
+ * therefore look identical while the real owner of the name is online, logs in or logs out; nothing
+ * on the server ever sees two players with one name. The Most Wanted is "renamed": its profile name
+ * is the alias as well, because that event must not leak the real name anywhere.
  *
  * Fixes over 1.1:
  *   - The disguised profile was built with Bukkit.createProfile(ownUuid, fakeName). For a UUID
@@ -56,7 +62,17 @@ public class DisguiseManager {
       }).runTaskTimer(plugin, 1L, 1L);
    }
 
-   public record Disguise(String realName, String fakeName, Set<ProfileProperty> realProperties, Component realDisplayName, Component realListName) {
+   /**
+    * renamed = the server profile itself carries the fake name (Most Wanted: nothing may leak the
+    * real name). Veil disguises are not renamed: the profile keeps the real name and only what
+    * others see changes (skin, tag, tab list, chat, death messages), so the real owner of the name
+    * can be online, log in or log out without the server ever seeing two players with one name.
+    */
+   public record Disguise(String realName, String fakeName, Set<ProfileProperty> realProperties, Component realDisplayName, Component realListName, boolean renamed) {
+      /** The scoreboard entry that carries the vanilla name tag for this player. */
+      public String tagEntry() {
+         return this.renamed ? this.fakeName : this.realName;
+      }
    }
 
    public boolean isDisguised(Player player) {
@@ -146,28 +162,35 @@ public class DisguiseManager {
    }
 
    /**
-    * Apply a disguise. With empty textures the player shows the default skin for their UUID,
-    * which the Most Wanted event uses on purpose to stay anonymous.
+    * Apply a Veil disguise: the target's skin and name as everyone sees them, while the server profile
+    * keeps the real name. Works whether or not the target is online.
     */
    public boolean apply(Player player, String fakeName, Collection<ProfileProperty> textures) {
+      return this.apply(player, fakeName, textures, false);
+   }
+
+   /**
+    * Apply a disguise. renamed = also rename the server profile (the Most Wanted, whose real name must
+    * not show anywhere). With empty textures the player shows the default skin for their UUID.
+    */
+   public boolean apply(Player player, String fakeName, Collection<ProfileProperty> textures, boolean renamed) {
       if (this.isDisguised(player) || !isValidName(fakeName)) {
          return false;
       } else {
-         // If the real owner of that name is online, hiding "their" vanilla tag would hide both of
-         // them; fall back to vanilla tags for this disguise so the two look identical.
-         Player namesake = Bukkit.getPlayerExact(fakeName);
-         boolean customTag = this.customNametags() && (namesake == null || namesake.equals(player));
          PlayerProfile current = player.getPlayerProfile();
-         Disguise record = new Disguise(player.getName(), fakeName, new HashSet<>(current.getProperties()), player.displayName(), player.playerListName());
+         Disguise record = new Disguise(player.getName(), fakeName, new HashSet<>(current.getProperties()), player.displayName(), player.playerListName(), renamed);
          this.active.put(player.getUniqueId(), record);
-         PlayerProfile disguised = Bukkit.createProfileExact(player.getUniqueId(), fakeName);
+         PlayerProfile disguised = Bukkit.createProfileExact(player.getUniqueId(), renamed ? fakeName : player.getName());
          disguised.setProperties(textures(textures));
          player.setPlayerProfile(disguised);
          player.displayName(Component.text(fakeName));
          player.playerListName(Component.text(fakeName));
-         if (customTag) {
+         // The vanilla tag would show the real (or, renamed, the shared) name: hide this player's
+         // entry and float the disguise name instead. Only this player's entry is hidden, so a real
+         // namesake standing next to them keeps their own vanilla tag.
+         if (this.customNametags() || !renamed) {
             this.tagged.add(player.getUniqueId());
-            this.hideVanillaTag(fakeName, true);
+            this.hideVanillaTag(record.tagEntry(), true);
             this.spawnNametag(player, fakeName);
          }
 
@@ -182,7 +205,7 @@ public class DisguiseManager {
          return null;
       } else {
          if (this.tagged.remove(player.getUniqueId())) {
-            this.hideVanillaTag(record.fakeName(), false);
+            this.hideVanillaTag(record.tagEntry(), false);
          }
 
          PlayerProfile restored = Bukkit.createProfileExact(player.getUniqueId(), record.realName());
@@ -248,7 +271,7 @@ public class DisguiseManager {
    public void syncTeamTo(Scoreboard board) {
       for (Map.Entry<UUID, Disguise> entry : this.active.entrySet()) {
          if (this.tagged.contains(entry.getKey())) {
-            this.hideOn(board, entry.getValue().fakeName(), true);
+            this.hideOn(board, entry.getValue().tagEntry(), true);
          }
       }
    }

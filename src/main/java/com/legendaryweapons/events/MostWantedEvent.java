@@ -146,7 +146,7 @@ public class MostWantedEvent {
 
    private void anonymise(Player player) {
       if (!this.plugin.getDisguiseManager().isDisguised(player)) {
-         this.plugin.getDisguiseManager().apply(player, this.alias(), Set.of());
+         this.plugin.getDisguiseManager().apply(player, this.alias(), Set.of(), true);
       }
    }
 

@@ -288,10 +288,9 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    }
 
    /**
-    * The real owner of a disguise's name is logging in. A disguise renames the wearer's server profile,
-    * so the server would treat the arrival as a duplicate login and kick the disguised player. Break
-    * the disguise first (on the main thread, before the login goes through), and they both stay on.
-    * The Most Wanted's alias is held for the event instead: that login is refused with a reason.
+    * Veil disguises keep the wearer's real profile name, so the real owner of a borrowed name can log
+    * in and out freely and both stay on. Only a renamed disguise (the Most Wanted's alias) occupies a
+    * real name on the server; a player logging in with that exact name is refused until the event ends.
     */
    @EventHandler(priority = EventPriority.MONITOR)
    public void onPreLogin(org.bukkit.event.player.AsyncPlayerPreLoginEvent event) {
@@ -316,14 +315,12 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    private boolean namesakeArriving(String name, UUID joining) {
       for (Player player : Bukkit.getOnlinePlayers()) {
          DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().disguiseOf(player);
-         if (disguise != null && disguise.fakeName().equalsIgnoreCase(name) && !player.getUniqueId().equals(joining)) {
+         if (disguise != null && disguise.renamed() && disguise.fakeName().equalsIgnoreCase(name) && !player.getUniqueId().equals(joining)) {
             if (this.plugin.getEventManager().isMostWanted(player)) {
                return true;
             }
 
-            this.reveal(player, null);
-            player.sendMessage(Component.text("The real " + disguise.fakeName() + " has arrived - your disguise shatters.", NamedTextColor.LIGHT_PURPLE));
-            HudManager.message(player, Component.text("The real " + disguise.fakeName() + " has arrived!", NamedTextColor.LIGHT_PURPLE));
+            this.reveal(player, null);                  // a renamed disguise outside the event: give the name back
          }
       }
 
@@ -331,9 +328,9 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    }
 
    /**
-    * While disguised, a player answers to the borrowed name, so a staff "/ban Name" meant for the real
-    * (offline) player would hit the impostor. Moderation commands that name a disguise reveal it first,
-    * so the command lands on whoever really owns the name.
+    * Only a renamed disguise answers to the borrowed name on the server, so only then could a staff
+    * "/ban Name" hit the wrong player. Veil disguises keep their real name, so commands always reach
+    * the real owner; this guard stays for renamed disguises outside the Most Wanted event.
     */
    @EventHandler(priority = EventPriority.LOWEST)
    public void onStaffCommand(org.bukkit.event.player.PlayerCommandPreprocessEvent event) {
@@ -360,7 +357,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().disguiseOf(player);
-         if (disguise != null && !this.plugin.getEventManager().isMostWanted(player)) {
+         if (disguise != null && disguise.renamed() && !this.plugin.getEventManager().isMostWanted(player)) {
             for (int i = 1; i < words.length; i++) {
                if (words[i].equalsIgnoreCase(disguise.fakeName())) {
                   this.reveal(player, "Your disguise was stripped.");

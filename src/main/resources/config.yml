@@ -605,7 +605,7 @@ weapons:
       tell-duration: 20
       allow-online-targets: true
       require-skin: true                # refuse a morph when no skin can be found
-      custom-nametag: true              # guaranteed floating name tag; vanilla tag hidden by team
+      custom-nametag: true              # Most Wanted: float the alias as a tag (Veil disguises always do, their real name stays on the server)
       reveal-on-commands: [ban, tempban, ban-ip, ipban, kick, mute, tempmute, warn, jail, op, deop, pardon, unban, whitelist]   # staff commands naming a disguise strip it first, so they hit the real owner
     enchantments: []
     recipe:
