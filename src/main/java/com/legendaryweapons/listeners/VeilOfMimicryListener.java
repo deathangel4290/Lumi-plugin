@@ -287,6 +287,90 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
       }
    }
 
+   /**
+    * The real owner of a disguise's name is logging in. A disguise renames the wearer's server profile,
+    * so the server would treat the arrival as a duplicate login and kick the disguised player. Break
+    * the disguise first (on the main thread, before the login goes through), and they both stay on.
+    * The Most Wanted's alias is held for the event instead: that login is refused with a reason.
+    */
+   @EventHandler(priority = EventPriority.MONITOR)
+   public void onPreLogin(org.bukkit.event.player.AsyncPlayerPreLoginEvent event) {
+      if (event.getLoginResult() != org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.ALLOWED) {
+         return;
+      }
+
+      final String name = event.getName();
+      final UUID joining = event.getUniqueId();
+      try {
+         Boolean refuse = Bukkit.getScheduler().callSyncMethod(this.plugin, () -> this.namesakeArriving(name, joining)).get(5L, java.util.concurrent.TimeUnit.SECONDS);
+         if (Boolean.TRUE.equals(refuse)) {
+            event.disallow(org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+               Component.text("Your name is in use by a running event. Try again in a few minutes.", NamedTextColor.RED));
+         }
+      } catch (Exception var6) {
+         this.plugin.getLogger().warning("[Veil] Could not check " + name + "'s login against disguises: " + var6);
+      }
+   }
+
+   /** Main thread. True = refuse the login (the name belongs to the Most Wanted right now). */
+   private boolean namesakeArriving(String name, UUID joining) {
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().disguiseOf(player);
+         if (disguise != null && disguise.fakeName().equalsIgnoreCase(name) && !player.getUniqueId().equals(joining)) {
+            if (this.plugin.getEventManager().isMostWanted(player)) {
+               return true;
+            }
+
+            this.reveal(player, null);
+            player.sendMessage(Component.text("The real " + disguise.fakeName() + " has arrived - your disguise shatters.", NamedTextColor.LIGHT_PURPLE));
+            HudManager.message(player, Component.text("The real " + disguise.fakeName() + " has arrived!", NamedTextColor.LIGHT_PURPLE));
+         }
+      }
+
+      return false;
+   }
+
+   /**
+    * While disguised, a player answers to the borrowed name, so a staff "/ban Name" meant for the real
+    * (offline) player would hit the impostor. Moderation commands that name a disguise reveal it first,
+    * so the command lands on whoever really owns the name.
+    */
+   @EventHandler(priority = EventPriority.LOWEST)
+   public void onStaffCommand(org.bukkit.event.player.PlayerCommandPreprocessEvent event) {
+      this.revealNamed(event.getMessage());
+   }
+
+   @EventHandler(priority = EventPriority.LOWEST)
+   public void onConsoleCommand(org.bukkit.event.server.ServerCommandEvent event) {
+      this.revealNamed("/" + event.getCommand());
+   }
+
+   private void revealNamed(String commandLine) {
+      String[] words = commandLine.trim().split("\\s+");
+      if (words.length < 2) {
+         return;
+      }
+
+      String label = words[0].substring(words[0].startsWith("/") ? 1 : 0).toLowerCase(java.util.Locale.ROOT);
+      label = label.contains(":") ? label.substring(label.indexOf(':') + 1) : label;
+      java.util.List<String> watched = this.abilities() == null ? java.util.List.of() : this.abilities().getStringList("reveal-on-commands");
+      if (!watched.contains(label)) {
+         return;
+      }
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().disguiseOf(player);
+         if (disguise != null && !this.plugin.getEventManager().isMostWanted(player)) {
+            for (int i = 1; i < words.length; i++) {
+               if (words[i].equalsIgnoreCase(disguise.fakeName())) {
+                  this.reveal(player, "Your disguise was stripped.");
+                  break;
+               }
+            }
+         }
+      }
+   }
+
    /** Leaving while disguised: the quit line shows the disguise (it is the name everyone saw). */
    @EventHandler(priority = EventPriority.LOWEST)
    public void onQuit(PlayerQuitEvent event) {

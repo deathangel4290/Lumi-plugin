@@ -272,6 +272,56 @@ def eclipse():
     return m
 GRIP['sword_of_eclipse'] = 5
 
+# The Sword of Eclipse splits into these two while its ability is active: each keeps one half of the
+# eclipse. Same silhouette as the parent so the split reads instantly, one colour family each.
+def eclipse_half(light):
+    m = Model()
+    if light:
+        m.mat('grip', ['#5a4a2a', '#9a8458', '#d8c89a', '#f4ead0', '#ffffff'], 'wrap')
+        m.mat('pommel', GOLD)
+        m.mat('blade', ['#8a7e5a', '#d8d0b8', '#f4f0e4', '#ffffff', '#ffffff'])
+        m.mat('seam', ['#b86a00', '#f0a800', '#ffd84a', '#fff0a0', '#ffffff'], 'glow', 13)
+        m.mat('face', ['#b86a00', '#f0a800', '#ffd84a', '#fff0a0', '#ffffff'], 'glow', 12)
+        m.mat('guard', GOLD)
+    else:
+        m.mat('grip', ['#000000', '#0c0816', '#1c1430', '#30264e', '#4a3c70'], 'wrap')
+        m.mat('pommel', SILVER)
+        m.mat('blade', ['#000000', '#0a0614', '#181028', '#2a2044', '#463a6a'])
+        m.mat('seam', ['#3a0a6a', '#7a2ad0', '#b070ff', '#dcb8ff', '#f6ecff'], 'glow', 12)
+        m.mat('face', ['#3a3a5a', '#8a8ab0', '#c8c8e6', '#ececff', '#ffffff'], 'glow', 8)
+        m.mat('guard', SILVER)
+    sword_base(m, 'grip', 'pommel')
+    def blade(x, y):
+        if y < 10.5: return None
+        hw = 2.5 if y < 26.5 else 2.5 * max(0.0, (31.5 - y) / 5)
+        if abs(x - 8) > hw: return None
+        return 'seam' if abs(x - 8) < 0.5 else 'blade'
+    m.extrude(blade, 5, 11, 10.5, 31.5, 8.0, 1.5)
+    def guard(x, y):
+        if 5 <= x <= 11 and 9 <= y <= 10.5: return 'guard'
+        for side in (-1, 1):
+            cx, cy = 8 + side * 4.8, 11.0
+            d = math.hypot(x - cx, y - cy)
+            if light:
+                if d <= 1.7: return 'face'
+                ang = math.atan2(y - cy, x - cx)
+                if d <= 2.8 and abs(((ang * 8 / math.pi) + 0.5) % 2 - 1) < 0.35: return 'face'      # sun rays
+            else:
+                # crescents opening outward, away from the blade
+                if d <= 2.2 and math.hypot(x - (cx + side * 1.0), y - (cy + 0.6)) > 1.7: return 'face'
+        return None
+    m.extrude(guard, 0, 16, 7.5, 14.5, 8.0, 1.75)
+    return m
+
+def eclipse_light():
+    return eclipse_half(True)
+
+def eclipse_dark():
+    return eclipse_half(False)
+
+GRIP['eclipse_light'] = 5
+GRIP['eclipse_dark'] = 5
+
 # ---------------------------------------------------------------- axes
 def zeus():
     m = Model()
@@ -410,7 +460,8 @@ def veil():
 
 MODELS = {'scythe_of_diablo': scythe, 'luminosity': luminosity, 'ender_glaive': glaive, 'hermes_blade': hermes,
           'chiones_blade': chione, 'blade_of_diminution': diminution, 'sword_of_eclipse': eclipse, 'axe_of_zeus': zeus,
-          'titans_axe': titan, 'lost_trident': trident, 'tether_chain': tether, 'veil_of_mimicry': veil}
+          'titans_axe': titan, 'lost_trident': trident, 'tether_chain': tether, 'veil_of_mimicry': veil,
+          'eclipse_light': eclipse_light, 'eclipse_dark': eclipse_dark}
 
 # ---------------------------------------------------------------- Hellstorm (crossbow, one model per draw state)
 # Built in the same diagonal layout as the vanilla crossbow sprite so the vanilla crossbow hand poses fit:

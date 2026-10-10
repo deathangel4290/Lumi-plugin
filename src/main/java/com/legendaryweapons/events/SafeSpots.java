@@ -34,24 +34,37 @@ public final class SafeSpots {
       return null;
    }
 
-   /** Top solid, non-liquid block with two free blocks above. The Nether is scanned below its roof. */
+   /**
+    * The real surface: the first solid block from the top, if it is plain ground with two free blocks
+    * above. Trees, water and anything else make the column unusable (another spot is tried) instead
+    * of searching further down, which used to find cave floors and treetops. The Nether is scanned
+    * downward from below its roof for the first open floor.
+    */
    public static Block groundAt(World world, int x, int z) {
-      int top = world.getEnvironment() == Environment.NETHER ? Math.min(120, world.getMaxHeight() - 1) : world.getHighestBlockYAt(x, z);
+      boolean nether = world.getEnvironment() == Environment.NETHER;
+      int top = nether ? Math.min(120, world.getMaxHeight() - 1) : world.getHighestBlockYAt(x, z);
 
       for (int y = top; y > world.getMinHeight() + 1; y--) {
          Block block = world.getBlockAt(x, y, z);
          Material type = block.getType();
-         if (!type.isAir()) {
-            if (block.isLiquid() || type == Material.LAVA || type == Material.WATER) {
-               if (world.getEnvironment() != Environment.NETHER) {
-                  return null;
-               }
-            } else if (!type.isSolid() || type.name().endsWith("_LEAVES")) {
-               continue;
-            } else if (block.getRelative(0, 1, 0).isPassable() && block.getRelative(0, 2, 0).isPassable() && !block.getRelative(0, 1, 0).isLiquid()) {
+         if (type.isAir() || (!block.isLiquid() && block.isPassable())) {
+            continue;                                   // air, grass, flowers, snow layers
+         }
+
+         boolean open = block.getRelative(0, 1, 0).isPassable() && block.getRelative(0, 2, 0).isPassable() && !block.getRelative(0, 1, 0).isLiquid();
+         if (nether) {
+            if (!block.isLiquid() && type.isSolid() && open) {
                return block;
             }
+
+            continue;
          }
+
+         if (block.isLiquid() || !type.isSolid() || type.name().endsWith("_LEAVES") || type.name().endsWith("_LOG") || type.name().endsWith("_WOOD")) {
+            return null;                                // water, a tree: pick another column
+         }
+
+         return open ? block : null;
       }
 
       return null;

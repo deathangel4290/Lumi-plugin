@@ -52,6 +52,10 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
    private final Map<UUID, Long> lastChargeFromVictim = new HashMap<>();
    private final Map<UUID, BukkitRunnable> slamming = new HashMap<>();
    private final Set<UUID> fallImmune = new HashSet<>();
+   /** Wielders mid-blast: their own SuperNova hits must not refill the SuperNova meter. */
+   private final Set<UUID> detonating = new HashSet<>();
+   /** victim -> wielder for the tick a SuperNova hit them, for the death message. */
+   private final Map<UUID, UUID> novaVictims = new HashMap<>();
 
    public LuminosityListener(LegendaryWeapons plugin) {
       super(plugin);
@@ -111,6 +115,12 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
    @EventHandler
    public void onDeath(PlayerDeathEvent event) {
       this.stopSlam(event.getEntity().getUniqueId());
+      UUID by = this.novaVictims.remove(event.getEntity().getUniqueId());
+      Player wielder = by == null ? null : this.plugin.getServer().getPlayer(by);
+      if (wielder != null) {
+         event.deathMessage(Component.text(this.plugin.getEventManager().publicName(event.getEntity()) + " was erased by "
+            + this.plugin.getEventManager().publicName(wielder) + "'s SuperNova", NamedTextColor.YELLOW));
+      }
    }
 
    @EventHandler
@@ -143,7 +153,7 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
          this.plugin.getChargeMeter().markCombat(hitter);
       }
 
-      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && !(event.getFinalDamage() <= 0.0)) {
+      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && !(event.getFinalDamage() <= 0.0) && !this.detonating.contains(attacker.getUniqueId())) {
          boolean isPlayer = event.getEntity() instanceof Player;
          boolean mobsCount = this.abilities() != null && this.abilities().getBoolean("charge-from-mobs", false);
          if (event.getEntity() instanceof LivingEntity && (isPlayer || mobsCount)) {
@@ -353,7 +363,8 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
    }
 
    private void detonate(Player player, double power, double radius) {
-      double damage = this.ability("supernova-damage", 20.0) * power;
+      // a partial charge is a smaller blast that still hurts: half the damage at the minimum charge
+      double damage = this.ability("supernova-damage", 20.0) * (0.5 + 0.5 * power);
       double cap = this.ability("supernova-max-health-fraction", 0.6);
       double knockback = this.ability("supernova-knockback", 1.8) * (0.5 + power * 0.5);
       Location centre = player.getLocation();
@@ -370,33 +381,59 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
          centre.getWorld().createExplosion(centre, (float)(this.ability("supernova-block-power", 2.0) * power), false, true, player);
       }
 
-      for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0 + 2.0, radius)) {
-         if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {
-            double distance = nearby.getLocation().distance(centre);
-            if (distance > radius) {
-               continue;                                // the search box has corners; the blast is round
-            }
-
-            double falloff = Math.max(0.0, 1.0 - distance / radius);
-            double dealt = damage * falloff * falloff;
-            AttributeInstance maxHealth = living.getAttribute(Attribute.MAX_HEALTH);
-            if (maxHealth != null && cap > 0.0) {
-               dealt = Math.min(dealt, maxHealth.getValue() * cap);
-            }
-
-            if (dealt > 0.0) {
-               living.damage(dealt, player);
-               // "the last light a thing ever sees": whoever the blast touched stays lit up for a moment
-               int glow = this.abilityInt("supernova-glow-duration", 60);
-               if (glow > 0 && living != player) {
-                  living.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.GLOWING, glow, 0, false, false, true));
+      double pierce = Math.max(0.0, Math.min(1.0, this.ability("supernova-armour-pierce", 0.5)));
+      double edge = Math.max(0.0, Math.min(1.0, this.ability("supernova-edge-damage", 0.5)));
+      this.detonating.add(player.getUniqueId());
+      try {
+         for (Entity nearby : centre.getWorld().getNearbyEntities(centre, radius, radius / 2.0 + 2.0, radius)) {
+            if (nearby instanceof LivingEntity living && this.canAffect(player, nearby)) {
+               double distance = nearby.getLocation().distance(centre);
+               if (distance > radius) {
+                  continue;                             // the search box has corners; the blast is round
                }
-            }
 
-            Vector offset = nearby.getLocation().toVector().subtract(centre.toVector());
-            Vector direction = offset.lengthSquared() < 1.0E-4 ? new Vector(0.0, 1.0, 0.0) : offset.normalize();
-            nearby.setVelocity(direction.multiply(knockback * falloff).setY(Math.max(0.4, knockback * falloff * 0.6)));
+               // Linear falloff to edge-damage at the rim: the whole circle hurts, the centre most.
+               double falloff = 1.0 - (1.0 - edge) * (distance / radius);
+               double dealt = damage * falloff;
+               AttributeInstance maxHealth = living.getAttribute(Attribute.MAX_HEALTH);
+               if (maxHealth != null && cap > 0.0) {
+                  dealt = Math.min(dealt, maxHealth.getValue() * cap);
+               }
+
+               if (dealt > 0.0) {
+                  // Part of the blast ignores armour (it is light, not a blade), the rest is a normal
+                  // hit from the wielder. Armour alone used to turn a full SuperNova into a scratch.
+                  double piercing = dealt * pierce;
+                  if (piercing > 0.0) {
+                     living.setNoDamageTicks(0);
+                     living.damage(piercing, org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.SONIC_BOOM)
+                        .withCausingEntity(player).withDirectEntity(player).withDamageLocation(centre).build());
+                  }
+
+                  if (dealt - piercing > 0.0 && !living.isDead()) {
+                     living.setNoDamageTicks(0);
+                     living.damage(dealt - piercing, player);
+                  }
+
+                  if (living instanceof Player victim) {
+                     this.novaVictims.put(victim.getUniqueId(), player.getUniqueId());
+                     this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> this.novaVictims.remove(victim.getUniqueId()), 2L);
+                  }
+
+                  // "the last light a thing ever sees": whoever the blast touched stays lit up for a moment
+                  int glow = this.abilityInt("supernova-glow-duration", 60);
+                  if (glow > 0 && living != player) {
+                     living.addPotionEffect(new org.bukkit.potion.PotionEffect(org.bukkit.potion.PotionEffectType.GLOWING, glow, 0, false, false, true));
+                  }
+               }
+
+               Vector offset = nearby.getLocation().toVector().subtract(centre.toVector());
+               Vector direction = offset.lengthSquared() < 1.0E-4 ? new Vector(0.0, 1.0, 0.0) : offset.normalize();
+               nearby.setVelocity(direction.multiply(knockback * falloff).setY(Math.max(0.4, knockback * falloff * 0.6)));
+            }
          }
+      } finally {
+         this.detonating.remove(player.getUniqueId());
       }
 
       HudManager.message(player, Component.text("SuperNova ", NamedTextColor.YELLOW).append(Component.text((int)Math.round(power * 100.0) + "%", NamedTextColor.GOLD)));

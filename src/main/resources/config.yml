@@ -251,6 +251,8 @@ weapons:
       stage-3-damage-bonus: 2
       stage-4-damage-bonus: 3
       dual-wield-duration: 200          # 10s
+      light-model-data: 15              # resource-pack models the split halves wear (Light / Dark Sword)
+      dark-model-data: 16
       dual-wield-cooldown: 1200         # 60s
       max-health-bonus: 2.0             # 1 heart per kill
       max-health-bonus-cap: 6.0         # 3 hearts maximum
@@ -551,7 +553,9 @@ weapons:
       supernova-slam-velocity: -2.2
       supernova-max-fall-ticks: 60
       supernova-radius: 7.0             # at 100%; scales down with charge
-      supernova-damage: 20.0            # at 100%, directly below; falls off squared; armour applies
+      supernova-damage: 20.0            # at 100% charge, at the centre (half of it at the minimum charge)
+      supernova-edge-damage: 0.5        # fraction of that still dealt at the rim (linear falloff)
+      supernova-armour-pierce: 0.5      # fraction of each hit that ignores armour
       supernova-max-health-fraction: 0.6
       supernova-knockback: 1.8
       supernova-glow-duration: 60      # ticks targets hit by SuperNova glow (0 = off)
@@ -602,6 +606,7 @@ weapons:
       allow-online-targets: true
       require-skin: true                # refuse a morph when no skin can be found
       custom-nametag: true              # guaranteed floating name tag; vanilla tag hidden by team
+      reveal-on-commands: [ban, tempban, ban-ip, ipban, kick, mute, tempmute, warn, jail, op, deop, pardon, unban, whitelist]   # staff commands naming a disguise strip it first, so they hit the real owner
     enchantments: []
     recipe:
       - BOOK

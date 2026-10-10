@@ -901,11 +901,13 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       ItemStack lightSword = original.clone();
       ItemMeta lightMeta = lightSword.getItemMeta();
       lightMeta.setDisplayName("§f§lLight Sword");
+      setModel(lightMeta, abilitiesFor(this.plugin).getInt("light-model-data", 15));
       lightMeta.getPersistentDataContainer().set(this.splitSwordKey, PersistentDataType.BYTE, (byte)1);
       lightSword.setItemMeta(lightMeta);
       ItemStack darkSword = original.clone();
       ItemMeta darkMeta = darkSword.getItemMeta();
       darkMeta.setDisplayName("§8§lDark Sword");
+      setModel(darkMeta, abilitiesFor(this.plugin).getInt("dark-model-data", 16));
       darkMeta.getPersistentDataContainer().set(this.splitSwordKey, PersistentDataType.BYTE, (byte)1);
       darkSword.setItemMeta(darkMeta);
       player.getInventory().setItemInMainHand(lightSword);
@@ -922,6 +924,19 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             }
          }
       }).runTaskLater(this.plugin, duration);
+   }
+
+   /** The halves wear their own models (the Light and Dark swords in the resource pack). */
+   private static void setModel(ItemMeta meta, int modelData) {
+      if (modelData > 0) {
+         org.bukkit.inventory.meta.components.CustomModelDataComponent component = meta.getCustomModelDataComponent();
+         component.setFloats(java.util.List.of((float)modelData));
+         meta.setCustomModelDataComponent(component);
+      }
+   }
+
+   private static ConfigurationSection abilitiesFor(LegendaryWeapons plugin) {
+      return plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse");
    }
 
    private void deactivateDualWield(Player player) {
