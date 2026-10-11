@@ -11,6 +11,7 @@ import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -296,6 +297,34 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                   default -> sender.sendMessage(Component.text(this.plugin.getBossManager().status(), NamedTextColor.GRAY));
                }
                break;
+            case "trader":
+            case "traders":
+               switch (action) {
+                  case "spawn" -> {
+                     if (!(sender instanceof Player player)) {
+                        reply(sender, "Run this in-game, standing where the trader should stand.", null);
+                     } else {
+                        this.events().tokenShop().spawn(player.getLocation());
+                        reply(sender, null, "Token Trader placed here, facing you.");
+                     }
+                  }
+                  case "remove" -> {
+                     if (!(sender instanceof Player player)) {
+                        reply(sender, "Run this in-game, next to the trader.", null);
+                     } else {
+                        int removed = this.events().tokenShop().removeNear(player.getLocation(), 4.0);
+                        reply(sender, removed == 0 ? "No Token Trader within 4 blocks." : null, "Removed " + removed + " Token Trader" + (removed == 1 ? "." : "s."));
+                     }
+                  }
+                  default -> {
+                     List<Location> homes = this.events().tokenShop().homes();
+                     sender.sendMessage(Component.text(homes.isEmpty() ? "No Token Traders placed." : "Token Traders:", NamedTextColor.GOLD));
+                     for (Location home : homes) {
+                        sender.sendMessage(Component.text("  " + home.getWorld().getName() + " " + home.getBlockX() + ", " + home.getBlockY() + ", " + home.getBlockZ(), NamedTextColor.GRAY));
+                     }
+                  }
+               }
+               break;
             case "stopall":
                this.events().bounty().stop(false);
                this.events().koth().stop(false);
@@ -336,6 +365,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          "/lwevent outpost create <name> <type> [radius] | remove <name> | reset <name> | list",
          "/lwevent season status | reset confirm | give <player> <amount>",
          "/lwevent boss arena <boss> [radius] | start [boss] | stop | status",
+         "/lwevent trader spawn | remove | list",
          "/lwevent status | stopall"
       }) {
          sender.sendMessage(Component.text(line, NamedTextColor.GOLD));
@@ -344,7 +374,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       List<String> options = switch (args.length) {
-         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "season", "boss", "status", "stopall");
+         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "season", "boss", "trader", "status", "stopall");
          case 2 -> switch (args[0].toLowerCase(Locale.ROOT)) {
             case "bounty" -> List.of("start", "stop", "status");
             case "koth" -> List.of("marker", "setcenter", "start", "stop", "status");
@@ -355,6 +385,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
             case "outpost", "outposts" -> List.of("create", "remove", "reset", "list");
             case "season" -> List.of("status", "reset", "give");
             case "boss", "bosses" -> List.of("arena", "start", "stop", "status");
+            case "trader", "traders" -> List.of("spawn", "remove", "list");
             default -> List.of();
          };
          case 3 -> args[0].equalsIgnoreCase("mostwanted") && args[1].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("season") && args[1].equalsIgnoreCase("give")

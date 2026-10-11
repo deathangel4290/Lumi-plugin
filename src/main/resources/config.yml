@@ -25,7 +25,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 1                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 2                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -1098,7 +1098,10 @@ outposts:
 
 
 # ============================================================================
-#  Token shop (/tokenshop). "ITEM [amount] @ cost" in the loot format.
+#  Token Traders: villagers an admin places with /lwevent trader spawn. They
+#  trade tokens for these offers through the villager trading screen;
+#  /tokenshop tells players where they stand. "ITEM [amount] @ cost" in the
+#  loot format; a trade can ask for at most two stacks (128) of tokens.
 #  Kept to consumables, materials and fragments: events should not mint power
 #  faster than the rituals do.
 # ============================================================================
@@ -1116,7 +1119,9 @@ token-shop:
     - "ALL_IN_ONE_POTION 1 @ 10"
     - "ENCHANTED_GOLDEN_APPLE 1 @ 16"
     - "FRAGMENT_T3 1 @ 24"
-    - "LUMINOSITY_FRAGMENT 1 @ 45"
+  trader:
+    protect-radius: 4.0           # only ops place/break blocks, empty buckets or light fires this close
+    look-range: 8.0               # turns to face the nearest player within this
 
 
 # ============================================================================

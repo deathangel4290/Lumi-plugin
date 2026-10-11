@@ -62,7 +62,7 @@ commands:
     usage: /rewards
     aliases: [rewardchest]
   tokenshop:
-    description: Spend Luminara Tokens.
+    description: Shows where the Token Traders stand.
     usage: /tokenshop
     aliases: [tokens]
   outposts:

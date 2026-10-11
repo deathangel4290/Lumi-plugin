@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
  *   /renown [player]            your (or someone's) season stats and ranks
  *   /renown top [category]      a leaderboard: renown, kills, deaths, boss, bounties, outposts, hearts, stars
  *   /rewards                    open your reward chest
- *   /tokenshop                  spend Luminara Tokens
+ *   /tokenshop                  where the Token Traders stand
  *   /outposts                   every outpost, where it is and who holds it
  */
 public class PlayerEventCommand implements CommandExecutor, TabCompleter {
@@ -64,10 +64,15 @@ public class PlayerEventCommand implements CommandExecutor, TabCompleter {
             }
          }
          case "tokenshop" -> {
-            if (sender instanceof Player player) {
-               events.tokenShop().open(player);
+            // the shop is the Token Traders now: say where they stand
+            java.util.List<org.bukkit.Location> homes = events.tokenShop().homes();
+            if (homes.isEmpty()) {
+               sender.sendMessage(Component.text("There are no Token Traders yet. Ask an admin to place one.", NamedTextColor.GRAY));
             } else {
-               sender.sendMessage("Run this in-game.");
+               sender.sendMessage(Component.text("Trade your Luminara Tokens with a Token Trader:", NamedTextColor.GOLD));
+               for (org.bukkit.Location home : homes) {
+                  sender.sendMessage(Component.text("  " + com.legendaryweapons.rituals.Ritual.dimensionName(home.getWorld()) + " " + home.getBlockX() + ", " + home.getBlockY() + ", " + home.getBlockZ(), NamedTextColor.YELLOW));
+               }
             }
          }
          case "outposts" -> events.outposts().list().forEach(sender::sendMessage);

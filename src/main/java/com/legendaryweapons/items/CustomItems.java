@@ -153,7 +153,7 @@ public class CustomItems implements Listener {
                line("Event currency.", NamedTextColor.DARK_GRAY),
                Component.empty(),
                line("Earned from outposts, bosses and events.", NamedTextColor.GRAY),
-               line("Spend it at /tokenshop", NamedTextColor.GOLD)
+               line("Trade it with a Token Trader (/tokenshop)", NamedTextColor.GOLD)
             ));
             case BOSS_HEART -> this.build(Material.HEART_OF_THE_SEA, 210, id, 1, Component.text(this.displayName(id), TextColor.color(190, 90, 255)), List.of());
             case STAR_CORE -> this.build(Material.NETHER_STAR, 211, id, 1, Component.text(this.displayName(id), TextColor.color(255, 215, 80)), List.of());

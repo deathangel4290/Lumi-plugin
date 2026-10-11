@@ -2,6 +2,7 @@ package com.legendaryweapons.managers;
 
 import com.legendaryweapons.LegendaryWeapons;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -71,6 +72,8 @@ public class ConfigManager {
     */
    private static final Object[][] RETUNED = {
       {1, "weapons.titans-axe.abilities.slam-damage", 6.0, 14.0},
+      // a String old value against a list removes that line, if it is still there
+      {2, "token-shop.offers", "LUMINOSITY_FRAGMENT 1 @ 45", null},
    };
 
    private void retune() {
@@ -87,6 +90,17 @@ public class ConfigManager {
          if (revision > found) {
             String path = (String)entry[1];
             Object current = this.config.get(path);
+            if (entry[3] == null && entry[2] instanceof String line && current instanceof List<?> list) {
+               if (list.contains(line)) {
+                  List<Object> kept = new ArrayList<>(list);
+                  kept.remove(line);
+                  this.config.set(path, kept);
+                  this.plugin.getLogger().info("Retuned " + path + ": removed '" + line + "'");
+               }
+
+               continue;
+            }
+
             boolean untouched = current instanceof Number n && entry[2] instanceof Number old
                ? Math.abs(n.doubleValue() - old.doubleValue()) < 1.0E-9
                : entry[2].equals(current);
