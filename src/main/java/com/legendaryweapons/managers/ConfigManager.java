@@ -77,6 +77,9 @@ public class ConfigManager {
       {3, "bosses.wither_king.damage-multiplier", 1.0, 1.5},
       {3, "bosses.wither_king.volley-interval", 8, 6},
       {3, "bosses.wither_king.slam-damage", 8, 14},
+      {4, "bosses.hollow_warden.damage-multiplier", 1.0, 1.2},
+      {4, "bosses.leviathan.damage-multiplier", 1.0, 1.4},
+      {4, "bosses.ender_colossus.damage-multiplier", 1.0, 1.4},
    };
 
    private void retune() {

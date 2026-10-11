@@ -25,7 +25,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 3                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 4                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -1169,7 +1169,7 @@ bosses:
     health: 900
     health-per-player: 0.35
     max-health-multiplier: 4.0
-    damage-multiplier: 1.0
+    damage-multiplier: 1.2
     feed-heal: 0.04
     feed-seconds: 30
     leave-seconds: 120
@@ -1192,6 +1192,13 @@ bosses:
     adapt-minimum-damage: 60
     adapt-seconds: 20             # ...is resisted this long
     adapted-damage: 0.35
+    eruption-interval: 15         # sculk spikes under the loudest players
+    eruption-targets: 2
+    eruption-radius: 2.5
+    eruption-damage: 9            # ignores armour
+    roar-interval: 20             # from 66%: a ground shockwave; jump over it
+    roar-radius: 16
+    roar-damage: 10               # ignores armour
     rewards:
       participant:
         rolls: "2-3"
@@ -1259,7 +1266,7 @@ bosses:
     health: 1000
     health-per-player: 0.35
     max-health-multiplier: 4.0
-    damage-multiplier: 1.0
+    damage-multiplier: 1.4
     feed-heal: 0.04
     feed-seconds: 30
     leave-seconds: 120
@@ -1281,6 +1288,13 @@ bosses:
     whirlpool-damage: 2
     summon-interval: 25
     flood-interval: 30
+    geyser-interval: 13           # the water under everyone erupts
+    geyser-radius: 2.2
+    geyser-damage: 8              # ignores armour
+    wave-interval: 18             # from 60%: a wall of water across the arena
+    wave-width: 9
+    wave-length: 34
+    wave-damage: 11               # ignores armour
     restore-seconds: 20
     rewards:
       participant:
@@ -1301,7 +1315,7 @@ bosses:
     health: 950
     health-per-player: 0.35
     max-health-multiplier: 4.0
-    damage-multiplier: 1.0
+    damage-multiplier: 1.4
     feed-heal: 0.04
     feed-seconds: 30
     leave-seconds: 120
@@ -1316,6 +1330,13 @@ bosses:
     decoy-seconds: 20
     decoy-interval: 30
     scramble-interval: 20
+    rift-interval: 16             # rifts open under people, pull in, then collapse
+    rifts: 3
+    rift-radius: 3
+    rift-damage: 9                # ignores armour
+    stomp-interval: 14            # from 60%: it drops out of the sky onto someone
+    stomp-radius: 3.5
+    stomp-damage: 13              # ignores armour
     rewards:
       participant:
         rolls: "2-3"

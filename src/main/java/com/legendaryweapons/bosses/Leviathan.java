@@ -4,9 +4,11 @@ import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.managers.ParticleManager;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -54,6 +56,8 @@ final class Leviathan extends Boss {
    private long nextWhirl;
    private long nextSpawn;
    private long nextFlood;
+   private long nextGeyser;
+   private long nextWave;
 
    Leviathan(LegendaryWeapons plugin, BossManager manager, BossManager.Arena arena, TempBlocks terrain) {
       super(plugin, manager, "leviathan", arena, terrain);
@@ -211,7 +215,133 @@ final class Leviathan extends Boss {
          this.flood();
       }
 
+      if (this.nextGeyser == 0L) {
+         this.nextGeyser = now + 8000L;
+         this.nextWave = now + 15000L;
+      }
+
+      if (now >= this.nextGeyser) {
+         this.nextGeyser = now + (long)(this.num("geyser-interval", 13.0) * 1000.0);
+         this.geysers();
+      }
+
+      if (this.phase >= 1 && now >= this.nextWave) {
+         this.nextWave = now + (long)(this.num("wave-interval", 18.0) * 1000.0);
+         this.tidalWave();
+      }
+
       this.tickWhirlpools(now);
+   }
+
+   /** Bubbles mark the water under people, then it erupts and throws them into the air. */
+   private void geysers() {
+      List<Location> marks = new ArrayList<>();
+      for (Player player : this.fighters()) {
+         marks.add(player.getLocation());
+      }
+
+      for (int i = 0; i < 2; i++) {
+         Player random = this.randomFighter(null);
+         if (random != null) {
+            marks.add(random.getLocation().add(ThreadLocalRandom.current().nextDouble(-4, 4), 0.0, ThreadLocalRandom.current().nextDouble(-4, 4)));
+         }
+      }
+
+      final double radius = this.num("geyser-radius", 2.2);
+      final Color foam = Color.fromRGB(190, 240, 255);
+      for (Location raw : marks) {
+         final Location at = this.arena.surface(raw);
+         for (int t = 0; t < 30; t += 3) {
+            this.later(t, () -> {
+               dustRing(at, radius, foam, 1.2F);
+               ParticleManager.showcase(Particle.BUBBLE_COLUMN_UP, at, 8, radius / 2.0, 0.2, radius / 2.0, 0.05, null);
+            });
+         }
+
+         this.later(30L, () -> {
+            for (int h = 0; h < 6; h++) {
+               ParticleManager.showcase(Particle.SPLASH, at.clone().add(0.0, h, 0.0), 20, 0.5, 0.3, 0.5, 0.2, null);
+               ParticleManager.showcase(Particle.CLOUD, at.clone().add(0.0, h, 0.0), 3, 0.3, 0.2, 0.3, 0.02, null);
+            }
+
+            this.plugin.getSoundManager().world(at, Sound.ENTITY_GENERIC_SPLASH, 1.5F, 0.6F);
+            this.plugin.getSoundManager().world(at, Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_INSIDE, 1.2F, 0.8F);
+            for (Player player : this.fighters()) {
+               Vector off = player.getLocation().toVector().subtract(at.toVector());
+               if (Math.hypot(off.getX(), off.getZ()) <= radius && Math.abs(off.getY()) < 4.0) {
+                  this.trueDamage(player, this.num("geyser-damage", 8.0));
+                  player.setVelocity(new Vector(0.0, 1.5, 0.0));
+                  player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1, true, false, true));
+               }
+            }
+         });
+      }
+   }
+
+   /**
+    * A wall of water rolls out from the Leviathan across the arena toward someone. Its path is
+    * marked first; get out of its width.
+    */
+   private void tidalWave() {
+      Player target = this.randomFighter(null);
+      if (target == null) {
+         return;
+      }
+
+      final Location origin = this.arena.surface(this.body.getLocation());
+      final Vector dir = target.getLocation().toVector().subtract(origin.toVector()).setY(0.0);
+      if (dir.lengthSquared() < 1.0) {
+         dir.setX(1.0);
+      }
+
+      dir.normalize();
+      final Vector side = new Vector(-dir.getZ(), 0.0, dir.getX());
+      final double half = this.num("wave-width", 9.0) / 2.0;
+      final double reach = this.num("wave-length", 34.0);
+      final Color foam = Color.fromRGB(200, 245, 255);
+      for (Player player : this.fighters()) {
+         com.legendaryweapons.managers.HudManager.message(player, Component.text("≈ A tidal wave is coming - get out of its path!", NamedTextColor.AQUA));
+      }
+
+      this.plugin.getSoundManager().world(origin, Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.5F, 0.6F);
+      for (int t = 0; t < 30; t += 5) {
+         this.later(t, () -> {
+            for (double d = 2.0; d < reach; d += 2.0) {
+               Location p = origin.clone().add(dir.clone().multiply(d));
+               ParticleManager.showcase(Particle.DUST, p.clone().add(side.clone().multiply(half)), 1, 0.0, 0.0, 0.0, 0.0, new Particle.DustOptions(foam, 1.2F));
+               ParticleManager.showcase(Particle.DUST, p.clone().add(side.clone().multiply(-half)), 1, 0.0, 0.0, 0.0, 0.0, new Particle.DustOptions(foam, 1.2F));
+            }
+         });
+      }
+
+      final java.util.Set<UUID> struck = new java.util.HashSet<>();
+      int steps = (int)Math.ceil(reach);
+      for (int i = 0; i <= steps; i++) {
+         final double front = i;
+         this.later(30L + i, () -> {
+            Location crest = origin.clone().add(dir.clone().multiply(front));
+            if ((int)front % 2 == 0) {
+               for (double w = -half; w <= half; w += 1.5) {
+                  Location p = crest.clone().add(side.clone().multiply(w));
+                  ParticleManager.showcase(Particle.SPLASH, p.clone().add(0.0, 1.0, 0.0), 6, 0.3, 0.8, 0.3, 0.1, null);
+                  ParticleManager.showcase(Particle.BUBBLE_POP, p.clone().add(0.0, 2.0, 0.0), 2, 0.3, 0.4, 0.3, 0.02, null);
+               }
+
+               this.plugin.getSoundManager().world(crest, Sound.ENTITY_PLAYER_SPLASH_HIGH_SPEED, 1.0F, 0.6F);
+            }
+
+            for (Player player : this.fighters()) {
+               Vector off = player.getLocation().toVector().subtract(origin.toVector());
+               double along = off.getX() * dir.getX() + off.getZ() * dir.getZ();
+               double across = Math.abs(off.getX() * side.getX() + off.getZ() * side.getZ());
+               if (Math.abs(along - front) <= 1.2 && across <= half && Math.abs(off.getY()) < 5.0 && struck.add(player.getUniqueId())) {
+                  this.trueDamage(player, this.num("wave-damage", 11.0));
+                  player.setVelocity(dir.clone().multiply(1.8).setY(0.6));
+                  player.setRemainingAir(Math.max(0, player.getRemainingAir() - 120));
+               }
+            }
+         });
+      }
    }
 
    private void surface() {

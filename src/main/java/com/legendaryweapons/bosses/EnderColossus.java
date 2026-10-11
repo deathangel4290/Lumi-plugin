@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.title.Title;
@@ -29,6 +30,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 /**
  * The Ender Colossus -- the chaos boss, and the PvP crowd's favourite.
@@ -50,6 +52,8 @@ final class EnderColossus extends Boss {
    private long nextPull;
    private long nextDecoys;
    private long nextScramble;
+   private long nextRift;
+   private long nextStomp;
 
    EnderColossus(LegendaryWeapons plugin, BossManager manager, BossManager.Arena arena, TempBlocks terrain) {
       super(plugin, manager, "ender_colossus", arena, terrain);
@@ -164,6 +168,105 @@ final class EnderColossus extends Boss {
          this.nextScramble = now + (long)(this.num("scramble-interval", 20.0) * 1000.0);
          this.scramble();
       }
+
+      if (this.nextRift == 0L) {
+         this.nextRift = now + 9000L;
+         this.nextStomp = now + 14000L;
+      }
+
+      if (now >= this.nextRift) {
+         this.nextRift = now + (long)(this.num("rift-interval", 16.0) * 1000.0);
+         this.voidRifts();
+      }
+
+      if (this.phase >= 1 && this.decoys.isEmpty() && now >= this.nextStomp) {
+         this.nextStomp = now + (long)(this.num("stomp-interval", 14.0) * 1000.0);
+         this.shatterStomp();
+      }
+   }
+
+   /** Rifts open under people, drag everything near them in, then collapse. Get clear early. */
+   private void voidRifts() {
+      List<Player> picks = new ArrayList<>(this.fighters());
+      Collections.shuffle(picks);
+      int count = Math.min(picks.size(), this.integer("rifts", 3));
+      final double radius = this.num("rift-radius", 3.0);
+      final Color dark = Color.fromRGB(30, 0, 50);
+      final Color glow = Color.fromRGB(190, 90, 255);
+      for (int i = 0; i < count; i++) {
+         final Location at = this.arena.surface(picks.get(i).getLocation());
+         this.plugin.getSoundManager().world(at, Sound.BLOCK_PORTAL_TRIGGER, 0.8F, 1.6F);
+         for (int t = 0; t < 60; t += 4) {
+            final boolean pulling = t >= 28;
+            this.later(t, () -> {
+               dustRing(at, radius, dark, 1.6F);
+               dustRing(at, radius * 0.5, glow, 1.0F);
+               ParticleManager.showcase(Particle.PORTAL, at.clone().add(0.0, 0.5, 0.0), 14, radius / 2.0, 0.3, radius / 2.0, 0.6, null);
+               if (pulling) {
+                  for (Player player : this.fighters()) {
+                     Vector in = at.toVector().subtract(player.getLocation().toVector());
+                     double d = in.length();
+                     if (d < radius * 2.2 && d > 0.5) {
+                        player.setVelocity(player.getVelocity().add(in.normalize().multiply(0.22).setY(0.0)));
+                     }
+                  }
+               }
+            });
+         }
+
+         this.later(60L, () -> {
+            ParticleManager.showcase(Particle.REVERSE_PORTAL, at.clone().add(0.0, 1.0, 0.0), 60, radius / 2.0, 1.0, radius / 2.0, 0.1, null);
+            com.legendaryweapons.managers.SpriteFx.wave(at, glow, radius + 1.0, 4);
+            this.plugin.getSoundManager().world(at, Sound.ENTITY_GENERIC_EXPLODE, 1.0F, 1.6F);
+            for (Player player : this.fighters()) {
+               if (player.getLocation().distanceSquared(at) <= radius * radius) {
+                  this.trueDamage(player, this.num("rift-damage", 9.0));
+                  player.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 25, 1, true, false, true));
+                  player.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 80, 0, true, false, true));
+               }
+            }
+         });
+      }
+   }
+
+   /** It vanishes, its shadow grows under someone, and it comes down on them. */
+   private void shatterStomp() {
+      Player target = this.randomFighter(null);
+      if (target == null) {
+         return;
+      }
+
+      final Location land = this.arena.surface(target.getLocation());
+      final double radius = this.num("stomp-radius", 3.5);
+      final Color shadow = Color.fromRGB(15, 5, 25);
+      com.legendaryweapons.managers.HudManager.message(target, Component.text("☄ A shadow grows beneath you - move!", NamedTextColor.LIGHT_PURPLE));
+      this.plugin.getSoundManager().world(target.getLocation(), Sound.ENTITY_ENDERMAN_STARE, 1.2F, 0.7F);
+      for (int t = 0; t < 26; t += 3) {
+         final double grow = 0.4 + 0.6 * t / 26.0;
+         this.later(t, () -> {
+            dustRing(land, radius * grow, shadow, 1.8F);
+            ParticleManager.showcase(Particle.LARGE_SMOKE, land.clone().add(0.0, 0.1, 0.0), 4, radius * grow / 2.0, 0.0, radius * grow / 2.0, 0.0, null);
+         });
+      }
+
+      this.later(18L, () -> {
+         ParticleManager.showcase(Particle.REVERSE_PORTAL, this.body.getLocation().add(0.0, 2.0, 0.0), 40, 0.6, 2.0, 0.6, 0.05, null);
+         this.moveBody(land.clone().add(0.0, 7.0, 0.0));
+         this.body.setVelocity(new Vector(0.0, -2.0, 0.0));
+         this.plugin.getSoundManager().world(land, Sound.ENTITY_ENDERMAN_TELEPORT, 1.5F, 0.5F);
+      });
+      this.later(27L, () -> {
+         com.legendaryweapons.managers.AnimationFx.shockwave(land, org.bukkit.Material.END_STONE, radius + 1.0, 12);
+         com.legendaryweapons.managers.SpriteFx.wave(land, Color.fromRGB(150, 60, 230), radius + 1.0, 5);
+         this.plugin.getSoundManager().world(land, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.5F, 0.6F);
+         this.plugin.getSoundManager().world(land, Sound.ENTITY_ENDERMAN_SCREAM, 1.2F, 0.6F);
+         for (Player player : this.fighters()) {
+            if (player.getLocation().distanceSquared(land) <= radius * radius) {
+               this.trueDamage(player, this.num("stomp-damage", 13.0));
+               player.setVelocity(new Vector(0.0, 1.0, 0.0));
+            }
+         }
+      });
    }
 
    @Override

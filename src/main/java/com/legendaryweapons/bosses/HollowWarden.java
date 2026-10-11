@@ -64,6 +64,8 @@ final class HollowWarden extends Boss {
    private long nextSonic;
    private long nextTendril;
    private long nextDarkness;
+   private long nextEruption;
+   private long nextRoar;
    private Tendril tendril;
 
    private static final class Node {
@@ -289,6 +291,21 @@ final class HollowWarden extends Boss {
          this.sonicLine();
       }
 
+      if (this.nextEruption == 0L) {
+         this.nextEruption = now + 10000L;
+         this.nextRoar = now + 16000L;
+      }
+
+      if (this.nodes.isEmpty() && now >= this.nextEruption) {
+         this.nextEruption = now + (long)(this.num("eruption-interval", 15.0) * 1000.0);
+         this.sculkEruption();
+      }
+
+      if (this.phase >= 1 && this.nodes.isEmpty() && now >= this.nextRoar) {
+         this.nextRoar = now + (long)(this.num("roar-interval", 20.0) * 1000.0);
+         this.shockwaveRoar();
+      }
+
       if (this.phase >= 1 && this.tendril == null && this.nodes.isEmpty() && now >= this.nextTendril) {
          this.nextTendril = now + (long)(this.num("tendril-interval", 18.0) * 1000.0);
          this.seize();
@@ -301,6 +318,82 @@ final class HollowWarden extends Boss {
       if (phase >= 2) {
          this.model.setState("enraged");
          this.say("☠ The light is going out...");
+      }
+   }
+
+   // ------------------------------------------------------------------ eruptions and the roar
+
+   /** The loudest players' ground is marked, then sculk spikes burst out of it. Sneak, keep moving. */
+   private void sculkEruption() {
+      List<Player> loud = new ArrayList<>(this.fighters());
+      loud.sort((a, b) -> Double.compare(this.noise.getOrDefault(b.getUniqueId(), 0.0), this.noise.getOrDefault(a.getUniqueId(), 0.0)));
+      int count = Math.min(loud.size(), this.integer("eruption-targets", 2));
+      final Color mark = Color.fromRGB(20, 110, 120);
+      final double radius = this.num("eruption-radius", 2.5);
+      for (int i = 0; i < count; i++) {
+         final Location at = this.arena.surface(loud.get(i).getLocation());
+         this.plugin.getSoundManager().world(at, Sound.BLOCK_SCULK_CATALYST_BLOOM, 1.2F, 0.7F);
+         for (int t = 0; t < 30; t += 5) {
+            this.later(t, () -> {
+               dustRing(at, radius, mark, 1.3F);
+               ParticleManager.showcase(Particle.SCULK_CHARGE_POP, at, 6, radius / 2.0, 0.1, radius / 2.0, 0.02, null);
+            });
+         }
+
+         this.later(30L, () -> {
+            com.legendaryweapons.managers.AnimationFx.spikes(at, Material.SCULK, 7, radius * 0.6, 2.2, 16, true);
+            ParticleManager.showcase(Particle.SCULK_SOUL, at.clone().add(0.0, 0.5, 0.0), 20, radius / 2.0, 0.6, radius / 2.0, 0.05, null);
+            this.plugin.getSoundManager().world(at, Sound.BLOCK_SCULK_BREAK, 1.5F, 0.5F);
+            for (Player player : this.fighters()) {
+               if (player.getLocation().distanceSquared(at) <= radius * radius) {
+                  this.trueDamage(player, this.num("eruption-damage", 9.0));
+                  player.setVelocity(new Vector(0.0, 1.0, 0.0));
+                  player.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 60, 0, true, false, true));
+                  this.addNoise(player, 20.0);
+               }
+            }
+         });
+      }
+   }
+
+   /**
+    * It roars, then a shockwave rolls out along the ground. Anyone standing on the ground when it
+    * passes is thrown; jump over it.
+    */
+   private void shockwaveRoar() {
+      final Location centre = this.arena.surface(this.body.getLocation());
+      final double reach = this.num("roar-radius", 16.0);
+      final int travel = 20;
+      this.body.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 40, 6, true, false));
+      this.plugin.getSoundManager().world(centre, Sound.ENTITY_WARDEN_ROAR, 2.0F, 0.8F);
+      for (Player player : this.fighters()) {
+         com.legendaryweapons.managers.HudManager.message(player, Component.text("☠ The Warden roars - jump the shockwave!", NamedTextColor.DARK_AQUA));
+      }
+
+      final java.util.Set<UUID> struck = new java.util.HashSet<>();
+      final Color ring = Color.fromRGB(40, 200, 210);
+      this.later(28L, () -> {
+         this.plugin.getSoundManager().world(centre, Sound.ENTITY_WARDEN_SONIC_BOOM, 2.0F, 0.6F);
+         com.legendaryweapons.managers.SpriteFx.wave(centre, ring, reach, travel);
+      });
+      for (int t = 0; t <= travel; t++) {
+         final double r = reach * t / (double)travel;
+         this.later(30L + t, () -> {
+            if (r > 0.5) {
+               dustRing(centre, r, ring, 1.4F);
+            }
+
+            for (Player player : this.fighters()) {
+               Vector off = player.getLocation().toVector().subtract(centre.toVector());
+               double flat = Math.hypot(off.getX(), off.getZ());
+               if (Math.abs(flat - r) <= 1.0 && player.isOnGround() && Math.abs(off.getY()) < 3.0 && struck.add(player.getUniqueId())) {
+                  this.trueDamage(player, this.num("roar-damage", 10.0));
+                  Vector push = off.setY(0.0);
+                  player.setVelocity((push.lengthSquared() < 0.01 ? new Vector(1, 0, 0) : push.normalize()).multiply(1.4).setY(0.8));
+                  player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2, true, false, true));
+               }
+            }
+         });
       }
    }
 
