@@ -660,6 +660,11 @@ weapons:
 ritual:
   timer: 900                            # SECONDS (900 = 15 minutes)
   altar-decoration: true                # small turning crystal above idle altars; false = glyph particles only
+  # The altar is the resource pack's model (an empty spawner underneath: same mining time as an
+  # enchanting table, immovable, and explosion-proof through the plugin). Existing enchanting-table
+  # altars convert when their chunk loads. false = plain enchanting tables, for servers whose pack
+  # is optional (players without it would see a missing-model cube).
+  custom-altar: true
 
 ritual-block-recipe:
   enabled: true

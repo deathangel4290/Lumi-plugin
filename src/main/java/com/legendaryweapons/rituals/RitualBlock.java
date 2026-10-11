@@ -25,7 +25,11 @@ public class RitualBlock {
             Component.text("Place it, then right-click to forge", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
             Component.text("a legendary weapon.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
          ));
-         meta.setEnchantmentGlintOverride(true);
+         if (LegendaryWeapons.getPlugin(LegendaryWeapons.class).getConfig().getBoolean("ritual.custom-altar", true)) {
+            meta.setItemModel(new NamespacedKey("luminara", "ritual_altar"));
+         } else {
+            meta.setEnchantmentGlintOverride(true);
+         }
          meta.getPersistentDataContainer().set(key(), PersistentDataType.BYTE, (byte)1);
          item.setItemMeta(meta);
       }

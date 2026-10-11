@@ -56,6 +56,7 @@ public class Ritual {
    private final BukkitTask particleTask;
    private int secondsRemaining;
    private ItemDisplay floatingItem;
+   private final RitualScene scene;
    private int lastMilestone = 0;
    private boolean finished = false;
 
@@ -69,6 +70,7 @@ public class Ritual {
       this.duration = Math.max(1, plugin.getConfigManager().getRitualTimer());
       this.world = this.location.getWorld();
       this.secondsRemaining = this.duration - (int)((System.currentTimeMillis() - startTime) / 1000L);
+      this.scene = new RitualScene(plugin, this.location, this.theme()[0]);
       this.createFloatingItem();
       this.particleTask = (new BukkitRunnable() {
          double time = 0.0;
@@ -87,6 +89,10 @@ public class Ritual {
             if (Ritual.this.secondsRemaining <= 0) {
                Ritual.this.complete();
             } else {
+               if (Ritual.this.secondsRemaining <= 2) {
+                  Ritual.this.scene.finale();
+               }
+
                Ritual.this.updateBars();
                if (this.ticks++ % 2 == 0) {
                   Ritual.this.milestones();
@@ -210,7 +216,7 @@ public class Ritual {
    // ------------------------------------------------------------------ visuals
 
    private void createFloatingItem() {
-      Location spawnLocation = this.location.clone().add(0.5, 1.6, 0.5);
+      Location spawnLocation = this.location.clone().add(0.5, RitualScene.WEAPON_HEIGHT, 0.5);
       ItemStack weaponStack = this.plugin.getWeaponManager().getWeapon(this.weaponKey);
       if (weaponStack == null || weaponStack.getType().isAir()) {
          weaponStack = new ItemStack(Material.BARRIER);
@@ -251,95 +257,16 @@ public class Ritual {
       return Math.max(0.0, Math.min(1.0, 1.0 - (double)this.secondsRemaining / this.duration));
    }
 
-   private static void fx(Particle particle, Location at, int count, double spread, double speed, Object data) {
-      ParticleManager.showcase(particle, at, count, spread, spread, spread, speed, data);
-   }
-
-   private static Particle.DustOptions dust(Color colour, double size) {
-      return new Particle.DustOptions(colour, (float)size);
-   }
-
    /**
-    * The ritual is a landmark, so it is drawn at full strength (effects.ritual-density) rather
-    * than through the PvP thinning. Everything tightens and speeds up as it nears completion.
-    *
-    *   - inner rune ring on the floor, shrinking and brightening
-    *   - outer sigil turning the other way, with enchanting glyphs drawn in along four spokes
-    *   - a double helix climbing to the weapon
-    *   - motes in the weapon's colours spiralling inward
-    *   - a beacon column that grows denser (this is how players find it from afar)
-    *   - sparks, and a firework crackle over the final fifth
+    * The ritual is drawn by RitualScene (rune circles, pylons, beams, sky beam); this keeps it built
+    * -- it is rebuilt if its chunks were unloaded -- and turns the weapon over the altar.
     */
    private void drawEffects(double time, int frame) {
       if (this.world != null && this.world.isChunkLoaded(this.location.getBlockX() >> 4, this.location.getBlockZ() >> 4)) {
          double progress = this.progress();
-         Color[] theme = this.theme();
-         Location centre = this.location.clone().add(0.5, 0.1, 0.5);
-
-         // Inner rune ring.
-         double inner = 1.7 - progress * 0.5;
-         double runeSize = 1.0 + progress * 0.8;
-
-         for (int i = 0; i < 16; i++) {
-            double angle = Math.PI * 2.0 / 16.0 * i + time * 0.5;
-            fx(Particle.DUST, centre.clone().add(Math.cos(angle) * inner, 0.05, Math.sin(angle) * inner), 1, 0.0, 0.0, dust(i % 4 == 0 ? theme[1] : theme[0], runeSize));
-         }
-
-         // Outer sigil and glyph spokes (every other frame keeps the density sensible).
-         if (frame % 2 == 0) {
-            double outer = 2.6;
-
-            for (int i = 0; i < 24; i++) {
-               double angle = Math.PI * 2.0 / 24.0 * i - time * 0.3;
-               fx(Particle.DUST, centre.clone().add(Math.cos(angle) * outer, 0.02, Math.sin(angle) * outer), 1, 0.0, 0.0, dust(theme[1], 0.8));
-            }
-
-            for (int spoke = 0; spoke < 4; spoke++) {
-               double angle = Math.PI / 2.0 * spoke - time * 0.3;
-               Location from = centre.clone().add(Math.cos(angle) * outer, 0.3, Math.sin(angle) * outer);
-               ParticleManager.showcase(Particle.ENCHANT, from, 3, 0.1, 0.1, 0.1, 1.0, null);
-            }
-         }
-
-         // Double helix.
-         double frequency = 1.5 + progress * 1.5;
-         double helixSize = 0.8 + progress * 0.5;
-
-         for (double y = 0.0; y < 3.5; y += 0.25) {
-            double r = 0.9 * (1.0 - y / 3.5) + 0.15;
-            double angle = y * frequency + time;
-            fx(Particle.DUST, centre.clone().add(Math.cos(angle) * r, y, Math.sin(angle) * r), 1, 0.0, 0.0, dust(theme[0], helixSize));
-            fx(Particle.DUST, centre.clone().add(-Math.cos(angle) * r, y, -Math.sin(angle) * r), 1, 0.0, 0.0, dust(theme[1], helixSize));
-         }
-
-         // Motes spiralling into the weapon.
-         for (int m = 0; m < 3; m++) {
-            double phase = (time * 0.35 + m / 3.0) % 1.0;
-            double r = 2.2 * (1.0 - phase);
-            double angle = time * 2.0 + m * (Math.PI * 2.0 / 3.0);
-            Location mote = centre.clone().add(Math.cos(angle) * r, 0.4 + phase * 1.2, Math.sin(angle) * r);
-            fx(Particle.DUST, mote, 1, 0.0, 0.0, dust(m % 2 == 0 ? theme[0] : Color.WHITE, 1.1));
-         }
-
-         // Beacon column.
-         int motes = 2 + (int)(progress * 4.0);
-
-         for (int i = 0; i < motes; i++) {
-            fx(Particle.END_ROD, centre.clone().add((Math.random() - 0.5) * 0.3, 2.0 + Math.random() * 20.0, (Math.random() - 0.5) * 0.3), 1, 0.0, 0.0, null);
-         }
-
-         // Sparks, more of them as it builds.
-         if (Math.random() < 0.15 + progress * 0.35) {
-            double spread = 6.0 - progress * 2.5;
-            Location spark = centre.clone().add((Math.random() - 0.5) * spread, Math.random() * 4.0, (Math.random() - 0.5) * spread);
-            fx(Particle.ELECTRIC_SPARK, spark, 2, 0.1, 0.0, null);
-            fx(Particle.GLOW, spark, 1, 0.0, 0.0, null);
-         }
-
-         // Final fifth: firework crackle around the weapon.
-         if (progress > 0.8 && frame % 10 == 0) {
-            fx(Particle.FIREWORK, centre.clone().add(0.0, 1.6, 0.0), 8, 0.5, 0.08, null);
-            fx(Particle.GLOW_SQUID_INK, centre.clone().add(0.0, 1.0, 0.0), 3, 0.3, 0.03, null);
+         boolean fresh = System.currentTimeMillis() - this.startTime < 4000L;
+         if (this.scene.ensure(fresh, progress, frame)) {
+            this.scene.tick(progress, frame);
          }
 
          // The weapon: bobbing, spinning faster as it nears completion. Respawn it if the chunk was
@@ -366,28 +293,12 @@ public class Ritual {
       }
    }
 
-   /** An expanding ring of the theme colour rolling out across the ground. */
+   /** A ring of the theme colour rolling out across the ground, with a chime. */
    private void pulse(float pitch) {
-      final Location centre = this.location.clone().add(0.5, 0.3, 0.5);
-      final Color colour = this.theme()[0];
+      Location centre = this.location.clone().add(0.5, 0.3, 0.5);
       this.plugin.getSoundManager().world(centre, Sound.BLOCK_BEACON_POWER_SELECT, 0.8F, pitch);
       this.plugin.getSoundManager().world(centre, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, pitch);
-      (new BukkitRunnable() {
-         double radius = 0.4;
-
-         public void run() {
-            if (this.radius > 4.5 || Ritual.this.finished) {
-               this.cancel();
-            } else {
-               for (int i = 0; i < 24; i++) {
-                  double angle = Math.PI * 2.0 / 24.0 * i;
-                  Ritual.fx(Particle.DUST, centre.clone().add(Math.cos(angle) * this.radius, 0.0, Math.sin(angle) * this.radius), 1, 0.0, 0.0, Ritual.dust(colour, 1.3));
-               }
-
-               this.radius += 0.45;
-            }
-         }
-      }).runTaskTimer(this.plugin, 0L, 1L);
+      this.scene.pulse(4.5);
    }
 
    // ------------------------------------------------------------------ lifecycle
@@ -406,19 +317,15 @@ public class Ritual {
          Bukkit.broadcast(LegacyComponentSerializer.legacySection().deserialize(this.displayName())
             .append(Component.text(" has been forged in the " + dimensionName(this.world) + ".", NamedTextColor.LIGHT_PURPLE)));
          this.plugin.getSoundManager().world(centre, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8F, 1.0F);
-         Color[] theme = this.theme();
-
-         for (int i = 0; i < 90; i++) {
-            double angle = Math.random() * Math.PI * 2.0;
-            double radius = Math.random() * 2.2;
-            fx(Particle.DUST, centre.clone().add(radius * Math.cos(angle), Math.random() * 3.0, radius * Math.sin(angle)), 1, 0.0, 0.0, dust(Math.random() < 0.5 ? theme[0] : theme[1], 2.0));
-         }
-
-         ParticleManager.showcase(Particle.FIREWORK, centre, 120, 2.0, 2.0, 2.0, 0.4, null);
-         ParticleManager.showcase(Particle.GLOW, centre, 60, 1.5, 1.5, 1.5, 0.3, null);
-         ParticleManager.showcase(Particle.TOTEM_OF_UNDYING, centre, 50, 1.0, 1.0, 1.0, 0.3, null);
-         ParticleManager.showcase(Particle.FLASH, centre, 1, 0.0, 0.0, 0.0, 0.0, theme[0]);
-         this.world.dropItemNaturally(this.location.clone().add(0.5, 1.2, 0.5), this.plugin.getWeaponManager().getWeapon(this.weaponKey));
+         this.plugin.getSoundManager().world(centre, Sound.BLOCK_BEACON_ACTIVATE, 1.2F, 1.2F);
+         this.plugin.getSoundManager().world(centre, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.6F, 1.6F);
+         this.scene.complete();
+         Location forged = this.location.clone().add(0.5, RitualScene.WEAPON_HEIGHT, 0.5);
+         ParticleManager.showcase(Particle.END_ROD, forged, 40, 0.1, 0.1, 0.1, 0.25, null);
+         ParticleManager.showcase(Particle.TOTEM_OF_UNDYING, forged, 30, 0.4, 0.4, 0.4, 0.35, null);
+         // dropped where it floated, straight down onto the altar
+         org.bukkit.entity.Item drop = this.world.dropItem(forged, this.plugin.getWeaponManager().getWeapon(this.weaponKey));
+         drop.setVelocity(new Vector(0.0, 0.0, 0.0));
          this.plugin.getRitualManager().removeRitual(this, true);
          this.cleanup();
       }
@@ -430,6 +337,8 @@ public class Ritual {
          this.finished = true;
          Location centre = this.location.clone().add(0.5, 1.0, 0.5);
          this.plugin.getSoundManager().world(centre, Sound.BLOCK_FIRE_EXTINGUISH, 0.8F, 1.0F);
+         this.plugin.getSoundManager().world(centre, Sound.BLOCK_BEACON_DEACTIVATE, 1.0F, 0.8F);
+         this.scene.cancel();
          ParticleManager.spawn(Particle.LARGE_SMOKE, centre, 20, 0.5, 0.5, 0.5, 0.05);
 
          for (ItemStack item : this.consumed) {
@@ -464,6 +373,7 @@ public class Ritual {
       }
 
       this.bars.clear();
+      this.scene.remove();
       if (this.floatingItem != null && this.floatingItem.isValid()) {
          this.floatingItem.remove();
       }

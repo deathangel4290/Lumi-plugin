@@ -43,6 +43,7 @@ public class RitualListener implements Listener {
    public void onBlockPlace(BlockPlaceEvent event) {
       if (RitualBlock.isRitualBlock(event.getItemInHand())) {
          this.ritualManager.addRitualBlock(event.getBlock().getLocation());
+         this.ritualManager.convertPlaced(event.getBlock().getLocation());
          this.plugin.getTutorialManager().giveTutorialBook(event.getPlayer());
          this.plugin.getSoundManager().world(event.getBlock().getLocation(), Sound.BLOCK_END_PORTAL_FRAME_FILL, 1.0F, 0.8F);
       }
@@ -54,15 +55,40 @@ public class RitualListener implements Listener {
          this.ritualManager.removeRitualBlock(event.getBlock().getLocation());
          // Give the altar back rather than a plain enchanting table.
          event.setDropItems(false);
+         event.setExpToDrop(0);                       // the altar is a spawner underneath: no free XP
          event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5), RitualBlock.getRitualBlockItem());
+      }
+   }
+
+   /** Explosions never take an altar (an enchanting table was immune; the spawner under the model is not). */
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onEntityExplode(org.bukkit.event.entity.EntityExplodeEvent event) {
+      event.blockList().removeIf(block -> this.ritualManager.isRitualBlock(block.getLocation()));
+   }
+
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onBlockExplode(org.bukkit.event.block.BlockExplodeEvent event) {
+      event.blockList().removeIf(block -> this.ritualManager.isRitualBlock(block.getLocation()));
+   }
+
+   /** Withers and the like breaking blocks would skip the break handling: they leave altars alone. */
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onEntityChangeBlock(org.bukkit.event.entity.EntityChangeBlockEvent event) {
+      if (this.ritualManager.isRitualBlock(event.getBlock().getLocation())) {
+         event.setCancelled(true);
       }
    }
 
    @EventHandler
    public void onPlayerInteract(PlayerInteractEvent event) {
-      if (event.getClickedBlock() != null && event.getHand() == EquipmentSlot.HAND && event.getAction().isRightClick()
+      if (event.getClickedBlock() != null && event.getAction().isRightClick()
          && this.ritualManager.isRitualBlock(event.getClickedBlock().getLocation())) {
+         // both hands: an off-hand spawn egg would otherwise give the spawner under the altar a mob
          event.setCancelled(true);
+         if (event.getHand() != EquipmentSlot.HAND) {
+            return;
+         }
+
          Location location = event.getClickedBlock().getLocation();
          Player player = event.getPlayer();
          Ritual active = this.ritualManager.getRitualAtLocation(location);

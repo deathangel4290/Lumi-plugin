@@ -66,6 +66,15 @@ anything harder than `tools.max-hardness`, and wear the tool (Unbreaking applies
   shows every player a boss bar with its coordinates, distance and direction — or, when you are in
   the Overworld and it is in the Nether (or the other way round), the coordinates converted to your
   dimension. Breaking the altar ends the ritual and spills the ingredients.
+
+  The altar has its own model in the resource pack (basalt, gold trim, glowing amethyst runes).
+  Underneath it is an empty spawner: it mines like an enchanting table, pistons cannot move it, and
+  explosions and withers leave it alone. Old enchanting-table altars convert when their chunk loads;
+  `ritual.custom-altar: false` keeps plain enchanting tables. While a ritual runs, two rune circles
+  in the weapon's colour turn on the ground. Four crystal pylons light their beams into the weapon
+  one per quarter of the time, so progress reads from a distance. A beam climbs into the sky over the
+  weapon. In the last two seconds the pylons fly into the weapon, then a flash and a shockwave. The
+  models come from `resourcepack/_source/altar.py`; Blockbench copies are in `resourcepack/_source/blockbench/`.
 * **Weapon Fragments** (Tier I–IV) — dropped by bosses (`fragments.mob-drops`), found in supply
   drops, won in events. 4 of a tier fuse into one of the next tier at the altar.
 * **Luminosity Fragment** — only from events. Luminosity's recipe needs 3.

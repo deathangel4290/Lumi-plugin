@@ -20,9 +20,9 @@ ITEMS = os.path.join(ROOT, "items", "vfx")
 N = 128
 
 
-def grid():
-    c = (N - 1) / 2.0
-    y, x = np.mgrid[0:N, 0:N].astype(np.float64)
+def grid(n=N):
+    c = (n - 1) / 2.0
+    y, x = np.mgrid[0:n, 0:n].astype(np.float64)
     dx, dy = (x - c) / c, (y - c) / c            # -1..1, +x right, +y down
     return dx, dy, np.hypot(dx, dy), np.arctan2(dy, dx)
 
@@ -144,22 +144,136 @@ def eclipse(name):
     save(name, rgb, np.maximum(body * 0.97, light))
 
 
+# ------------------------------------------------------------------ ritual (white: tinted per weapon)
+def _segments(dx, dy, segs, width):
+    """Anti-aliased strokes: max over segments of a soft line of `width` (in -1..1 units)."""
+    v = np.zeros_like(dx)
+    for (x0, y0), (x1, y1) in segs:
+        ex, ey = x1 - x0, y1 - y0
+        L2 = ex * ex + ey * ey or 1e-9
+        t = np.clip(((dx - x0) * ex + (dy - y0) * ey) / L2, 0, 1)
+        d = np.hypot(dx - (x0 + t * ex), dy - (y0 + t * ey))
+        v = np.maximum(v, smooth(width, width * 0.35, d))
+    return v
+
+
+def _ring(r, at, width):
+    return smooth(width, width * 0.35, np.abs(r - at))
+
+
+def _glyphs(count, r0, r1, seed):
+    """Little made-up runes in a band: 2-4 strokes on a 3x3 lattice per cell, read around the circle."""
+    rng = np.random.default_rng(seed)
+    segs = []
+    lattice = [(i, j) for i in range(3) for j in range(3)]
+    for g in range(count):
+        a0 = 2 * math.pi * g / count
+        span = 2 * math.pi / count * 0.62
+        def at(i, j):
+            ang = a0 + span * (i / 2.0 - 0.5)
+            rad = r0 + (r1 - r0) * (j / 2.0)
+            return (rad * math.cos(ang), rad * math.sin(ang))
+        want, made = rng.integers(3, 5), 0
+        while made < want:
+            a, b = rng.choice(len(lattice), 2, replace=False)
+            (i0, j0), (i1, j1) = lattice[a], lattice[b]
+            if abs(i0 - i1) + abs(j0 - j1) > 2:
+                continue
+            segs.append((at(i0, j0), at(i1, j1)))
+            made += 1
+    return segs
+
+
+def polygon(k, radius, turn=0.0, step=1):
+    pts = [(radius * math.cos(turn + 2 * math.pi * i / k), radius * math.sin(turn + 2 * math.pi * i / k)) for i in range(k)]
+    return [(pts[i], pts[(i + step) % k]) for i in range(k)]
+
+
+def ritual_outer(name, n=256):
+    dx, dy, r, a = grid(n)
+    w = 3.4 / n                                            # about one texel either side
+    v = np.maximum.reduce([
+        _ring(r, 0.965, w * 1.6), _ring(r, 0.93, w), _ring(r, 0.80, w), _ring(r, 0.77, w * 1.4),
+        _ring(r, 0.52, w),
+        _segments(dx, dy, _glyphs(28, 0.815, 0.915, 3), w * 0.9),
+        _segments(dx, dy, polygon(8, 0.77, step=3), w),           # eight-point star
+        _segments(dx, dy, polygon(4, 0.77, 0.0), w * 0.8),
+        _segments(dx, dy, polygon(4, 0.77, math.pi / 4), w * 0.8),
+    ])
+    # small nodes where the star touches the ring
+    for i in range(8):
+        ang = 2 * math.pi * i / 8
+        v = np.maximum(v, _ring(np.hypot(dx - 0.77 * math.cos(ang), dy - 0.77 * math.sin(ang)), 0.03, w))
+    fill = np.clip(1 - r / 0.97, 0, 1) ** 0.6 * 0.10 * (r < 0.965)       # faint glow inside
+    alpha = np.clip(np.maximum(v, fill), 0, 1)
+    save(name, np.full(r.shape + (3,), 255.0), alpha)
+
+
+def ritual_inner(name, n=128):
+    dx, dy, r, a = grid(n)
+    w = 2.8 / n
+    v = np.maximum.reduce([
+        _ring(r, 0.95, w * 1.4), _ring(r, 0.86, w),
+        _segments(dx, dy, polygon(6, 0.86, math.pi / 2, step=2), w),      # hexagram
+        _ring(r, 0.43, w), _ring(r, 0.12, w * 1.5),
+        _segments(dx, dy, _glyphs(12, 0.47, 0.6, 11), w * 0.9),
+    ])
+    for i in range(6):
+        ang = math.pi / 2 + 2 * math.pi * i / 6
+        v = np.maximum(v, smooth(0.045, 0.02, np.hypot(dx - 0.95 * math.cos(ang), dy - 0.95 * math.sin(ang))))
+    fill = smooth(0.5, 0.0, r) * 0.18
+    save(name, np.full(r.shape + (3,), 255.0), np.clip(np.maximum(v, fill), 0, 1))
+
+
+def ritual_beam(name, height, fade):
+    """A soft beam: bright core, soft edges, optionally fading out toward the top (v = 0)."""
+    w = 32
+    x = (np.arange(w) - (w - 1) / 2) / ((w - 1) / 2)
+    profile = np.exp(-(x / 0.22) ** 2) + 0.45 * np.exp(-(x / 0.6) ** 2)
+    profile = np.clip(profile / profile.max(), 0, 1)
+    v = np.linspace(0, 1, height)[:, None]
+    along = smooth(0.0, 0.85, v) * smooth(1.0, 0.97, v) if fade else np.ones_like(v)
+    alpha = profile[None, :] * along
+    core = np.exp(-(x / 0.12) ** 2)[None, :] * np.ones_like(v)
+    rgb = np.dstack([np.full(alpha.shape, 255.0)] * 3) * (0.75 + 0.25 * core[..., None])
+    a = np.clip(alpha, 0, 1)
+    img = np.dstack([np.clip(rgb, 0, 255), a * 255]).astype(np.uint8)
+    img[a < 1 / 255.0] = 0
+    Image.fromarray(img, "RGBA").save(os.path.join(TEX, name + ".png"))
+
+
+def ritual_pulse(name):
+    dx, dy, r, a = grid()
+    v = np.maximum(np.exp(-((r - 0.9) / 0.03) ** 2), np.clip((r - 0.55) / 0.35, 0, 1) ** 2.5 * 0.5 * (r <= 0.9))
+    save(name, np.full(r.shape + (3,), 255.0), np.clip(v, 0, 1) * (r < 0.99))
+
+
 FLAT = {"from": [0, 8, 0], "to": [16, 8, 16], "faces": ("up", "down")}
 CARD = {"from": [0, 0, 8], "to": [16, 16, 8], "faces": ("north", "south")}
+CROSS = [{"from": [0, 0, 8], "to": [16, 16, 8], "faces": ("north", "south")},
+         {"from": [8, 0, 0], "to": [8, 16, 16], "faces": ("east", "west")}]
 
 
-def model(name, shape):
+def model(name, shape, tint=False):
+    """tint: faces take tintindex 0 and the item definition reads the colour from custom_model_data."""
     tex = "luminara:item/vfx/" + name
-    faces = {f: {"uv": [0, 0, 16, 16], "texture": "#0"} for f in shape["faces"]}
-    data = {
-        "textures": {"0": tex, "particle": tex},
-        "elements": [{"from": shape["from"], "to": shape["to"], "shade": False, "light_emission": 15, "faces": faces}],
-    }
+    shapes = shape if isinstance(shape, list) else [shape]
+    elements = []
+    for sh in shapes:
+        faces = {f: {"uv": [0, 0, 16, 16], "texture": "#0"} for f in sh["faces"]}
+        if tint:
+            for face in faces.values():
+                face["tintindex"] = 0
+        elements.append({"from": sh["from"], "to": sh["to"], "shade": False, "light_emission": 15, "faces": faces})
+    data = {"textures": {"0": tex, "particle": tex}, "elements": elements}
     with open(os.path.join(MODELS, name + ".json"), "w") as f:
         json.dump(data, f, indent=2)
         f.write("\n")
     with open(os.path.join(ITEMS, name + ".json"), "w") as f:
-        json.dump({"model": {"type": "minecraft:model", "model": "luminara:vfx/" + name}}, f, indent=2)
+        item = {"type": "minecraft:model", "model": "luminara:vfx/" + name}
+        if tint:
+            item["tints"] = [{"type": "minecraft:custom_model_data", "index": 0, "default": 0xC88CFF}]
+        json.dump({"model": item}, f, indent=2)
         f.write("\n")
 
 
@@ -178,6 +292,15 @@ def main():
         model(name, FLAT)
     for name in ("flash", "eclipse"):
         model(name, CARD)
+    ritual_outer("ritual_circle_outer")
+    ritual_inner("ritual_circle_inner")
+    ritual_pulse("ritual_pulse")
+    ritual_beam("ritual_beam", 32, fade=False)
+    ritual_beam("ritual_sky", 128, fade=True)
+    for name in ("ritual_circle_outer", "ritual_circle_inner", "ritual_pulse"):
+        model(name, FLAT, tint=True)
+    for name in ("ritual_beam", "ritual_sky"):
+        model(name, CROSS, tint=True)
 
 
 if __name__ == "__main__":

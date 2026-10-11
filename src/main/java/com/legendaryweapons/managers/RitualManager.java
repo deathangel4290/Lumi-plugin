@@ -3,6 +3,7 @@ package com.legendaryweapons.managers;
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.rituals.Ritual;
 import com.legendaryweapons.rituals.RitualBlock;
+import com.legendaryweapons.rituals.RitualScene;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,6 +24,8 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.entity.Display;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Display.Billboard;
@@ -57,6 +60,7 @@ public class RitualManager implements Listener {
    private final List<Map<?, ?>> pendingRituals = new ArrayList<>();
    private final List<String> craftedWeapons = new ArrayList<>();
    private final Map<Location, ItemDisplay> altarCores = new HashMap<>();
+   private final Map<Location, ItemDisplay> altarShells = new HashMap<>();
    private final File dataFile;
    private final FileConfiguration dataConfig;
 
@@ -248,6 +252,14 @@ public class RitualManager implements Listener {
       }
 
       this.altarCores.clear();
+      for (ItemDisplay shell : this.altarShells.values()) {
+         if (shell.isValid()) {
+            shell.remove();
+         }
+      }
+
+      this.altarShells.clear();
+      RitualScene.shutdown();
    }
 
    // ------------------------------------------------------------------ altar recipe & visuals
@@ -300,6 +312,11 @@ public class RitualManager implements Listener {
             }
          }
 
+         if (loaded) {
+            this.keepAltarBlock(altar);
+         }
+
+         boolean custom = this.customAltar();
          ItemDisplay core = this.altarCores.get(altar);
          boolean decorate = this.plugin.getConfig().getBoolean("ritual.altar-decoration", true);
          if (loaded && watched && this.getRitualAtLocation(altar) == null) {
@@ -307,18 +324,26 @@ public class RitualManager implements Listener {
          }
 
          if (decorate && loaded && watched && this.getRitualAtLocation(altar) == null) {
+            float size = custom ? 0.45F : 0.35F;
             if (core == null || !core.isValid()) {
-               core = world.spawn(altar.clone().add(0.5, 1.15, 0.5), ItemDisplay.class, display -> {
-                  display.setItemStack(new ItemStack(Material.AMETHYST_CLUSTER));
+               // the custom altar gets the pack's crystal hovering over its basin; the plain one an amethyst cluster
+               ItemStack shown = custom ? RitualScene.model("ritual_crystal", null) : new ItemStack(Material.AMETHYST_CLUSTER);
+               core = world.spawn(altar.clone().add(0.5, custom ? 1.5 : 1.15, 0.5), ItemDisplay.class, display -> {
+                  display.setItemStack(shown);
                   display.setPersistent(false);
                   display.setBillboard(Billboard.FIXED);
                   display.setInterpolationDuration(20);
-                  display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(0.35F, 0.35F, 0.35F), new Quaternionf()));
+                  if (custom) {
+                     display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
+                     display.setBrightness(new Display.Brightness(15, 15));
+                  }
+
+                  display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(size, size, size), new Quaternionf()));
                });
                this.altarCores.put(altar, core);
             }
 
-            core.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 0.5) * 0.04), 0.0F), new Quaternionf().rotateY((float)(time * 0.6)), new Vector3f(0.35F, 0.35F, 0.35F), new Quaternionf()));
+            core.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 0.5) * 0.06), 0.0F), new Quaternionf().rotateY((float)(time * 0.6)), new Vector3f(size, size, size), new Quaternionf()));
          } else if (core != null) {
             if (core.isValid()) {
                core.remove();
@@ -329,11 +354,68 @@ public class RitualManager implements Listener {
       }
    }
 
+   private boolean customAltar() {
+      return this.plugin.getConfig().getBoolean("ritual.custom-altar", true);
+   }
+
+   /**
+    * The custom altar is the resource pack's model on an item display over an EMPTY SPAWNER: a full
+    * block with the enchanting table's mining time that pistons cannot move, with no book poking
+    * through and no texture of its own showing (it is see-through, so the model is lit properly).
+    * Old enchanting-table altars are converted when their chunk is loaded; with custom-altar off
+    * they are turned back. Anything else in the spot (WorldEdit, a missing block) gets no shell.
+    */
+   private void keepAltarBlock(Location altar) {
+      Block block = altar.getBlock();
+      boolean custom = this.customAltar();
+      if (custom && block.getType() == Material.ENCHANTING_TABLE) {
+         block.setType(Material.SPAWNER);
+      } else if (!custom && block.getType() == Material.SPAWNER) {
+         block.setType(Material.ENCHANTING_TABLE);
+      }
+
+      ItemDisplay shell = this.altarShells.get(altar);
+      if (custom && block.getType() == Material.SPAWNER) {
+         if (shell == null || !shell.isValid()) {
+            shell = altar.getWorld().spawn(altar.clone().add(0.5, 0.5, 0.5), ItemDisplay.class, display -> {
+               display.setPersistent(false);
+               display.setItemStack(RitualScene.model("ritual_altar", null));
+               display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
+               display.setBillboard(Billboard.FIXED);
+               display.setViewRange(2.0F);
+               // a hair bigger than the block so the spawner's own faces never show through
+               display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.002F, 1.002F, 1.002F), new Quaternionf()));
+            });
+            this.altarShells.put(altar, shell);
+         }
+      } else if (shell != null) {
+         if (shell.isValid()) {
+            shell.remove();
+         }
+
+         this.altarShells.remove(altar);
+      }
+   }
+
    // ------------------------------------------------------------------ altars & rituals
 
    public void addRitualBlock(Location location) {
-      this.altars.add(blockOf(location));
+      Location block = blockOf(location);
+      this.altars.add(block);
       this.save();
+   }
+
+   /**
+    * The placed enchanting table becomes the altar's spawner a tick later: during BlockPlaceEvent the
+    * server still has the table's block entity captured and would put it back over a changed block.
+    */
+   public void convertPlaced(Location location) {
+      Location block = blockOf(location);
+      this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
+         if (this.altars.contains(block)) {
+            this.keepAltarBlock(block);
+         }
+      });
    }
 
    public void removeRitualBlock(Location location) {
@@ -342,6 +424,11 @@ public class RitualManager implements Listener {
       ItemDisplay core = this.altarCores.remove(block);
       if (core != null && core.isValid()) {
          core.remove();
+      }
+
+      ItemDisplay shell = this.altarShells.remove(block);
+      if (shell != null && shell.isValid()) {
+         shell.remove();
       }
 
       Ritual ritual = this.getRitualAtLocation(block);
