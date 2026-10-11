@@ -156,7 +156,11 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       }
 
       direction.normalize().multiply(power);
-      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_STAINED_GLASS, 0.4, 1.8, 6, false);
+      if (!com.legendaryweapons.managers.SpriteFx.wave(player.getLocation(), org.bukkit.Color.fromRGB(210, 240, 255), 2.2, 5)) {
+         com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_STAINED_GLASS, 0.4, 1.8, 6, false);
+      }
+
+      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(200, 245, 255), 2.8, 0.0);
       direction.setY(lift);
       player.setVelocity(direction);
       this.plugin.getDashTracker().markDashing(player, duration + 4L);

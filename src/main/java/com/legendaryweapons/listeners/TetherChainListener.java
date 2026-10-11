@@ -117,6 +117,7 @@ public class TetherChainListener extends AbstractWeaponListener {
 
    private void hooked(Player owner, LivingEntity target) {
       com.legendaryweapons.managers.AnimationFx.ring(target.getLocation(), Material.CHAIN, 1.4, 0.3, 8, false);
+      com.legendaryweapons.managers.SpriteFx.burst(target.getLocation().add(0.0, target.getHeight() * 0.55, 0.0), org.bukkit.Color.fromRGB(200, 205, 215), 1.3, 1, 1, 4);
       Vector pull = owner.getLocation().toVector().subtract(target.getLocation().toVector());
       double distance = pull.length();
       if (distance > 0.5) {

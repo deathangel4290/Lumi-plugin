@@ -1,0 +1,79 @@
+{
+  "textures": {
+    "0": "luminara:item/vfx/flash_tint_body",
+    "1": "luminara:item/vfx/flash_tint_core",
+    "particle": "luminara:item/vfx/flash_tint_body"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        8.0
+      ],
+      "to": [
+        16,
+        16,
+        8.0
+      ],
+      "shade": false,
+      "light_emission": 15,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#0",
+          "tintindex": 0
+        }
+      }
+    },
+    {
+      "from": [
+        0,
+        0,
+        8.05
+      ],
+      "to": [
+        16,
+        16,
+        8.05
+      ],
+      "shade": false,
+      "light_emission": 15,
+      "faces": {
+        "north": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#1"
+        },
+        "south": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#1"
+        }
+      }
+    }
+  ]
+}

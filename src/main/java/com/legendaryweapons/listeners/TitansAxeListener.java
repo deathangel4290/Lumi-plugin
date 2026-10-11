@@ -163,6 +163,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
             equipment.setArmorContents(armour);
             Location loc = target.getLocation().add(0.0, 1.0, 0.0);
             ParticleManager.spawn(Particle.CRIT, loc, 12, 0.4, 0.5, 0.4, 0.1);
+            com.legendaryweapons.managers.SpriteFx.burst(loc, org.bukkit.Color.fromRGB(255, 190, 80), 1.4, 1, 1, 4);
             this.plugin.getSoundManager().world(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.5F, 1.4F);
             HudManager.message(source, Component.text("Armour cracked (-" + amount + " durability)", NamedTextColor.GOLD));
          }

@@ -166,6 +166,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       axeDisplay.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "zeus-owner"), PersistentDataType.STRING, player.getUniqueId().toString());
       this.axeOwners.put(axeDisplay.getUniqueId(), player.getUniqueId());
       this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_TRIDENT_THROW, 0.8F, 1.1F);
+      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(120, 220, 255), 2.6, -0.3);
       this.startAxeTracking(axeDisplay, player, direction);
    }
 
@@ -271,7 +272,11 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    private void onAxeHit(Entity axe, Player owner, LivingEntity hitEntity) {
       Location hitLoc = axe.getLocation();
       hitLoc.getWorld().strikeLightningEffect(hitLoc);
-      com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.LIGHT_BLUE_STAINED_GLASS, 0.3, 2.5, 8, true);
+      if (!com.legendaryweapons.managers.SpriteFx.wave(hitLoc, org.bukkit.Color.fromRGB(120, 220, 255), 3.0, 6)) {
+         com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.LIGHT_BLUE_STAINED_GLASS, 0.3, 2.5, 8, true);
+      }
+
+      com.legendaryweapons.managers.SpriteFx.burst(hitLoc.clone().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(120, 220, 255), 2.6, 2, 1, 6);
       this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.7F, 1.2F);
       if (hitEntity != null && this.plugin.getProtectionManager().canAffect(owner, hitEntity)) {
          com.legendaryweapons.abilities.AbilityDamage.hit(owner, hitEntity, this.ability("throw-damage", 8.0), this.ability("throw-armour-pierce", 0.25), hitLoc, "{victim} was struck down by {killer}'s Axe of Zeus");

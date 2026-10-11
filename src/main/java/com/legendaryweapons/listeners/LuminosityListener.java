@@ -219,6 +219,7 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
 
          direction.normalize().multiply(this.ability("dash-power", 1.5)).setY(this.ability("dash-lift", 0.35));
          player.setVelocity(direction);
+         com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(255, 220, 110), 2.6, 0.0);
          this.plugin.getDashTracker().markDashing(player, 10L);
          Location loc = player.getLocation();
          ParticleManager.spawn(Particle.END_ROD, loc.clone().add(0.0, 0.2, 0.0), 8, 0.3, 0.1, 0.3, 0.02);

@@ -246,6 +246,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       trident.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "glaive-owner"), PersistentDataType.STRING, player.getUniqueId().toString());
       trident.getPersistentDataContainer().set(new NamespacedKey(this.plugin, "glaive-damage"), PersistentDataType.DOUBLE, baseDamage);
       this.tridentOwners.put(trident.getUniqueId(), player.getUniqueId());
+      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(150, 60, 235), 2.4, 0.25);
       this.glaiveItems.put(trident.getUniqueId(), glaiveItem);
       this.owedGlaives.push(player, glaiveItem);
       // The thrown entity would render as a vanilla trident; hide it and fly the glaive model instead.
@@ -359,6 +360,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                ParticleManager.spawn(Particle.PORTAL, hitLoc, 20, 1.0, 1.0, 1.0, 0.2);
                com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.PURPLE_STAINED_GLASS, 0.3, 1.6, 8, true);
                com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.PURPLE_STAINED_GLASS, 1.6, 0.3, 8, true);
+               com.legendaryweapons.managers.SpriteFx.burst(hitLoc.clone().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(150, 60, 235), 1.8, 2, 1, 5);
             }
          }
       }

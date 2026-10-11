@@ -97,6 +97,7 @@ public class ScytheOfDiabloListener implements Listener {
                   event.setDamage(event.getDamage() * backstabMultiplier);
                   isBackstab = true;
                   this.createBackstabEffects(victim.getLocation());
+                  com.legendaryweapons.managers.SpriteFx.slash(damager, org.bukkit.Color.fromRGB(230, 40, 50), 2.2, -0.45);
                }
             }
 

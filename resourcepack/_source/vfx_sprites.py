@@ -248,6 +248,63 @@ def ritual_pulse(name):
     save(name, np.full(r.shape + (3,), 255.0), np.clip(v, 0, 1) * (r < 0.99))
 
 
+# ------------------------------------------------------------------ tintable slash / flash
+def slash_layers(name):
+    """Two layers for a slash in any colour: a white body (tinted in game) and an untinted white-hot
+    leading edge drawn just above it, so a tinted slash still has a bright rim."""
+    dx, dy, r, a = grid()
+    span = math.radians(115)
+    t = np.clip(1 - np.abs(a) / span, 0, 1)
+    thick = 0.42 * np.sin(t * math.pi / 2) ** 1.2
+    outer = 0.92
+    depth = (outer - r) / np.maximum(thick, 1e-4)
+    body = (depth >= 0) & (depth <= 1) & (t > 0)
+    core = np.where(body, (1 - np.clip(depth, 0, 1)) ** 0.9, 0.0)
+    halo = np.clip(1 - (r - outer) / 0.05, 0, 1) * (r > outer) * t ** 0.7
+    smear = np.clip(1 - (outer - thick - r) / 0.35, 0, 1) * (depth > 1) * t ** 2 * 0.22
+    alpha = np.maximum.reduce([np.clip(core * 1.25, 0, 1) * (0.45 + 0.55 * t ** 0.5), halo * 0.5, smear])
+    white = np.full(r.shape + (3,), 255.0)
+    save(name + "_body", white * (0.55 + 0.45 * core[..., None]), alpha)
+    edge = np.where(body, np.clip(1 - depth / 0.22, 0, 1), 0.0) * t ** 0.6
+    save(name + "_edge", white, np.clip(edge * 0.95, 0, 1))
+
+
+def flash_layers(name):
+    dx, dy, r, a = grid()
+    glow = np.exp(-(r / 0.32) ** 2) + 0.35 * np.exp(-(r / 0.65) ** 2)
+    rays = (np.abs(np.cos(a * 4)) ** 24 + 0.5 * np.abs(np.cos(a * 4 + math.pi / 4)) ** 30) * np.clip(1 - r, 0, 1) ** 1.5
+    v = np.clip(glow + rays * 0.7, 0, 1) * smooth(1.0, 0.85, r)
+    white = np.full(r.shape + (3,), 255.0)
+    save(name + "_body", white, v ** 0.9)
+    core = np.exp(-(r / 0.13) ** 2)
+    save(name + "_core", white, np.clip(core * 1.2, 0, 1))
+
+
+def layered_model(name, shape, layers, gap):
+    """Layer 0 is tinted (tintindex 0), the rest are drawn untinted `gap` units in front of it."""
+    elements = []
+    for i, layer in enumerate(layers):
+        frm, to = list(shape["from"]), list(shape["to"])
+        axis = 1 if shape["faces"][0] == "up" else 2
+        frm[axis] += gap * i
+        to[axis] += gap * i
+        faces = {f: {"uv": [0, 0, 16, 16], "texture": "#" + str(i)} for f in shape["faces"]}
+        if i == 0:
+            for face in faces.values():
+                face["tintindex"] = 0
+        elements.append({"from": frm, "to": to, "shade": False, "light_emission": 15, "faces": faces})
+    textures = {str(i): "luminara:item/vfx/" + layer for i, layer in enumerate(layers)}
+    textures["particle"] = textures["0"]
+    with open(os.path.join(MODELS, name + ".json"), "w") as f:
+        json.dump({"textures": textures, "elements": elements}, f, indent=2)
+        f.write("\n")
+    item = {"type": "minecraft:model", "model": "luminara:vfx/" + name,
+            "tints": [{"type": "minecraft:custom_model_data", "index": 0, "default": 0xFFFFFF}]}
+    with open(os.path.join(ITEMS, name + ".json"), "w") as f:
+        json.dump({"model": item}, f, indent=2)
+        f.write("\n")
+
+
 FLAT = {"from": [0, 8, 0], "to": [16, 8, 16], "faces": ("up", "down")}
 CARD = {"from": [0, 0, 8], "to": [16, 16, 8], "faces": ("north", "south")}
 CROSS = [{"from": [0, 0, 8], "to": [16, 16, 8], "faces": ("north", "south")},
@@ -301,6 +358,10 @@ def main():
         model(name, FLAT, tint=True)
     for name in ("ritual_beam", "ritual_sky"):
         model(name, CROSS, tint=True)
+    slash_layers("slash_tint")
+    flash_layers("flash_tint")
+    layered_model("slash_tint", FLAT, ["slash_tint_body", "slash_tint_edge"], 0.05)
+    layered_model("flash_tint", CARD, ["flash_tint_body", "flash_tint_core"], 0.05)
 
 
 if __name__ == "__main__":

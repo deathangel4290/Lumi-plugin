@@ -94,6 +94,11 @@ public final class SpriteFx {
    }
 
    private static ItemDisplay spawn(Location at, ItemStack shown, Display.Billboard billboard, Transformation start) {
+      return spawn(at, shown, billboard, start, 0.0);
+   }
+
+   /** `clearance` > 0: not shown to anyone whose eyes are that close (a burst on your own body). */
+   private static ItemDisplay spawn(Location at, ItemStack shown, Display.Billboard billboard, Transformation start, double clearance) {
       World world = at.getWorld();
       Location place = at.clone();
       place.setYaw(0.0F);
@@ -111,7 +116,8 @@ public final class SpriteFx {
          if (particles != null) {
             for (Player viewer : world.getPlayers()) {
                ParticleManager.Level level = particles.levelOf(viewer);
-               if (level == ParticleManager.Level.OFF || level == ParticleManager.Level.MINIMAL) {
+               if (level == ParticleManager.Level.OFF || level == ParticleManager.Level.MINIMAL
+                  || clearance > 0.0 && viewer.getEyeLocation().distanceSquared(at) < clearance * clearance) {
                   viewer.hideEntity(plugin, display);
                }
             }
@@ -154,7 +160,16 @@ public final class SpriteFx {
     * direction (positive and negative give forehand and backhand); `size` is its width in blocks.
     */
    public static boolean slash(Player player, Sprite sprite, double size, double roll) {
-      if (!enabled() || player.getWorld() == null) {
+      return enabled() && slash(player, item(sprite), size, roll);
+   }
+
+   /** The same slash in any colour, with a white-hot leading edge. */
+   public static boolean slash(Player player, org.bukkit.Color colour, double size, double roll) {
+      return enabled() && slash(player, com.legendaryweapons.rituals.RitualScene.model("vfx/slash_tint", colour), size, roll);
+   }
+
+   private static boolean slash(Player player, ItemStack shown, double size, double roll) {
+      if (player.getWorld() == null) {
          return false;
       }
 
@@ -168,7 +183,7 @@ public final class SpriteFx {
       float yaw = yawToward(forward);
       float sweep = roll >= 0.0 ? 0.6F : -0.6F;
       float tilt = (float)roll;
-      ItemDisplay display = spawn(centre, sprite, Display.Billboard.FIXED,
+      ItemDisplay display = spawn(centre, shown, Display.Billboard.FIXED,
          shape(new Quaternionf().rotationY(yaw + sweep).rotateX(tilt), size * 0.7));
       morph(display, 2L, 3, shape(new Quaternionf().rotationY(yaw - sweep * 0.25F).rotateX(tilt), size));
       morph(display, 5L, 3, shape(new Quaternionf().rotationY(yaw - sweep).rotateX(tilt), size * 0.8));
@@ -211,11 +226,20 @@ public final class SpriteFx {
 
    /** A camera-facing sprite that blooms to `size`, holds, then shrinks away. */
    public static boolean burst(Location at, Sprite sprite, double size, int growTicks, int holdTicks, int fadeTicks) {
-      if (!enabled() || at.getWorld() == null) {
+      return enabled() && burst(at, item(sprite), size, growTicks, holdTicks, fadeTicks);
+   }
+
+   /** A burst of light in any colour around a white core. */
+   public static boolean burst(Location at, org.bukkit.Color colour, double size, int growTicks, int holdTicks, int fadeTicks) {
+      return enabled() && burst(at, com.legendaryweapons.rituals.RitualScene.model("vfx/flash_tint", colour), size, growTicks, holdTicks, fadeTicks);
+   }
+
+   private static boolean burst(Location at, ItemStack shown, double size, int growTicks, int holdTicks, int fadeTicks) {
+      if (at.getWorld() == null) {
          return false;
       }
 
-      ItemDisplay display = spawn(at, sprite, Display.Billboard.CENTER, shape(new Quaternionf(), size * 0.4));
+      ItemDisplay display = spawn(at, shown, Display.Billboard.CENTER, shape(new Quaternionf(), size * 0.4), size * 0.5 + 0.6);
       int grow = Math.max(1, growTicks);
       morph(display, 2L, grow, shape(new Quaternionf(), size));
       morph(display, 2L + grow + Math.max(0, holdTicks), Math.max(1, fadeTicks), shape(new Quaternionf(), size * 0.05));

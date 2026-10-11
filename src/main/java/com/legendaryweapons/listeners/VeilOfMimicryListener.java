@@ -166,6 +166,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
                      HudManager.message(player, Component.text("That face would not hold (no skin found for " + targetName + ").", NamedTextColor.RED));
                   } else if (this.plugin.getDisguiseManager().apply(player, targetName, textures)) {
                      com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_STAINED_GLASS, 1.6, 0.2, 10, false);
+                     com.legendaryweapons.managers.SpriteFx.burst(player.getLocation().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(70, 30, 90), 2.2, 2, 2, 8);
                      this.plugin.getCooldownManager().setWithHeldItemFeedback(player, COOLDOWN_KEY, this.abilityLong("morph-cooldown", 4800L));
                      Bukkit.broadcast(Component.translatable("multiplayer.player.joined", NamedTextColor.YELLOW, Component.text(targetName)));
                      HudManager.message(player, Component.text("You are " + targetName + ".", NamedTextColor.LIGHT_PURPLE));

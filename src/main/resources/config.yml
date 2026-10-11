@@ -50,9 +50,9 @@ audio:
 effects:
   particles: true
   animations: true                # short ground-level ability animations (display blocks, <1s, hidden for /lwfx off)
-  # Textured effects from the resource pack, one signature moment per weapon: SuperNova's rune
-  # circle, flash and shockwave; the Eclipse split's eclipse and light/dark slashes; the Scythe's
-  # combo finisher; Titan's Axe Slam cracks. Hidden for /lwfx minimal and off. With this off, those
+  # Textured effects from the resource pack, one per ability, in each weapon's colours (slashes,
+  # bursts, ground rings; SuperNova and the Eclipse split get their own). Hidden for /lwfx minimal
+  # and off, and never shown to someone a burst lands on. With this off, those
   # moments use the particle/display-block versions instead. Players WITHOUT the resource pack see
   # placeholder blocks for sprites, so turn this off if the pack is optional on your server.
   sprites: true

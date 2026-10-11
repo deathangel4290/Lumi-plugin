@@ -216,6 +216,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
       Vector side = Math.abs(dir.getY()) > 0.95 ? new Vector(1, 0, 0) : dir.clone().crossProduct(new Vector(0, 1, 0)).normalize();
       Vector up = side.clone().crossProduct(dir).normalize();
       DustOptions ring = new DustOptions(Color.fromRGB(110, 225, 255), 0.8F);
+      com.legendaryweapons.managers.SpriteFx.burst(hand, org.bukkit.Color.fromRGB(90, 215, 255), 1.2, 1, 0, 4);
 
       for (int i = 0; i < 14; i++) {
          double a = Math.PI * 2 * i / 14;
@@ -497,7 +498,10 @@ public class LostTridentListener implements Listener, WeaponAbility {
    }
 
    private void createWaterWallEffects(final Location location) {
-      AnimationFx.ring(location, Material.LIGHT_BLUE_STAINED_GLASS, 0.6, 3.0, 8, false);
+      if (!com.legendaryweapons.managers.SpriteFx.wave(location, org.bukkit.Color.fromRGB(90, 215, 255), 3.2, 7)) {
+         AnimationFx.ring(location, Material.LIGHT_BLUE_STAINED_GLASS, 0.6, 3.0, 8, false);
+      }
+
       this.plugin.getSoundManager().world(location, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.7F, 1.1F);
    }
 
@@ -512,7 +516,10 @@ public class LostTridentListener implements Listener, WeaponAbility {
       (new BukkitRunnable() {
          public void run() {
             Location ground = location.clone();
-            AnimationFx.ring(ground, Material.LIGHT_BLUE_STAINED_GLASS, 0.5, radius, 8, false);
+            if (!com.legendaryweapons.managers.SpriteFx.wave(ground, org.bukkit.Color.fromRGB(90, 215, 255), radius, 7)) {
+               AnimationFx.ring(ground, Material.LIGHT_BLUE_STAINED_GLASS, 0.5, radius, 8, false);
+            }
+
             for (int i = 0; i < 16; i++) {                                     // crown
                double a = Math.PI * 2 * i / 16;
                Location lip = location.clone().add(Math.cos(a) * 0.7, 0.2, Math.sin(a) * 0.7);
