@@ -25,6 +25,7 @@
 #
 # ============================================================================
 config-version: 4
+balance-revision: 1                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -209,6 +210,7 @@ weapons:
       - "§7Cooldown  §f»  §f{s:throw-cooldown}"
     abilities:
       throw-damage: 8.0
+      throw-armour-pierce: 0.25         # share of the throw that ignores armour and Protection
       throw-stun-duration: 40           # 2s
       throw-weakness-duration: 100      # 5s
       melee-stun-duration: 20           # 1s
@@ -449,6 +451,7 @@ weapons:
       - "§7Against a shield  §f»  §7disabled {s:shield-break-duration}"
       - "§7Each charged hit on a player  §f»  §6+{n:slam-charge-per-hit}% §7Slam"
       - "§7Ability at 100%  §f»  §7Slam: {n:slam-radius} block radius"
+      - "§8  Up to {h:slam-damage} hearts, {pct:slam-armour-pierce} of it through armour"
       - "§8  Knockback {n:slam-knockback}, up to -{n:slam-armour-damage} armour durability"
       - ""
       - "§7Slam cooldown  §f»  §f{s:slam-cooldown}"
@@ -468,7 +471,9 @@ weapons:
       slam-cooldown: 600                # 30s
       slam-windup: 12                   # 0.6s telegraph
       slam-radius: 6.0
-      slam-damage: 6.0                  # scaled by distance falloff
+      slam-damage: 14.0                 # at the centre; falls to slam-edge-damage of it at the rim
+      slam-edge-damage: 0.4
+      slam-armour-pierce: 0.4           # share of the hit that ignores armour and Protection
       slam-knockback: 1.6
       slam-armour-damage: 40            # at the epicentre, falling to 0 at the rim
     enchantments:

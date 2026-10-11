@@ -64,7 +64,46 @@ public class ConfigManager {
       }
    }
 
+   /**
+    * Defaults retuned after release, as {revision, path, old default, new default}. On start, a
+    * server still on the old default is moved to the new one; a value somebody changed is left
+    * alone. Each revision runs once (balance-revision in config.yml remembers where it got to).
+    */
+   private static final Object[][] RETUNED = {
+      {1, "weapons.titans-axe.abilities.slam-damage", 6.0, 14.0},
+   };
+
+   private void retune() {
+      File file = new File(this.plugin.getDataFolder(), "config.yml");
+      if (!file.exists()) {
+         return;
+      }
+
+      int found = YamlConfiguration.loadConfiguration(file).getInt("balance-revision", 0);
+      int latest = 0;
+      for (Object[] entry : RETUNED) {
+         int revision = (Integer)entry[0];
+         latest = Math.max(latest, revision);
+         if (revision > found) {
+            String path = (String)entry[1];
+            Object current = this.config.get(path);
+            boolean untouched = current instanceof Number n && entry[2] instanceof Number old
+               ? Math.abs(n.doubleValue() - old.doubleValue()) < 1.0E-9
+               : entry[2].equals(current);
+            if (untouched) {
+               this.config.set(path, entry[3]);
+               this.plugin.getLogger().info("Retuned " + path + ": " + entry[2] + " -> " + entry[3]);
+            }
+         }
+      }
+
+      if (latest > found) {
+         this.config.set("balance-revision", latest);
+      }
+   }
+
    public void loadDefaults() {
+      this.retune();
       this.config.addDefault("ritual-block-recipe.enabled", true);
       this.config.addDefault("ritual-block-recipe.shape", Arrays.asList("ODO", "DND", "OOO"));
       this.config.addDefault("ritual-block-recipe.ingredients.O", "OBSIDIAN");

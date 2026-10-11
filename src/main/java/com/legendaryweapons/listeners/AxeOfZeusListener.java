@@ -274,7 +274,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.LIGHT_BLUE_STAINED_GLASS, 0.3, 2.5, 8, true);
       this.plugin.getSoundManager().world(hitLoc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.7F, 1.2F);
       if (hitEntity != null && this.plugin.getProtectionManager().canAffect(owner, hitEntity)) {
-         hitEntity.damage(this.ability("throw-damage", 8.0), owner);
+         com.legendaryweapons.abilities.AbilityDamage.hit(owner, hitEntity, this.ability("throw-damage", 8.0), this.ability("throw-armour-pierce", 0.25), hitLoc, "{victim} was struck down by {killer}'s Axe of Zeus");
          int stunDuration = this.abilityInt("throw-stun-duration", 40);
          int weaknessDuration = this.abilityInt("throw-weakness-duration", 100);
          hitEntity.setVelocity(new Vector(0.0, 0.5, 0.0));

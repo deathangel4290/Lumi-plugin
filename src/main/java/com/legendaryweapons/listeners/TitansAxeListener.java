@@ -258,9 +258,11 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                continue;                                // the search box has corners; the blast is round
             }
 
-            double falloff = Math.max(0.0, 1.0 - distance / radius);
-            if (damage > 0.0 && falloff > 0.0) {
-               living.damage(damage * falloff, player);
+            // full force at the centre, never less than slam-edge-damage of it inside the ring
+            double edge = Math.max(0.0, Math.min(1.0, this.ability("slam-edge-damage", 0.4)));
+            double falloff = 1.0 - (1.0 - edge) * (distance / radius);
+            if (damage > 0.0) {
+               com.legendaryweapons.abilities.AbilityDamage.hit(player, living, damage * falloff, this.ability("slam-armour-pierce", 0.4), centre, "{victim} was crushed by {killer}'s Slam");
             }
 
             this.damageArmour(living, (int)Math.round(armourDamage * falloff), player);

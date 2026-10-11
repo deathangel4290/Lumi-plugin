@@ -349,7 +349,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
                   if (nearby instanceof LivingEntity living && hit.add(nearby.getUniqueId()) && ChionesBladeListener.this.canAffect(player, nearby)) {
                      living.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, slowDuration, slowAmplifier, true, false));
                      if (damage > 0.0) {
-                        living.damage(damage, player);
+                        com.legendaryweapons.abilities.AbilityDamage.hit(player, living, damage, 0.0, front, "{victim} was frozen solid by {killer}'s Ice Wave");
                      }
 
                      ParticleManager.spawn(Particle.SNOWFLAKE, living.getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.5, 0.3, 0.01);

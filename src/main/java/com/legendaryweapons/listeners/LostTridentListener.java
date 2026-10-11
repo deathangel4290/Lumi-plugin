@@ -452,7 +452,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
 
                hit.add(entity.getUniqueId());
                if (damage > 0.0) {
-                  living.damage(damage, owner);
+                  com.legendaryweapons.abilities.AbilityDamage.hit(owner, living, damage, 0.0, anchor, "{victim} was swept away by {killer}'s Water Wall");
                }
 
                entity.setVelocity(facing.clone().multiply(1.1).setY(0.35));
@@ -531,11 +531,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
                   }
 
                   if (pulseDamage > 0.0) {
-                     if (shooter != null) {
-                        living.damage(pulseDamage, shooter);
-                     } else {
-                        living.damage(pulseDamage);
-                     }
+                     com.legendaryweapons.abilities.AbilityDamage.hit(shooter, living, pulseDamage, 0.0, location, "{victim} was dragged under by {killer}'s Lost Trident");
                   }
 
                   Vector offset = entity.getLocation().toVector().subtract(location.toVector());

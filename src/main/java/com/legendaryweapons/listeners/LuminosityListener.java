@@ -439,17 +439,7 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
                if (dealt > 0.0) {
                   // Part of the blast ignores armour (it is light, not a blade), the rest is a normal
                   // hit from the wielder. Armour alone used to turn a full SuperNova into a scratch.
-                  double piercing = dealt * pierce;
-                  if (piercing > 0.0) {
-                     living.setNoDamageTicks(0);
-                     living.damage(piercing, org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.SONIC_BOOM)
-                        .withCausingEntity(player).withDirectEntity(player).withDamageLocation(centre).build());
-                  }
-
-                  if (dealt - piercing > 0.0 && !living.isDead()) {
-                     living.setNoDamageTicks(0);
-                     living.damage(dealt - piercing, player);
-                  }
+                  com.legendaryweapons.abilities.AbilityDamage.hit(player, living, dealt, pierce, centre, null);
 
                   if (living instanceof Player victim) {
                      this.novaVictims.put(victim.getUniqueId(), player.getUniqueId());
