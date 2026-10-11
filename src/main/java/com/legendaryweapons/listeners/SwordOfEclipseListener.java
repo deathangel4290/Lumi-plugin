@@ -472,6 +472,10 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
                int combo = this.comboTracker.getOrDefault(damager.getUniqueId(), 0) + 1;
                this.comboTracker.put(damager.getUniqueId(), combo);
                this.createComboEffects(damager, victim.getLocation(), combo);
+               if (damager.getAttackCooldown() > 0.9F) {
+                  boolean light = combo % 2 == 1;
+                  com.legendaryweapons.managers.SpriteFx.slash(damager, light ? com.legendaryweapons.managers.SpriteFx.Sprite.SLASH_LIGHT : com.legendaryweapons.managers.SpriteFx.Sprite.SLASH_DARK, 2.6, light ? 0.45 : -0.45);
+               }
                ItemStack mainHand = damager.getInventory().getItemInMainHand();
                ItemStack offHand = damager.getInventory().getItemInOffHand();
                if (this.isSplitSword(mainHand) && this.isSplitSword(offHand)) {
@@ -892,6 +896,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       this.dualWielding.put(uuid, true);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_CONCRETE, 0.4, 2.4, 10, true);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_CONCRETE, 2.4, 0.4, 10, false);
+      com.legendaryweapons.managers.SpriteFx.burst(player.getLocation().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.4, 5, 14, 6);
       this.mainSlot.put(uuid, player.getInventory().getHeldItemSlot());
       ItemStack held = player.getInventory().getItemInMainHand();
       ItemStack original = this.isRealEclipse(held) ? held.clone() : this.weaponManager.getWeapon("sword-of-eclipse");

@@ -1,0 +1,42 @@
+{
+  "textures": {
+    "0": "luminara:item/vfx/slash_red",
+    "particle": "luminara:item/vfx/slash_red"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        8,
+        0
+      ],
+      "to": [
+        16,
+        8,
+        16
+      ],
+      "shade": false,
+      "light_emission": 15,
+      "faces": {
+        "up": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ]
+}

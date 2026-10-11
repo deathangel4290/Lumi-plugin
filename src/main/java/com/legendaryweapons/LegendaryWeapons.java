@@ -85,6 +85,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.soundManager = new SoundManager(this);
       this.particleManager = new ParticleManager(this);
       com.legendaryweapons.managers.AnimationFx.init(this);
+      com.legendaryweapons.managers.SpriteFx.init(this);
       this.hudManager = new HudManager(this);
       this.protectionManager = new ProtectionManager(this);
       this.chargePool = new ChargePool();
@@ -164,6 +165,7 @@ public class LegendaryWeapons extends JavaPlugin {
    }
 
    public void onDisable() {
+      com.legendaryweapons.managers.SpriteFx.shutdown();
       if (this.bossManager != null) {
          this.bossManager.shutdown();
       }

@@ -266,6 +266,10 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
       }
 
       this.fallImmune.add(id);
+      // The landing spot gets a rune circle (the telegraph) and light gathers over the player's head.
+      final int life = windup + maxTicks + 20;
+      final com.legendaryweapons.managers.SpriteFx.Held circle = com.legendaryweapons.managers.SpriteFx.hold(this.groundBelow(player), com.legendaryweapons.managers.SpriteFx.Sprite.RUNE_GOLD, false, radius * 2.15 * 0.45, life);
+      final com.legendaryweapons.managers.SpriteFx.Held core = com.legendaryweapons.managers.SpriteFx.hold(player.getLocation().add(0.0, 2.4, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.FLASH, true, 0.3, life);
       BukkitRunnable task = new BukkitRunnable() {
          int ticks = 0;
          boolean driving = false;
@@ -275,6 +279,14 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
             if (!this.finished) {
                this.finished = true;
                this.cancel();
+               if (core != null) {
+                  core.remove();
+               }
+
+               if (circle != null) {
+                  circle.release(detonate ? 2 : 5);
+               }
+
                LuminosityListener.this.slamming.remove(id);
 
                try {
@@ -300,6 +312,21 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
 
                this.ticks++;
                player.setFallDistance(0.0F);
+               if (circle != null) {
+                  circle.follow(LuminosityListener.this.groundBelow(player));
+                  if (this.ticks % 4 == 1) {
+                     double grown = Math.min(1.0, 0.45 + 0.55 * this.ticks / Math.max(1.0, windup));
+                     circle.animate(radius * 2.15 * grown, circle.angle() + 0.6F, 4);
+                  }
+               }
+
+               if (core != null) {
+                  core.follow(player.getLocation().add(0.0, 2.4, 0.0));
+                  if (this.ticks <= windup && this.ticks % 2 == 1) {
+                     core.animate(0.3 + 1.3 * this.ticks / Math.max(1.0, windup), 2);
+                  }
+               }
+
                if (this.ticks <= windup) {
                   if (this.ticks % 3 == 1) {
                      LuminosityListener.this.warningRing(player, radius);
@@ -339,21 +366,25 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
       return this.ability("supernova-radius", 7.0) * (0.45 + power * 0.55);
    }
 
-   /** The ring on the ground where the slam will land: the "get out of here" cue for everyone else. */
-   private void warningRing(Player player, double radius) {
+   /** The first solid ground under the player (up to 24 blocks down), where the slam will land. */
+   private Location groundBelow(Player player) {
       Location ground = player.getLocation();
-      Location base = ground.clone();
-      int floor = base.getBlockY();
+      int floor = ground.getBlockY();
 
       for (int i = 0; i < 24 && floor > ground.getWorld().getMinHeight(); i++) {
-         if (!base.getWorld().getBlockAt(base.getBlockX(), floor - 1, base.getBlockZ()).isPassable()) {
+         if (!ground.getWorld().getBlockAt(ground.getBlockX(), floor - 1, ground.getBlockZ()).isPassable()) {
             break;
          }
 
          floor--;
       }
 
-      Location centre = new Location(ground.getWorld(), ground.getX(), floor + 0.1, ground.getZ());
+      return new Location(ground.getWorld(), ground.getX(), floor + 0.05, ground.getZ());
+   }
+
+   /** The ring on the ground where the slam will land: the "get out of here" cue for everyone else. */
+   private void warningRing(Player player, double radius) {
+      Location centre = this.groundBelow(player).add(0.0, 0.05, 0.0);
       Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(255, 200, 60), 1.3F);
 
       for (int i = 0; i < 28; i++) {
@@ -370,9 +401,14 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
       Location centre = player.getLocation();
       player.setFallDistance(0.0F);
       ParticleManager.spawn(Particle.EXPLOSION_EMITTER, centre, 1, 0.0, 0.0, 0.0, 0.0);
-      com.legendaryweapons.managers.AnimationFx.ring(centre, Material.GLOWSTONE, 0.6, radius, 12, true);
+      if (!com.legendaryweapons.managers.SpriteFx.wave(centre, com.legendaryweapons.managers.SpriteFx.Sprite.SHOCKWAVE_GOLD, radius, 6)) {
+         com.legendaryweapons.managers.AnimationFx.ring(centre, Material.GLOWSTONE, 0.6, radius, 12, true);
+      }
+
       com.legendaryweapons.managers.AnimationFx.shockwave(centre, Material.GOLD_BLOCK, radius * 0.7, 12);
-      ParticleManager.spawn(Particle.FLASH, centre, 1, 0.0, 0.0, 0.0, 0.0, Color.fromRGB(255, 230, 150));
+      if (!com.legendaryweapons.managers.SpriteFx.burst(centre.clone().add(0.0, 1.2, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.FLASH, 2.5 + power * 2.0, 2, 1, 5)) {
+         ParticleManager.spawn(Particle.FLASH, centre, 1, 0.0, 0.0, 0.0, 0.0, Color.fromRGB(255, 230, 150));
+      }
       ParticleManager.spawn(Particle.END_ROD, centre.clone().add(0.0, 0.3, 0.0), (int)(24.0 * power) + 8, radius / 2.0, 0.3, radius / 2.0, 0.08);
       this.plugin.getSoundManager().world(centre, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0F, 0.8F);
       this.plugin.getSoundManager().world(centre, Sound.ENTITY_GENERIC_EXPLODE, 0.5F + (float)power * 0.3F, 1.1F);

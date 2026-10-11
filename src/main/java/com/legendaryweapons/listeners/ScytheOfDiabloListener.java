@@ -244,7 +244,9 @@ public class ScytheOfDiabloListener implements Listener {
    private void createComboCompletionEffects(Player damager, Location victimLoc) {
       World world = damager.getWorld();
       final Location damagerLoc = damager.getLocation();
-      com.legendaryweapons.managers.AnimationFx.slash(damager, org.bukkit.Color.fromRGB(255, 70, 60), org.bukkit.Color.fromRGB(70, 0, 10));
+      if (!com.legendaryweapons.managers.SpriteFx.slash(damager, com.legendaryweapons.managers.SpriteFx.Sprite.SLASH_RED, 3.4, 0.3)) {
+         com.legendaryweapons.managers.AnimationFx.slash(damager, org.bukkit.Color.fromRGB(255, 70, 60), org.bukkit.Color.fromRGB(70, 0, 10));
+      }
       com.legendaryweapons.managers.AnimationFx.ring(damagerLoc, Material.RED_STAINED_GLASS, 0.5, 2.5, 8, true);
       
 
