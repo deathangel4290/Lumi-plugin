@@ -1,6 +1,7 @@
 package com.legendaryweapons.bosses;
 
 import java.util.Locale;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
@@ -14,26 +15,41 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * A boss's custom look, if one is configured (bosses.<id>.model). The vanilla mob keeps doing the
- * fighting -- AI, hitbox, sounds -- and becomes invisible; an item display riding it shows the model.
+ * A custom look for a mob, if one is configured (bosses.<id>.model, token-shop.trader.model). The
+ * vanilla mob keeps doing the work -- AI, hitbox, sounds -- and turns invisible; an item display
+ * follows it every tick and shows the model.
  *
- * Each state (idle, attack, special, enraged, ...) names a model:
+ * Template convention (see docs/BOSS_MODELS.md and resourcepack/_source/blockbench/): the model
+ * stands on the BOTTOM of the Blockbench grid (y = -16), centred on x = z = 8, front facing north.
+ * `scale` then sizes it; the feet land on the mob's feet with no offset to fiddle with.
+ *
+ * It follows by teleporting rather than riding: an entity with a passenger cannot be teleported,
+ * which would break every boss teleport (leash, swaps, landing) and the trader's snap-back.
+ *
+ * Each state (idle, attack, enraged, landed, ...) names a model:
  *   - "namespace:path"  -> an item model (assets/<namespace>/items/<path>.json in the pack)
  *   - a number          -> custom_model_data on model.item (default PAPER)
- * Abilities call setState("attack") etc.; a state with no entry falls back to idle. With no model
- * section at all, the plain vanilla mob is shown -- the placeholder until real models exist.
+ * A state with no entry falls back to the base state (idle, or landed once the Wither King has
+ * landed). `enabled: false` keeps the vanilla mob.
  */
 public final class BossModel {
    private final ConfigurationSection config;
    private ItemDisplay display;
    private String state = "";
+   private String base = "idle";
 
    public BossModel(ConfigurationSection config) {
       this.config = config;
    }
 
    public boolean enabled() {
-      return this.config != null && this.config.isConfigurationSection("states") && this.config.contains("states.idle");
+      return this.config != null && this.config.getBoolean("enabled", true) && this.config.isConfigurationSection("states") && this.config.contains("states.idle");
+   }
+
+   private static Location place(LivingEntity body) {
+      Location at = body.getLocation();
+      at.setPitch(0.0F);
+      return at;
    }
 
    public void attach(LivingEntity body) {
@@ -46,17 +62,26 @@ public final class BossModel {
       }
 
       float scale = (float)this.config.getDouble("scale", 1.0);
-      float offset = (float)this.config.getDouble("offset-y", 0.0);
-      this.display = body.getWorld().spawn(body.getLocation(), ItemDisplay.class, d -> {
+      // the template's feet sit 1.5 grid-heights below its centre
+      float lift = 1.5F * scale + (float)this.config.getDouble("offset-y", 0.0);
+      float turn = (float)Math.toRadians(this.config.getDouble("yaw-offset", 0.0));
+      this.display = body.getWorld().spawn(place(body), ItemDisplay.class, d -> {
          d.setPersistent(false);
          d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
          d.setBillboard(Display.Billboard.FIXED);
          d.setTeleportDuration(1);
          d.setViewRange((float)this.config.getDouble("view-range", 2.0));
-         d.setTransformation(new Transformation(new Vector3f(0.0F, offset, 0.0F), new Quaternionf(), new Vector3f(scale, scale, scale), new Quaternionf()));
+         d.setTransformation(new Transformation(new Vector3f(0.0F, lift, 0.0F), new Quaternionf().rotationY(turn), new Vector3f(scale, scale, scale), new Quaternionf()));
       });
-      body.addPassenger(this.display);
-      this.setState("idle");
+      String keep = this.state.isEmpty() ? this.base : this.state;
+      this.state = "";
+      this.setState(keep);
+   }
+
+   /** The state missing states fall back to (idle, or landed after the Wither King lands). */
+   public void setBaseState(String state) {
+      this.base = state;
+      this.setState(state);
    }
 
    public void setState(String wanted) {
@@ -64,7 +89,7 @@ public final class BossModel {
          return;
       }
 
-      String key = this.config.contains("states." + wanted) ? wanted : "idle";
+      String key = this.config.contains("states." + wanted) ? wanted : (this.config.contains("states." + this.base) ? this.base : "idle");
       if (key.equals(this.state)) {
          return;
       }
@@ -93,26 +118,25 @@ public final class BossModel {
       this.display.setItemStack(item);
    }
 
-   /** Keep it on the body and facing where the body faces. */
+   /** Keep it on the body, facing where the body faces. Call every tick. */
    public void follow(LivingEntity body) {
-      if (this.display == null) {
+      if (!this.enabled()) {
          return;
       }
 
-      if (!this.display.isValid()) {
+      if (this.display == null || !this.display.isValid()) {
          String keep = this.state;
-         this.state = "";
          this.display = null;
+         this.state = keep;
          this.attach(body);
-         this.setState(keep);
          return;
       }
 
-      if (!body.getPassengers().contains(this.display)) {
-         body.addPassenger(this.display);
+      Location at = place(body);
+      Location now = this.display.getLocation();
+      if (!now.getWorld().equals(at.getWorld()) || now.distanceSquared(at) > 1.0E-4 || Math.abs(now.getYaw() - at.getYaw()) > 0.5F) {
+         this.display.teleport(at);
       }
-
-      this.display.setRotation(body.getLocation().getYaw(), 0.0F);
    }
 
    public void remove() {

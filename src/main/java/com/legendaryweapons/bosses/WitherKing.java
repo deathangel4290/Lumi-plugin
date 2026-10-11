@@ -422,7 +422,10 @@ final class WitherKing extends Boss {
       }
 
       this.swapBody(EntityType.WITHER_SKELETON, this.num("landed-scale", 2.6), "landed");
-      this.body.getEquipment().setItemInMainHand(new ItemStack(Material.NETHERITE_SWORD));
+      if (!this.model.enabled()) {
+         // an invisible body would still show its sword floating inside a custom model
+         this.body.getEquipment().setItemInMainHand(new ItemStack(Material.NETHERITE_SWORD));
+      }
       setBase(this.body, Attribute.MOVEMENT_SPEED, 0.33);
       setBase(this.body, Attribute.ATTACK_DAMAGE, this.num("landed-attack-damage", 12.0));
       for (Player player : this.fighters()) {

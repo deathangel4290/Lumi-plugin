@@ -1122,6 +1122,14 @@ token-shop:
   trader:
     protect-radius: 4.0           # only ops place/break blocks, empty buckets or light fires this close
     look-range: 8.0               # turns to face the nearest player within this
+    # Custom model (template: resourcepack/_source/blockbench/templates/token_trader.bbmodel).
+    # Model over the template, export it into the pack, then set enabled: true.
+    model:
+      enabled: false
+      scale: 0.975                # template units -> blocks (32 units = a villager's 1.95)
+      hide-body: true
+      states:
+        idle: "luminara:token_trader"
 
 
 # ============================================================================
@@ -1152,14 +1160,12 @@ token-shop:
 #    leviathan:      surfaced
 #    ender_colossus: cast
 #  A missing state falls back to idle. Example:
-#    model:
-#      item: PAPER
-#      scale: 3.0
-#      offset-y: 0.0
-#      hide-body: true
+#    model:            each boss has a ready template wired up (enabled: false):
+#      enabled: true   see docs/BOSS_MODELS.md and resourcepack/_source/blockbench/templates/
+#      scale: 1.32
 #      states:
-#        idle: "luminara:hollow_warden_idle"
-#        attack: "luminara:hollow_warden_attack"
+#        idle: "luminara:boss_hollow_warden"
+#        attack: "luminara:boss_hollow_warden_attack"   (optional extra states)
 # ============================================================================
 bosses:
   hollow_warden:
@@ -1199,6 +1205,14 @@ bosses:
     roar-interval: 20             # from 66%: a ground shockwave; jump over it
     roar-radius: 16
     roar-damage: 10               # ignores armour
+    # Custom model (template: resourcepack/_source/blockbench/templates/boss_hollow_warden.bbmodel).
+    # Model over the template, export it into the pack, then set enabled: true.
+    model:
+      enabled: false
+      scale: 1.32
+      hide-body: true
+      states:
+        idle: "luminara:boss_hollow_warden"
     rewards:
       participant:
         rolls: "2-3"
@@ -1247,6 +1261,15 @@ bosses:
     leap-radius: 3.5
     leap-damage: 9
     restore-seconds: 20           # the withered ground heals this long after the fight
+    # Custom model (template: resourcepack/_source/blockbench/templates/boss_wither_king.bbmodel, and _landed for phase 4).
+    # Model over the template, export it into the pack, then set enabled: true.
+    model:
+      enabled: false
+      scale: 2.06
+      hide-body: true
+      states:
+        idle: "luminara:boss_wither_king"
+        landed: "luminara:boss_wither_king_landed"
     rewards:
       participant:
         rolls: "2-3"
@@ -1296,6 +1319,14 @@ bosses:
     wave-length: 34
     wave-damage: 11               # ignores armour
     restore-seconds: 20
+    # Custom model (template: resourcepack/_source/blockbench/templates/boss_leviathan.bbmodel).
+    # Model over the template, export it into the pack, then set enabled: true.
+    model:
+      enabled: false
+      scale: 2.67
+      hide-body: true
+      states:
+        idle: "luminara:boss_leviathan"
     rewards:
       participant:
         rolls: "2-3"
@@ -1337,6 +1368,14 @@ bosses:
     stomp-interval: 14            # from 60%: it drops out of the sky onto someone
     stomp-radius: 3.5
     stomp-damage: 13              # ignores armour
+    # Custom model (template: resourcepack/_source/blockbench/templates/boss_ender_colossus.bbmodel).
+    # Model over the template, export it into the pack, then set enabled: true.
+    model:
+      enabled: false
+      scale: 2.9
+      hide-body: true
+      states:
+        idle: "luminara:boss_ender_colossus"
     rewards:
       participant:
         rolls: "2-3"

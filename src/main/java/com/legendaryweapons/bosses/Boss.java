@@ -206,7 +206,7 @@ public abstract class Boss {
       this.model.remove();
       this.body.remove();
       this.setupBody(at, type, scale);
-      this.model.setState(modelState);
+      this.model.setBaseState(modelState);
    }
 
    /** A line shown under the action bar while this boss is fighting (null = nothing). */

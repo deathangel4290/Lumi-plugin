@@ -66,6 +66,8 @@ public final class TokenShop implements Listener {
    private final File file;
    private final Map<UUID, Location> traders = new LinkedHashMap<>();       // entity -> home
    private final Map<UUID, Long> warned = new HashMap<>();
+   private final Map<UUID, com.legendaryweapons.bosses.BossModel> models = new HashMap<>();
+   private org.bukkit.configuration.ConfigurationSection modelConfig;
 
    private record Offer(String spec, int cost) {
    }
@@ -234,6 +236,7 @@ public final class TokenShop implements Listener {
       for (Entity entity : at.getWorld().getNearbyEntities(at, radius, radius, radius)) {
          if (this.isTrader(entity)) {
             this.traders.remove(entity.getUniqueId());
+            this.dropModel(entity.getUniqueId());
             entity.remove();
             removed++;
          }
@@ -264,6 +267,36 @@ public final class TokenShop implements Listener {
    }
 
    /** Stay put, stay unlit, and turn to face the nearest player. */
+   /**
+    * The trader's custom model (token-shop.trader.model, template luminara:token_trader): shown on
+    * an item display that follows the villager, which turns invisible. Off, it is a plain cleric.
+    */
+   private void dress(Villager villager) {
+      org.bukkit.configuration.ConfigurationSection section = this.plugin.getConfig().getConfigurationSection("token-shop.trader.model");
+      if (section != this.modelConfig) {                 // config reloaded: rebuild every model
+         this.modelConfig = section;
+         for (com.legendaryweapons.bosses.BossModel model : this.models.values()) {
+            model.remove();
+         }
+
+         this.models.clear();
+      }
+
+      com.legendaryweapons.bosses.BossModel model = this.models.computeIfAbsent(villager.getUniqueId(), id -> new com.legendaryweapons.bosses.BossModel(section));
+      if (model.enabled()) {
+         model.follow(villager);
+      } else if (villager.isInvisible()) {
+         villager.setInvisible(false);
+      }
+   }
+
+   private void dropModel(UUID id) {
+      com.legendaryweapons.bosses.BossModel model = this.models.remove(id);
+      if (model != null) {
+         model.remove();
+      }
+   }
+
    private void tick() {
       double look = Math.max(2.0, this.plugin.getConfig().getDouble("token-shop.trader.look-range", 8.0));
       for (Map.Entry<UUID, Location> entry : this.traders.entrySet()) {
@@ -280,6 +313,7 @@ public final class TokenShop implements Listener {
             villager.setVelocity(new Vector());
          }
 
+         this.dress(villager);
          if (villager.getFireTicks() > 0) {
             villager.setFireTicks(0);
          }
@@ -356,6 +390,7 @@ public final class TokenShop implements Listener {
 
    @EventHandler
    public void onDeath(EntityDeathEvent event) {
+      this.dropModel(event.getEntity().getUniqueId());
       if (this.traders.remove(event.getEntity().getUniqueId()) != null) {
          this.save();
       }

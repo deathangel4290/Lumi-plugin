@@ -141,7 +141,9 @@ Shared rules: health scales with the number of fighters (also when more arrive),
 inside the arena and on foot count, the boss is leashed and never breaks blocks, arena changes heal
 afterwards, and **a player who dies in the arena feeds the boss** (it heals and hits harder), so
 betraying people mid-fight can cost everyone the kill. On death everyone is paid by contribution and
-**the Boss Heart drops**. Custom models: see [docs/BOSS_MODELS.md](docs/BOSS_MODELS.md).
+**the Boss Heart drops**. Custom models: every boss (and the Token Trader) has a Blockbench
+template already wired into the pack and the config. Model over it, export, and set
+`model.enabled: true`. See [docs/BOSS_MODELS.md](docs/BOSS_MODELS.md).
 
 ### Shared fights, carry objectives, outposts and seasons
 
