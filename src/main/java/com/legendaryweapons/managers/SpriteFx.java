@@ -90,13 +90,17 @@ public final class SpriteFx {
    }
 
    private static ItemDisplay spawn(Location at, Sprite sprite, Display.Billboard billboard, Transformation start) {
+      return spawn(at, item(sprite), billboard, start);
+   }
+
+   private static ItemDisplay spawn(Location at, ItemStack shown, Display.Billboard billboard, Transformation start) {
       World world = at.getWorld();
       Location place = at.clone();
       place.setYaw(0.0F);
       place.setPitch(0.0F);
       ItemDisplay spawned = world.spawn(place, ItemDisplay.class, display -> {
          display.setPersistent(false);
-         display.setItemStack(item(sprite));
+         display.setItemStack(shown);
          display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
          display.setBillboard(billboard);
          display.setBrightness(new Display.Brightness(15, 15));
@@ -183,6 +187,24 @@ public final class SpriteFx {
       int grow = Math.max(2, ticks);
       morph(display, 2L, grow, shape(new Quaternionf().rotationY(0.4F), radius * 2.0));
       morph(display, 2L + grow, 3, shape(new Quaternionf().rotationY(0.5F), (float)(radius * 2.15), 1.0F, (float)(radius * 2.15)));
+      removeAt(display, 5L + grow);
+      return true;
+   }
+
+   /** A ground ring in any colour (the pack's white pulse ring, tinted), racing out to `radius`. */
+   public static boolean wave(Location ground, org.bukkit.Color colour, double radius, int ticks) {
+      if (!enabled() || ground.getWorld() == null) {
+         return false;
+      }
+
+      ItemStack ring = com.legendaryweapons.rituals.RitualScene.model("vfx/ritual_pulse", colour);
+      Location at = ground.clone().add(0.0, 0.08, 0.0);
+      ItemDisplay display = spawn(at, ring, Display.Billboard.FIXED, shape(new Quaternionf(), 0.8));
+      int grow = Math.max(2, ticks);
+      // the pulse texture's rim sits at 0.9 of its half-width
+      double diameter = radius * 2.0 / 0.9;
+      morph(display, 2L, grow, shape(new Quaternionf().rotationY(0.4F), diameter));
+      morph(display, 2L + grow, 3, shape(new Quaternionf().rotationY(0.5F), (float)(diameter * 1.07), 1.0F, (float)(diameter * 1.07)));
       removeAt(display, 5L + grow);
       return true;
    }

@@ -33,6 +33,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Vector;
@@ -121,6 +122,14 @@ public abstract class Boss {
    }
 
    protected void onMinionDeath(LivingEntity minion, Player killer) {
+   }
+
+   /** A player was hit by the boss, a minion, or one of their projectiles (after scaling). */
+   protected void onHitPlayer(Player victim, Entity source, EntityDamageByEntityEvent event) {
+   }
+
+   /** Something the fight owns exploded at `at` (skulls, fireballs). */
+   protected void onExplosion(Location at, Entity source) {
    }
 
    /** Where the body appears and returns to when it strays: the arena floor by default. */

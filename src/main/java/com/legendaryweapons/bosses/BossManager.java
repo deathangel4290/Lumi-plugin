@@ -439,6 +439,10 @@ public final class BossManager implements Listener {
       if (this.ownedByFight(source) && event.getCause() != EntityDamageEvent.DamageCause.SONIC_BOOM) {
          event.setDamage(event.getDamage() * boss.outgoing());
       }
+
+      if (this.ownedByFight(source)) {
+         boss.onHitPlayer((Player)event.getEntity(), source, event);
+      }
    }
 
    @EventHandler(priority = EventPriority.MONITOR)
@@ -474,6 +478,9 @@ public final class BossManager implements Listener {
 
       if (this.ownedByFight(source) || source.getPersistentDataContainer().has(this.bodyKey, PersistentDataType.STRING)) {
          event.blockList().clear();                      // bosses never grief the arena
+         if (this.active != null) {
+            this.active.onExplosion(event.getLocation(), event.getEntity());
+         }
       }
    }
 

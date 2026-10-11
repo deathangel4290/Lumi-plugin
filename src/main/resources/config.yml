@@ -25,7 +25,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 2                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 3                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -1211,22 +1211,34 @@ bosses:
     health: 1100
     health-per-player: 0.35
     max-health-multiplier: 4.0
-    damage-multiplier: 1.0
+    damage-multiplier: 1.5
     feed-heal: 0.04
     feed-seconds: 30
     leave-seconds: 120
     max-minutes: 25
     phases: [0.7, 0.4, 0.15]
-    anchor-health: 60             # North/South: damage to break (+25% per extra fighter, as are the others)
+    anchor-health: 60             # North: melee damage to break (+25% per extra fighter, as are the others)
+    anchor-skulls: 5              # South: skulls that must burst beside it
+    lure-interval: 3              # South: seconds between aimed skulls at whoever stands by it
     anchor-stand-seconds: 15      # East
     anchor-kills: 6               # West
-    volley-interval: 8
+    wither-on-hit-seconds: 4      # Wither II on everything the King and its court hit
+    volley-interval: 6            # a leading skull at every fighter, from the start
+    soul-beam-interval: 12
+    soul-beam-damage: 10          # ignores armour; locks its aim 0.6s before firing
+    nova-interval: 22             # from 70%
+    nova-radius: 9
+    nova-damage: 14               # ignores armour
     rain-interval: 9
     landed-scale: 2.6
     landed-attack-damage: 12
+    landed-summons: 2             # wither skeletons per slam (4 alive at most)
     slam-interval: 8
     slam-radius: 6
-    slam-damage: 8
+    slam-damage: 14
+    leap-interval: 7              # leaps at the furthest player
+    leap-radius: 3.5
+    leap-damage: 9
     restore-seconds: 20           # the withered ground heals this long after the fight
     rewards:
       participant:

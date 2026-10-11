@@ -74,6 +74,9 @@ public class ConfigManager {
       {1, "weapons.titans-axe.abilities.slam-damage", 6.0, 14.0},
       // a String old value against a list removes that line, if it is still there
       {2, "token-shop.offers", "LUMINOSITY_FRAGMENT 1 @ 45", null},
+      {3, "bosses.wither_king.damage-multiplier", 1.0, 1.5},
+      {3, "bosses.wither_king.volley-interval", 8, 6},
+      {3, "bosses.wither_king.slam-damage", 8, 14},
    };
 
    private void retune() {

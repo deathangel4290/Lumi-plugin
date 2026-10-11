@@ -49,15 +49,19 @@ import org.joml.Vector3f;
  * The Wither King -- the raid boss.
  *
  * Four Soul Anchors around the arena keep it shielded, and each one breaks a different way:
- *   North - melee only     South - ranged only
- *   East  - stand on it    West  - kill the skeletons it summons
- * Nobody is forced into a class, but the fight sorts people into roles on its own.
+ *   North - melee only            South - lure its skulls onto it
+ *   East  - stand on it           West  - kill the skeletons it summons
+ * Nobody is forced into a class, but the fight sorts people into roles on its own. The South
+ * anchor turns the King's own attack into the tool: whoever stands by it draws aimed skulls, and
+ * every skull that bursts beside the anchor cracks it -- dodge at the last moment.
  *
- * The arena falls apart as it goes (all temporary, healed after the fight):
+ * It hurts. Skull volleys from the first second, aimed where you are going; a Soul Beam that
+ * locks on, freezes its aim, then fires through armour; everything it hits withers.
  *   Phase 1  the King flies; anchors up until broken
- *   Phase 2  (70%) soul soil and wither roses spread across the ground; charged skull volleys
+ *   Phase 2  (70%) soul soil and wither roses spread; Wither Nova punishes anyone crowding it
  *   Phase 3  (40%) the anchors rise again, darkness, skulls rain on marked circles
- *   Phase 4  (15%) THE KING LANDS - no more flying, it fights on the ground
+ *   Phase 4  (15%) THE KING LANDS - ground slams, leaps at whoever is furthest away, summons
+ * All terrain changes are temporary and healed after the fight.
  */
 final class WitherKing extends Boss {
    private static final TextColor ASH = TextColor.color(150, 110, 200);
@@ -68,10 +72,14 @@ final class WitherKing extends Boss {
    private long nextRain;
    private long nextSlam;
    private long nextDarkness;
+   private long nextBeam;
+   private long nextNova;
+   private long nextLeap;
+   private long nextLure;
    private int decay;
 
    private enum Kind {
-      NORTH("Melee only", 0, -1), SOUTH("Ranged only", 0, 1), EAST("Stand on it", 1, 0), WEST("Slay its summons", -1, 0);
+      NORTH("Melee only", 0, -1), SOUTH("Lure its skulls here", 0, 1), EAST("Stand on it", 1, 0), WEST("Slay its summons", -1, 0);
 
       final String rule;
       final int dx;
@@ -144,7 +152,8 @@ final class WitherKing extends Boss {
    protected void onSpawned() {
       this.tameVanillaWither();
       long now = System.currentTimeMillis();
-      this.nextVolley = now + 10000L;
+      this.nextVolley = now + 6000L;
+      this.nextBeam = now + 9000L;
       this.raiseAnchors();
    }
 
@@ -168,6 +177,7 @@ final class WitherKing extends Boss {
             s.setInvisible(true);
             s.setRemoveWhenFarAway(false);
          });
+         setBase(hitbox, Attribute.SCALE, 1.5);          // the hitbox is the size of the anchor you see
          BlockDisplay look = at.getWorld().spawn(at.clone().add(-0.75, 0.0, -0.75), BlockDisplay.class, d -> {
             d.setBlock(Material.RESPAWN_ANCHOR.createBlockData());
             d.setPersistent(false);
@@ -186,7 +196,7 @@ final class WitherKing extends Boss {
       }
 
       this.plugin.getSoundManager().world(this.arena.centre(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 1.5F, 0.5F);
-      this.say("☠ Four Soul Anchors shield the King. North: melee only. South: ranged only. East: stand on it. West: slay its summons.");
+      this.say("☠ Four Soul Anchors shield the King. North: melee only. South: lure its skulls onto it. East: stand on it. West: slay its summons.");
    }
 
    private void clearAnchors() {
@@ -223,9 +233,9 @@ final class WitherKing extends Boss {
       }
 
       boolean ranged = event instanceof EntityDamageByEntityEvent byEntity && byEntity.getDamager() instanceof Projectile;
-      boolean counts = anchor.kind == Kind.NORTH && !ranged || anchor.kind == Kind.SOUTH && ranged;
-      if (!counts) {
-         com.legendaryweapons.managers.HudManager.message(attacker, Component.text(anchor.kind.name().charAt(0) + anchor.kind.name().substring(1).toLowerCase() + " Anchor: " + anchor.kind.rule.toLowerCase() + ".", ASH));
+      if (anchor.kind != Kind.NORTH || ranged) {
+         String how = anchor.kind == Kind.SOUTH ? "stand by it and let the King's skulls burst on it" : anchor.kind.rule.toLowerCase();
+         com.legendaryweapons.managers.HudManager.message(attacker, Component.text(anchor.kind.name().charAt(0) + anchor.kind.name().substring(1).toLowerCase() + " Anchor: " + how + ".", ASH));
          return true;
       }
 
@@ -287,6 +297,22 @@ final class WitherKing extends Boss {
             } else {
                anchor.progress = Math.max(0.0, anchor.progress - 2.0);
             }
+         } else if (anchor.kind == Kind.SOUTH && !this.landed) {
+            // whoever stands by it draws an aimed skull every few seconds
+            Player lurer = null;
+            for (Player player : this.fighters()) {
+               if (player.getLocation().distanceSquared(anchor.at) <= 5.0 * 5.0) {
+                  lurer = player;
+                  break;
+               }
+            }
+
+            long now = System.currentTimeMillis();
+            if (lurer != null && now >= this.nextLure) {
+               this.nextLure = now + (long)(this.num("lure-interval", 3.0) * 1000.0);
+               this.skullAt(lurer, true);
+               com.legendaryweapons.managers.HudManager.message(lurer, Component.text("☠ The King takes aim at you - dodge at the last moment!", ASH));
+            }
          } else if (anchor.kind == Kind.WEST) {
             this.westSkeletons.removeIf(id -> {
                Entity e = this.plugin.getServer().getEntity(id);
@@ -313,6 +339,39 @@ final class WitherKing extends Boss {
       }
    }
 
+   /** South Anchor: every skull that bursts beside it cracks it. */
+   @Override
+   protected void onExplosion(Location at, Entity source) {
+      for (Anchor anchor : new ArrayList<>(this.anchors)) {
+         if (anchor.kind == Kind.SOUTH && !anchor.broken && at.getWorld().equals(anchor.at.getWorld()) && at.distanceSquared(anchor.at) <= 4.5 * 4.5) {
+            anchor.progress = Math.min(100.0, anchor.progress + 100.0 / Math.max(1.0, Math.round(this.num("anchor-skulls", 5.0) * this.anchorScale())));
+            ParticleManager.showcase(Particle.SOUL_FIRE_FLAME, anchor.at.clone().add(0.0, 1.0, 0.0), 16, 0.5, 0.6, 0.5, 0.04, null);
+            this.plugin.getSoundManager().world(anchor.at, Sound.BLOCK_RESPAWN_ANCHOR_SET_SPAWN, 1.0F, 0.8F);
+            Player lurer = null;
+            double best = 36.0;
+            for (Player player : this.fighters()) {
+               double d = player.getLocation().distanceSquared(anchor.at);
+               if (d < best) {
+                  best = d;
+                  lurer = player;
+               }
+            }
+
+            this.credit(lurer, Contribution.Kind.MECHANIC, 5.0);
+            this.checkAnchor(anchor, lurer);
+         }
+      }
+   }
+
+   /** Everything the King and its court hit withers. */
+   @Override
+   protected void onHitPlayer(Player victim, Entity source, EntityDamageByEntityEvent event) {
+      int seconds = this.integer("wither-on-hit-seconds", 4);
+      if (seconds > 0) {
+         victim.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, seconds * 20, 1, false, true, true));
+      }
+   }
+
    @Override
    protected void onMinionDeath(LivingEntity minion, Player killer) {
       if (this.westSkeletons.remove(minion.getUniqueId())) {
@@ -336,7 +395,8 @@ final class WitherKing extends Boss {
       switch (phase) {
          case 1 -> {
             this.decay = 60;
-            this.say("☠ The ground withers beneath the King.");
+            this.nextNova = System.currentTimeMillis() + 5000L;
+            this.say("☠ The ground withers beneath the King - and it gathers its power. Do not crowd it.");
          }
          case 2 -> {
             this.raiseAnchors();
@@ -372,6 +432,7 @@ final class WitherKing extends Boss {
       ParticleManager.showcase(Particle.EXPLOSION_EMITTER, at, 2, 1.0, 0.2, 1.0, 0.0, null);
       this.plugin.getSoundManager().world(at, Sound.ENTITY_WITHER_BREAK_BLOCK, 1.5F, 0.5F);
       this.nextSlam = System.currentTimeMillis() + 5000L;
+      this.nextLeap = System.currentTimeMillis() + 9000L;
    }
 
    // ------------------------------------------------------------------ main loop
@@ -392,9 +453,19 @@ final class WitherKing extends Boss {
          this.witherGround();
       }
 
-      if (!this.landed && this.phase >= 1 && now >= this.nextVolley) {
-         this.nextVolley = now + (long)(this.num("volley-interval", 8.0) * 1000.0);
+      if (!this.landed && now >= this.nextVolley) {
+         this.nextVolley = now + (long)(this.num("volley-interval", 6.0) * 1000.0);
          this.volley();
+      }
+
+      if (!this.landed && now >= this.nextBeam) {
+         this.nextBeam = now + (long)(this.num("soul-beam-interval", 12.0) * 1000.0);
+         this.soulBeam();
+      }
+
+      if (!this.landed && this.phase >= 1 && now >= this.nextNova) {
+         this.nextNova = now + (long)(this.num("nova-interval", 22.0) * 1000.0);
+         this.witherNova();
       }
 
       if (!this.landed && this.phase >= 2 && now >= this.nextRain) {
@@ -412,6 +483,11 @@ final class WitherKing extends Boss {
       if (this.landed && now >= this.nextSlam) {
          this.nextSlam = now + (long)(this.num("slam-interval", 8.0) * 1000.0);
          this.slam();
+      }
+
+      if (this.landed && now >= this.nextLeap) {
+         this.nextLeap = now + (long)(this.num("leap-interval", 7.0) * 1000.0);
+         this.leap();
       }
    }
 
@@ -437,21 +513,180 @@ final class WitherKing extends Boss {
       this.manager.save();
    }
 
+   private Location head() {
+      return this.body.getLocation().add(0.0, this.body.getHeight() * 0.85, 0.0);
+   }
+
+   /** A charged skull at a player, aimed where they are going rather than where they are. */
+   private void skullAt(Player target, boolean lead) {
+      Location from = this.head();
+      Location aim = target.getLocation().add(0.0, 1.0, 0.0);
+      if (lead) {
+         double flight = aim.distance(from) / 1.1;               // ticks the skull needs to get there
+         Vector v = target.getVelocity().setY(0.0);
+         aim.add(v.multiply(Math.min(14.0, flight * 0.6)));
+      }
+
+      Vector dir = aim.toVector().subtract(from.toVector());
+      if (dir.lengthSquared() < 1.0E-4) {
+         return;
+      }
+
+      dir.normalize();
+      WitherSkull skull = from.getWorld().spawn(from.clone().add(dir), WitherSkull.class, s -> {
+         s.setShooter(this.body);
+         s.setCharged(true);
+         s.setDirection(dir);
+      });
+      skull.setVelocity(dir.multiply(1.1));
+   }
+
    private void volley() {
       for (Player target : this.fighters()) {
-         if (ThreadLocalRandom.current().nextDouble() < 0.6) {
-            Location from = this.body.getLocation().add(0.0, 2.5, 0.0);
-            Vector dir = target.getLocation().add(0.0, 1.0, 0.0).toVector().subtract(from.toVector()).normalize();
-            WitherSkull skull = from.getWorld().spawn(from.clone().add(dir), WitherSkull.class, s -> {
-               s.setShooter(this.body);
-               s.setCharged(true);
-               s.setDirection(dir);
-            });
-            skull.setVelocity(dir.multiply(0.9));
+         this.skullAt(target, true);
+      }
+
+      this.plugin.getSoundManager().world(this.body.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1.2F, 0.7F);
+   }
+
+   /**
+    * Locks onto someone (a tracking line for a second and a bit), freezes its aim, then fires
+    * through armour along that line. Step off the line once it stops following you.
+    */
+   private void soulBeam() {
+      final Player target = this.randomFighter(null);
+      if (target == null) {
+         return;
+      }
+
+      final Color tracking = Color.fromRGB(120, 60, 190);
+      final Color locked = Color.fromRGB(230, 40, 90);
+      com.legendaryweapons.managers.HudManager.message(target, Component.text("☠ The King's gaze locks onto you...", ASH));
+      this.plugin.getSoundManager().world(target.getLocation(), Sound.ENTITY_WITHER_AMBIENT, 1.2F, 1.6F);
+      for (int t = 0; t < 26; t += 2) {
+         this.later(t, () -> {
+            if (target.isOnline() && !target.isDead()) {
+               dustLine(this.head(), target.getLocation().add(0.0, 1.0, 0.0), tracking, 0.7F);
+            }
+         });
+      }
+
+      final Location[] aim = new Location[1];
+      this.later(26L, () -> {
+         Location from = this.head();
+         Location at = target.isOnline() ? target.getLocation().add(0.0, 1.0, 0.0) : from.clone().add(0.0, -1.0, 0.0);
+         Vector dir = at.toVector().subtract(from.toVector());
+         aim[0] = from.clone().add(dir.normalize().multiply(this.beamLength(from, dir)));
+         this.plugin.getSoundManager().world(from, Sound.BLOCK_BEACON_DEACTIVATE, 1.5F, 0.6F);
+      });
+      for (int t = 28; t < 38; t += 2) {
+         this.later(t, () -> {
+            if (aim[0] != null) {
+               dustLine(this.head(), aim[0], locked, 1.1F);
+            }
+         });
+      }
+
+      this.later(38L, () -> {
+         if (aim[0] == null) {
+            return;
+         }
+
+         Location from = this.head();
+         Vector dir = aim[0].toVector().subtract(from.toVector());
+         double length = this.beamLength(from, dir);
+         dir.normalize();
+         for (double d = 0.0; d < length; d += 0.5) {
+            Location p = from.clone().add(dir.clone().multiply(d));
+            ParticleManager.showcase(Particle.SOUL_FIRE_FLAME, p, 2, 0.12, 0.12, 0.12, 0.01, null);
+            if ((int)(d * 2) % 3 == 0) {
+               ParticleManager.showcase(Particle.DUST, p, 1, 0.2, 0.2, 0.2, 0.0, new Particle.DustOptions(locked, 1.6F));
+            }
+         }
+
+         this.plugin.getSoundManager().world(from, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5F, 0.6F);
+         double damage = this.num("soul-beam-damage", 10.0);
+         for (Player player : this.fighters()) {
+            Vector rel = player.getLocation().add(0.0, 1.0, 0.0).toVector().subtract(from.toVector());
+            double along = rel.dot(dir);
+            if (along > 0.0 && along < length && rel.clone().subtract(dir.clone().multiply(along)).length() <= 1.4) {
+               this.trueDamage(player, damage);
+               player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 100, 1, false, true, true));
+               player.setVelocity(dir.clone().multiply(0.8).setY(0.3));
+            }
+         }
+      });
+   }
+
+   /** How far a beam goes from `from` along `dir` before a wall stops it (32 at most). */
+   private double beamLength(Location from, Vector dir) {
+      Vector step = dir.clone().normalize().multiply(0.5);
+      Location probe = from.clone();
+      for (double d = 0.0; d < 32.0; d += 0.5) {
+         probe.add(step);
+         if (!probe.getBlock().isPassable()) {
+            return d;
          }
       }
 
-      this.plugin.getSoundManager().world(this.body.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1.0F, 0.7F);
+      return 32.0;
+   }
+
+   /**
+    * Phase 2+: the King gathers itself (a ring on the ground shows the blast), then bursts: true
+    * damage, withering and knockback to everyone inside, and a ring of skulls flung outward.
+    */
+   private void witherNova() {
+      final double radius = this.num("nova-radius", 9.0);
+      final Color edge = Color.fromRGB(60, 20, 90);
+      final Color core = Color.fromRGB(170, 90, 255);
+      for (Player player : this.fighters()) {
+         if (player.getLocation().distanceSquared(this.body.getLocation()) <= radius * radius * 2.25) {
+            com.legendaryweapons.managers.HudManager.message(player, Component.text("☠ Wither Nova - get away from the King!", NamedTextColor.RED));
+         }
+      }
+
+      this.body.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 45, 6, true, false));
+      this.plugin.getSoundManager().world(this.body.getLocation(), Sound.BLOCK_RESPAWN_ANCHOR_CHARGE, 2.0F, 0.5F);
+      for (int t = 0; t < 40; t += 4) {
+         final double shrink = 1.0 - t / 40.0;
+         this.later(t, () -> {
+            Location ground = this.arena.surface(this.body.getLocation());
+            dustRing(ground, radius, edge, 1.6F);
+            dustRing(ground, Math.max(0.6, radius * shrink), core, 1.2F);
+            ParticleManager.showcase(Particle.SOUL, this.head(), 6, 1.2, 1.2, 1.2, -0.05, null);
+         });
+      }
+
+      this.later(40L, () -> {
+         Location centre = this.body.getLocation();
+         Location ground = this.arena.surface(centre);
+         ParticleManager.showcase(Particle.EXPLOSION_EMITTER, centre, 1, 0.0, 0.0, 0.0, 0.0, null);
+         ParticleManager.showcase(Particle.SOUL_FIRE_FLAME, centre, 60, radius / 3.0, 1.0, radius / 3.0, 0.15, null);
+         com.legendaryweapons.managers.SpriteFx.wave(ground, core, radius, 6);
+         this.plugin.getSoundManager().world(centre, Sound.ENTITY_GENERIC_EXPLODE, 2.0F, 0.6F);
+         this.plugin.getSoundManager().world(centre, Sound.ENTITY_WITHER_SHOOT, 2.0F, 0.5F);
+         for (Player player : this.fighters()) {
+            Vector off = player.getLocation().toVector().subtract(centre.toVector());
+            if (off.clone().setY(0.0).lengthSquared() <= radius * radius && Math.abs(off.getY()) <= radius) {
+               this.trueDamage(player, this.num("nova-damage", 14.0));
+               player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 120, 1, false, true, true));
+               Vector push = off.setY(0.0);
+               player.setVelocity((push.lengthSquared() < 0.01 ? new Vector(1, 0, 0) : push.normalize()).multiply(1.6).setY(0.7));
+            }
+         }
+
+         for (int i = 0; i < 12; i++) {
+            double a = Math.PI * 2.0 * i / 12.0;
+            Vector dir = new Vector(Math.cos(a), -0.08, Math.sin(a));
+            Location from = centre.clone().add(0.0, 1.5, 0.0).add(dir.clone().multiply(1.5));
+            WitherSkull skull = from.getWorld().spawn(from, WitherSkull.class, s -> {
+               s.setShooter(this.body);
+               s.setDirection(dir);
+            });
+            skull.setVelocity(dir.multiply(0.8));
+         }
+      });
    }
 
    /** Phase 3: circles mark where skulls will fall, then they fall. */
@@ -498,16 +733,69 @@ final class WitherKing extends Boss {
 
       this.later(30L, () -> {
          ParticleManager.showcase(Particle.EXPLOSION, at, 6, radius / 2.0, 0.2, radius / 2.0, 0.0, null);
+         com.legendaryweapons.managers.SpriteFx.wave(at, Color.fromRGB(150, 70, 220), radius, 6);
          this.plugin.getSoundManager().world(at, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.5F, 0.6F);
          for (Player player : this.fighters()) {
             if (player.getLocation().distanceSquared(at) <= radius * radius) {
-               this.trueDamage(player, this.num("slam-damage", 8.0));
+               this.trueDamage(player, this.num("slam-damage", 14.0));
+               player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1, false, true, true));
                Vector push = player.getLocation().toVector().subtract(at.toVector()).setY(0.0);
                player.setVelocity((push.lengthSquared() < 0.01 ? new Vector(1, 0, 0) : push.normalize()).multiply(1.3).setY(0.6));
             }
          }
 
+         // the King's court answers the slam
+         int summons = this.integer("landed-summons", 2);
+         for (int i = 0; i < summons && this.aliveMinions() < 4; i++) {
+            Location spot = this.arena.surface(at.clone().add(ThreadLocalRandom.current().nextDouble(-4, 4), 0.0, ThreadLocalRandom.current().nextDouble(-4, 4)));
+            WitherSkeleton skeleton = this.spawnMinion(spot, WitherSkeleton.class);
+            skeleton.getEquipment().setItemInMainHand(new ItemStack(Material.STONE_SWORD));
+            ParticleManager.showcase(Particle.SOUL, spot.clone().add(0.0, 1.0, 0.0), 12, 0.3, 0.6, 0.3, 0.03, null);
+         }
+
          this.model.setState("landed");
+      });
+   }
+
+   /** Landed: it leaps at whoever is furthest away, so nobody can just wait at the edge. */
+   private void leap() {
+      Player target = null;
+      double best = 36.0;
+      for (Player player : this.fighters()) {
+         double d = player.getLocation().distanceSquared(this.body.getLocation());
+         if (d > best) {
+            best = d;
+            target = player;
+         }
+      }
+
+      if (target == null) {
+         return;
+      }
+
+      final Location land = target.getLocation();
+      final double radius = this.num("leap-radius", 3.5);
+      for (int t = 0; t < 20; t += 4) {
+         this.later(t, () -> dustRing(land, radius, Color.fromRGB(200, 40, 80), 1.4F));
+      }
+
+      this.later(4L, () -> {
+         Vector jump = land.toVector().subtract(this.body.getLocation().toVector());
+         double flat = Math.hypot(jump.getX(), jump.getZ());
+         this.body.setVelocity(jump.setY(0.0).normalize().multiply(Math.min(2.4, flat / 9.0)).setY(Math.min(1.3, 0.6 + flat / 25.0)));
+         this.plugin.getSoundManager().world(this.body.getLocation(), Sound.ENTITY_WITHER_SHOOT, 1.5F, 0.4F);
+      });
+      this.later(22L, () -> {
+         Location at = this.body.getLocation();
+         ParticleManager.showcase(Particle.EXPLOSION, at, 3, radius / 2.0, 0.2, radius / 2.0, 0.0, null);
+         com.legendaryweapons.managers.SpriteFx.wave(at, Color.fromRGB(200, 40, 80), radius, 5);
+         this.plugin.getSoundManager().world(at, Sound.ITEM_MACE_SMASH_GROUND, 1.5F, 0.7F);
+         for (Player player : this.fighters()) {
+            if (player.getLocation().distanceSquared(at) <= radius * radius) {
+               this.trueDamage(player, this.num("leap-damage", 9.0));
+               player.setVelocity(new Vector(0.0, 0.7, 0.0));
+            }
+         }
       });
    }
 
