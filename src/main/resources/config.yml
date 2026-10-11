@@ -957,7 +957,8 @@ events:
 #  a random time inside the window, then counts down in chat. Players know
 #  something happens 9-11 PM, not what or exactly when.
 #  Events: supplydrop[:early|mid|late], bounty, koth (needs a hill), fallenstar,
-#  bloodmoon. days: ALL, WEEKDAYS, WEEKEND or MON, TUE, ...
+#  bloodmoon, boss (a random boss with an arena) or boss:<id>.
+#  days: ALL, WEEKDAYS, WEEKEND or MON, TUE, ... Windows cannot cross midnight.
 # ============================================================================
 director:
   enabled: true
@@ -993,6 +994,7 @@ director:
         fallenstar: 3
         koth: 2
         bloodmoon: 2
+        boss: 3                     # only once a boss arena is set (/lwevent boss arena ...)
         "supplydrop:late": 1
 
 
@@ -1019,6 +1021,8 @@ season:
     blood-moon-elite: 10
     blood-bounty: 40            # added to a blood-moon killer's bounty per kill
     blood-bounty-survived: 30   # surviving the night with a bounty on you
+    boss-participation: 40      # everyone who helped kill a boss
+    boss-pool: 300              # split by contribution score
     outpost-capture: 30
     outpost-hour: 15
   rewards:                      # season end, top three by Renown (into /rewards)
@@ -1097,6 +1101,198 @@ token-shop:
     - "FRAGMENT_T3 1 @ 24"
     - "LUMINOSITY_FRAGMENT 1 @ 45"
 
+
+# ============================================================================
+#  Bosses -- /lwevent boss arena <boss> [radius] (stand at the centre), then
+#  /lwevent boss start <boss> or let the Director pick "boss". One at a time.
+#
+#  Shared rules for every boss:
+#    health            pool for one fighter; + health-per-player for each extra
+#                      fighter (also when people join mid-fight), capped at
+#                      health x max-health-multiplier
+#    damage-multiplier everything the boss and its summons deal
+#    feed-heal         a player dying in the arena heals the boss this fraction
+#                      and makes it hit 10% harder (stacks to 5) for feed-seconds
+#    arrive-minutes    time people get to reach the arena before anyone counts as missing (5)
+#    leave-seconds     nobody in the arena this long -> it retreats (no rewards)
+#    max-minutes       the fight ends unrewarded after this long
+#    phases            pool fractions where phases begin (highest first)
+#    rewards           contribution payout (participant / top3 / top1 tables)
+#                      before the Boss Heart drops; Renown: season.renown.boss-*
+#
+#  MODELS (optional): give a boss a model section and the vanilla mob turns
+#  invisible with the model riding it. Each state is an item model id
+#  ("luminara:hollow_warden_idle", i.e. assets/luminara/items/hollow_warden_idle.json)
+#  or a custom_model_data number on model.item. States the bosses use:
+#    all:            idle, attack, enraged
+#    hollow_warden:  roar
+#    wither_king:    landed (phase 4 body)
+#    leviathan:      surfaced
+#    ender_colossus: cast
+#  A missing state falls back to idle. Example:
+#    model:
+#      item: PAPER
+#      scale: 3.0
+#      offset-y: 0.0
+#      hide-body: true
+#      states:
+#        idle: "luminara:hollow_warden_idle"
+#        attack: "luminara:hollow_warden_attack"
+# ============================================================================
+bosses:
+  hollow_warden:
+    enabled: true
+    arena-radius: 22
+    scale: 1.3
+    health: 900
+    health-per-player: 0.35
+    max-health-multiplier: 4.0
+    damage-multiplier: 1.0
+    feed-heal: 0.04
+    feed-seconds: 30
+    leave-seconds: 120
+    max-minutes: 20
+    phases: [0.66, 0.33]
+    sonic-interval: 12            # seconds between sonic lines
+    sonic-interval-enraged: 8
+    sonic-warning-ticks: 30       # how long the line is marked before it fires
+    sonic-length: 24
+    sonic-width: 1.4
+    sonic-damage: 12              # ignores armour
+    node-charge-per-second: 25
+    node-drain-per-second: 12
+    tendril-interval: 18
+    tendril-seconds: 6
+    tendril-damage-per-second: 1
+    tendril-slam-damage: 10
+    adapt-window-seconds: 20      # it learns from the last 20s of damage
+    adapt-share: 0.55             # one kind doing 55%+ of it...
+    adapt-minimum-damage: 60
+    adapt-seconds: 20             # ...is resisted this long
+    adapted-damage: 0.35
+    rewards:
+      participant:
+        rolls: "2-3"
+        guaranteed: ["LUMINARA_TOKEN 2-3"]
+        items: ["GOLDEN_APPLE 3-6 w6", "EXPERIENCE_BOTTLE 12-24 w6", "DIAMOND 3-6 w4", "ECHO_SHARD 1-3 w4", "FRAGMENT_T2 1 w3"]
+      top3:
+        rolls: "1-2"
+        items: ["LUMINARA_TOKEN 3 w4", "FRAGMENT_T2 1 w3", "NETHERITE_SCRAP 1-2 w3", "SILENCE_ARMOR_TRIM_SMITHING_TEMPLATE 1 w1"]
+      top1:
+        rolls: "1"
+        items: ["FRAGMENT_T3 1 w3", "LUMINARA_TOKEN 5 w3"]
+
+  wither_king:
+    enabled: true
+    arena-radius: 26
+    scale: 1.4
+    health: 1100
+    health-per-player: 0.35
+    max-health-multiplier: 4.0
+    damage-multiplier: 1.0
+    feed-heal: 0.04
+    feed-seconds: 30
+    leave-seconds: 120
+    max-minutes: 25
+    phases: [0.7, 0.4, 0.15]
+    anchor-health: 60             # North/South: damage to break (+25% per extra fighter, as are the others)
+    anchor-stand-seconds: 15      # East
+    anchor-kills: 6               # West
+    volley-interval: 8
+    rain-interval: 9
+    landed-scale: 2.6
+    landed-attack-damage: 12
+    slam-interval: 8
+    slam-radius: 6
+    slam-damage: 8
+    restore-seconds: 20           # the withered ground heals this long after the fight
+    rewards:
+      participant:
+        rolls: "2-3"
+        guaranteed: ["LUMINARA_TOKEN 2-3"]
+        items: ["GOLDEN_APPLE 3-6 w6", "WITHER_SKELETON_SKULL 1 w2", "NETHERITE_SCRAP 1 w3", "DIAMOND 3-6 w4", "FRAGMENT_T2 1 w3"]
+      top3:
+        rolls: "1-2"
+        items: ["LUMINARA_TOKEN 3 w4", "NETHER_STAR 1 w2", "FRAGMENT_T2 1 w3", "RIB_ARMOR_TRIM_SMITHING_TEMPLATE 1 w1"]
+      top1:
+        rolls: "1"
+        items: ["FRAGMENT_T3 1 w3", "LUMINARA_TOKEN 5 w3"]
+
+  leviathan:
+    enabled: true
+    arena-radius: 28              # set the centre over open water (a platform there is fine)
+    scale: 2.2
+    health: 1000
+    health-per-player: 0.35
+    max-health-multiplier: 4.0
+    damage-multiplier: 1.0
+    feed-heal: 0.04
+    feed-seconds: 30
+    leave-seconds: 120
+    max-minutes: 20
+    phases: [0.6, 0.3]
+    surface-interval: 18          # seconds under water between surfacings
+    surface-interval-enraged: 12
+    surface-seconds: 7
+    surfaced-damage-multiplier: 1.6
+    lost-trident-multiplier: 1.75 # the Lost Trident of Atlantis, thrown or swung
+    drag-interval: 14
+    drag-strength: 1.2
+    drag-damage: 4
+    bolt-interval: 6
+    bolt-damage: 6
+    whirlpool-interval: 20
+    whirlpool-seconds: 8
+    whirlpool-radius: 4.5
+    whirlpool-damage: 2
+    summon-interval: 25
+    flood-interval: 30
+    restore-seconds: 20
+    rewards:
+      participant:
+        rolls: "2-3"
+        guaranteed: ["LUMINARA_TOKEN 2-3"]
+        items: ["GOLDEN_APPLE 3-6 w6", "PRISMARINE_CRYSTALS 8-16 w5", "NAUTILUS_SHELL 1-2 w4", "DIAMOND 3-6 w4", "FRAGMENT_T2 1 w3"]
+      top3:
+        rolls: "1-2"
+        items: ["LUMINARA_TOKEN 3 w4", "HEART_OF_THE_SEA 1 w2", "FRAGMENT_T2 1 w3", "TIDE_ARMOR_TRIM_SMITHING_TEMPLATE 1 w1"]
+      top1:
+        rolls: "1"
+        items: ["FRAGMENT_T3 1 w3", "LUMINARA_TOKEN 5 w3"]
+
+  ender_colossus:
+    enabled: true
+    arena-radius: 24
+    scale: 3.0
+    health: 950
+    health-per-player: 0.35
+    max-health-multiplier: 4.0
+    damage-multiplier: 1.0
+    feed-heal: 0.04
+    feed-seconds: 30
+    leave-seconds: 120
+    max-minutes: 20
+    phases: [0.6, 0.3]
+    swap-interval: 12
+    banish-interval: 15
+    pull-interval: 18
+    pull-damage: 6
+    decoys: 3
+    decoy-health: 30
+    decoy-seconds: 20
+    decoy-interval: 30
+    scramble-interval: 20
+    rewards:
+      participant:
+        rolls: "2-3"
+        guaranteed: ["LUMINARA_TOKEN 2-3"]
+        items: ["GOLDEN_APPLE 3-6 w6", "SHULKER_SHELL 1-2 w4", "CHORUS_FRUIT 8-16 w4", "DIAMOND 3-6 w4", "FRAGMENT_T2 1 w3"]
+      top3:
+        rolls: "1-2"
+        items: ["LUMINARA_TOKEN 3 w4", "ELYTRA 1 w1", "FRAGMENT_T2 1 w3", "SPIRE_ARMOR_TRIM_SMITHING_TEMPLATE 1 w1"]
+      top1:
+        rolls: "1"
+        items: ["FRAGMENT_T3 1 w3", "LUMINARA_TOKEN 5 w3"]
 
 # ============================================================================
 #  Trust system -- stops your own team eating your abilities

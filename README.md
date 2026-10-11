@@ -88,9 +88,36 @@ what or exactly when. It waits for `director.min-players`. Admins can still star
 | `/lwevent supplydrop <early\|mid\|late> [count] [world]` | Crates fall at random safe spots inside the world border, with a beam until claimed. Loot tables per tier are in the config. |
 | `/lwevent mostwanted set <name>` → `confirm` | The named player is anonymous from the moment they join (no join message, neutral name, default skin). After an admin confirms, they get 20 hearts and Speed II and their rough position is broadcast regularly. On death: a blast throws players back, a loot chest appears with a Luminosity Fragment in the centre, and they are banned (`events.most-wanted.ban-on-death`). |
 | `/lwevent outpost ...`, `/lwevent season status\|reset confirm\|give <player> <n>` | Outposts and the season. |
+| `/lwevent boss arena <boss> [radius]\|start [boss]\|stop\|status` | Bosses: hollow_warden, wither_king, leviathan, ender_colossus. |
 | `/lwevent status`, `/lwevent stopall` | Overview of everything; stop bounty, KotH, Fallen Star and Blood Moon without prizes. |
 
 Winners who are offline when an event ends get their prize the next time they join.
+
+### Bosses
+
+Set an arena per boss (`/lwevent boss arena <boss> [radius]`, standing at its centre), then
+`/lwevent boss start <boss>` or let the Director run one. Only one boss fights at a time.
+
+* **Hollow Warden** (deep dark) — coordination. Hunts the *loudest* player (sprinting, jumping and
+  hitting are loud, sneaking is quiet; your noise is on the action bar). Marked sonic lines you
+  sidestep; at 66% and 33% it buries itself in sculk and only breaks out when every sculk node is
+  charged at the same time; tendrils seize players until someone cuts them free; darkness in the
+  last phase. It **learns**: one kind of damage doing most of the work gets resisted for a while.
+* **Wither King** — raid boss. Four Soul Anchors shield it, each broken differently (North melee,
+  South ranged, East stand on it, West kill its summons). The arena withers in phase 2, the
+  anchors return with skull rain in phase 3, and in phase 4 the King lands and fights on foot.
+* **Leviathan** (open water) — movement. Mostly submerged; it surfaces in a rhythm and takes extra
+  damage while up. Drags people under, water bolts, whirlpools, sinks boats, summons drowned and
+  guardians, floods the dry ground late. The Lost Trident of Atlantis hits it 75% harder.
+* **Ender Colossus** — chaos. Every trick has a tell: tethered swaps, banishing its top damage
+  dealer, pulling the farthest player in, decoys (the real one drips portal particles) and a final
+  position scramble.
+
+Shared rules: health scales with the number of fighters (also when more arrive), only hits from
+inside the arena and on foot count, the boss is leashed and never breaks blocks, arena changes heal
+afterwards, and **a player who dies in the arena feeds the boss** (it heals and hits harder), so
+betraying people mid-fight can cost everyone the kill. On death everyone is paid by contribution and
+**the Boss Heart drops**. Custom models: see [docs/BOSS_MODELS.md](docs/BOSS_MODELS.md).
 
 ### Shared fights, carry objectives, outposts and seasons
 

@@ -34,7 +34,8 @@ import org.bukkit.scheduler.BukkitRunnable;
  * then counts down to it in chat (director.announce-minutes). So "8-10 PM" means something WILL
  * happen in that window, but nobody knows exactly what or when until it is announced.
  *
- * Event ids: supplydrop[:early|mid|late], bounty, koth, fallenstar, bloodmoon.
+ * Event ids: supplydrop[:early|mid|late], bounty, koth, fallenstar, bloodmoon, boss[:id] (a boss
+ * needs its arena set; plain "boss" picks one of the bosses that have one).
  * Windows cannot cross midnight; split one into two windows instead.
  * If fewer than director.min-players are online when it is time, it waits 5 minutes and tries
  * again until the window closes.
@@ -256,6 +257,15 @@ public final class EventDirector {
             continue;
          }
 
+         if (event.equalsIgnoreCase("boss") && this.plugin.getBossManager() != null) {
+            String boss = this.plugin.getBossManager().pickBoss();   // decide now, so the countdown can say who and where
+            if (boss == null) {
+               continue;
+            }
+
+            event = "boss:" + boss;
+         }
+
          // Leave room for the countdown: never closer than the first announcement allows.
          int lead = 0;
          for (int minutes : this.config().getIntegerList("announce-minutes")) {
@@ -317,6 +327,11 @@ public final class EventDirector {
       return switch (base) {
          case "koth" -> this.manager.koth().getCenter() != null;
          case "supplydrop", "bounty", "fallenstar", "bloodmoon" -> true;
+         case "boss" -> {
+            String[] parts = event.split(":");
+            var bosses = this.plugin.getBossManager();
+            yield bosses != null && !bosses.isRunning() && (parts.length > 1 ? bosses.hasArena(parts[1].toLowerCase(Locale.ROOT)) : !bosses.withArenas().isEmpty());
+         }
          default -> false;
       };
    }
@@ -329,7 +344,18 @@ public final class EventDirector {
          case "koth" -> "King of the Hill";
          case "fallenstar" -> "Fallen Star";
          case "bloodmoon" -> "Blood Moon";
+         case "boss" -> parts.length > 1 ? bossName(parts[1]) : "A Boss";
          default -> event;
+      };
+   }
+
+   private static String bossName(String id) {
+      return switch (id.toLowerCase(Locale.ROOT)) {
+         case "hollow_warden" -> "The Hollow Warden";
+         case "wither_king" -> "The Wither King";
+         case "leviathan" -> "The Leviathan";
+         case "ender_colossus" -> "The Ender Colossus";
+         default -> "A Boss";
       };
    }
 
@@ -337,6 +363,13 @@ public final class EventDirector {
       String name = displayName(event);
       Component line = Component.text("⚡ ", NamedTextColor.GOLD).append(Component.text(name, NamedTextColor.YELLOW, TextDecoration.BOLD))
          .append(Component.text(" begins in " + minutes + " minute" + (minutes == 1 ? "" : "s") + "!", NamedTextColor.GOLD));
+      String[] parts = event.split(":");
+      if (parts[0].equalsIgnoreCase("boss") && parts.length > 1 && this.plugin.getBossManager() != null) {
+         String where = this.plugin.getBossManager().arenaText(parts[1]);
+         if (where != null) {
+            line = line.append(Component.text(" Arena: " + where, NamedTextColor.GRAY));
+         }
+      }
       Bukkit.broadcast(line);
       for (Player player : Bukkit.getOnlinePlayers()) {
          this.plugin.getSoundManager().self(player, Sound.BLOCK_NOTE_BLOCK_PLING, 0.6F, minutes <= 1 ? 1.6F : 1.0F);
@@ -365,6 +398,7 @@ public final class EventDirector {
          case "koth" -> this.manager.koth().start(events == null ? 15 : events.getInt("koth.default-minutes", 15));
          case "fallenstar" -> this.manager.fallenStar().start(this.mainWorld());
          case "bloodmoon" -> this.manager.bloodMoon().arm(this.mainWorld());
+         case "boss" -> this.plugin.getBossManager().start(parts.length > 1 ? parts[1] : null);
          default -> "Unknown event '" + event + "'.";
       };
    }

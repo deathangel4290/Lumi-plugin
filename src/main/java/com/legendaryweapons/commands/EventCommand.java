@@ -32,6 +32,7 @@ import org.jetbrains.annotations.NotNull;
  *   director on | off | status | skip | run <event>
  *   outpost create <name> <type> [radius] | remove <name> | reset <name> | list
  *   season status | reset confirm | give <player> <amount>
+ *   boss arena <id> [radius] | start [id] | stop | status
  *   status | stopall
  */
 public class EventCommand implements CommandExecutor, TabCompleter {
@@ -265,12 +266,43 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                   default -> sender.sendMessage(Component.text(this.events().season().status(), NamedTextColor.GRAY));
                }
                break;
+            case "boss":
+            case "bosses":
+               switch (action) {
+                  case "arena" -> {
+                     if (!(sender instanceof Player player)) {
+                        reply(sender, "Run this in-game, standing at the arena's centre.", null);
+                     } else if (args.length < 3) {
+                        reply(sender, "Usage: /lwevent boss arena <" + String.join("|", com.legendaryweapons.bosses.BossManager.IDS) + "> [radius]", null);
+                     } else {
+                        double radius = 0.0;
+                        if (args.length > 3) {
+                           try {
+                              radius = Double.parseDouble(args[3]);
+                           } catch (NumberFormatException var13) {
+                              reply(sender, "'" + args[3] + "' is not a number.", null);
+                              return true;
+                           }
+                        }
+
+                        reply(sender, this.plugin.getBossManager().setArena(args[2], player.getLocation(), radius), "Arena for " + args[2] + " set here.");
+                     }
+                  }
+                  case "start" -> reply(sender, this.plugin.getBossManager().start(args.length > 2 ? args[2] : null), "The boss awakens.");
+                  case "stop" -> {
+                     this.plugin.getBossManager().stop();
+                     reply(sender, null, "Boss dismissed (no rewards).");
+                  }
+                  default -> sender.sendMessage(Component.text(this.plugin.getBossManager().status(), NamedTextColor.GRAY));
+               }
+               break;
             case "stopall":
                this.events().bounty().stop(false);
                this.events().koth().stop(false);
                this.events().fallenStar().stop();
                this.events().bloodMoon().stop();
-               reply(sender, null, "Stopped the bounty hunt, King of the Hill, Fallen Star and Blood Moon (no prizes). Most Wanted and outposts are left as they are.");
+               this.plugin.getBossManager().stop();
+               reply(sender, null, "Stopped the bounty hunt, King of the Hill, Fallen Star, Blood Moon and any boss (no prizes). Most Wanted and outposts are left as they are.");
                break;
             case "status":
                sender.sendMessage(Component.text(this.events().bounty().status(), NamedTextColor.GRAY));
@@ -282,6 +314,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                this.events().relics().status().forEach(line -> sender.sendMessage(Component.text(line, NamedTextColor.GRAY)));
                this.events().director().status().forEach(line -> sender.sendMessage(Component.text(line, NamedTextColor.GRAY)));
                sender.sendMessage(Component.text(this.events().season().status(), NamedTextColor.GRAY));
+               sender.sendMessage(Component.text(this.plugin.getBossManager().status(), NamedTextColor.GRAY));
                break;
             default:
                this.usage(sender);
@@ -302,6 +335,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          "/lwevent director on | off | status | skip | run <event>",
          "/lwevent outpost create <name> <type> [radius] | remove <name> | reset <name> | list",
          "/lwevent season status | reset confirm | give <player> <amount>",
+         "/lwevent boss arena <boss> [radius] | start [boss] | stop | status",
          "/lwevent status | stopall"
       }) {
          sender.sendMessage(Component.text(line, NamedTextColor.GOLD));
@@ -310,7 +344,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       List<String> options = switch (args.length) {
-         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "season", "status", "stopall");
+         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "season", "boss", "status", "stopall");
          case 2 -> switch (args[0].toLowerCase(Locale.ROOT)) {
             case "bounty" -> List.of("start", "stop", "status");
             case "koth" -> List.of("marker", "setcenter", "start", "stop", "status");
@@ -320,15 +354,17 @@ public class EventCommand implements CommandExecutor, TabCompleter {
             case "director" -> List.of("on", "off", "status", "skip", "run");
             case "outpost", "outposts" -> List.of("create", "remove", "reset", "list");
             case "season" -> List.of("status", "reset", "give");
+            case "boss", "bosses" -> List.of("arena", "start", "stop", "status");
             default -> List.of();
          };
          case 3 -> args[0].equalsIgnoreCase("mostwanted") && args[1].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("season") && args[1].equalsIgnoreCase("give")
             ? this.plugin.getPlayerRosterManager().entries().stream().map(java.util.Map.Entry::getValue).toList()
-            : (args[0].equalsIgnoreCase("director") && args[1].equalsIgnoreCase("run") ? List.of("supplydrop:early", "supplydrop:mid", "supplydrop:late", "bounty", "koth", "fallenstar", "bloodmoon")
+            : (args[0].toLowerCase(Locale.ROOT).startsWith("boss") && (args[1].equalsIgnoreCase("arena") || args[1].equalsIgnoreCase("start")) ? com.legendaryweapons.bosses.BossManager.IDS
+            : (args[0].equalsIgnoreCase("director") && args[1].equalsIgnoreCase("run") ? List.of("supplydrop:early", "supplydrop:mid", "supplydrop:late", "bounty", "koth", "fallenstar", "bloodmoon", "boss", "boss:hollow_warden", "boss:wither_king", "boss:leviathan", "boss:ender_colossus")
             : (args[0].toLowerCase(Locale.ROOT).startsWith("outpost") && !args[1].equalsIgnoreCase("create") ? this.events().outposts().names()
             : (args[0].equalsIgnoreCase("season") && args[1].equalsIgnoreCase("reset") ? List.of("confirm")
             : ((args[0].equalsIgnoreCase("fallenstar") || args[0].equalsIgnoreCase("bloodmoon")) && args[1].equalsIgnoreCase("start") ? Bukkit.getWorlds().stream().map(World::getName).toList()
-            : (args[1].equalsIgnoreCase("start") ? List.of("5", "10", "15", "30") : List.of())))));
+            : (args[1].equalsIgnoreCase("start") ? List.of("5", "10", "15", "30") : List.of()))))));
          case 4 -> args[0].toLowerCase(Locale.ROOT).startsWith("supply") ? Bukkit.getWorlds().stream().map(World::getName).toList()
             : (args[0].toLowerCase(Locale.ROOT).startsWith("outpost") && args[1].equalsIgnoreCase("create") ? this.events().outposts().types() : List.of());
          default -> List.of();

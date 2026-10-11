@@ -73,6 +73,7 @@ public class LegendaryWeapons extends JavaPlugin {
    private DisguiseManager disguiseManager;
    private CustomItems customItems;
    private EventManager eventManager;
+   private com.legendaryweapons.bosses.BossManager bossManager;
    private AbilityDispatcher abilityDispatcher;
    private SwordOfEclipseListener swordOfEclipseListener;
    private ChionesBladeListener chionesBladeListener;
@@ -101,6 +102,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.tutorialManager = new TutorialManager(this);
       this.guiManager = new GUIManager(this);
       this.eventManager = new EventManager(this);
+      this.bossManager = new com.legendaryweapons.bosses.BossManager(this);
       this.swordOfEclipseListener = new SwordOfEclipseListener(this);
       EnderGlaiveListener enderGlaiveListener = this.enderGlaiveListener = new EnderGlaiveListener(this);
       LostTridentListener lostTridentListener = this.lostTridentListener = new LostTridentListener(this);
@@ -162,6 +164,10 @@ public class LegendaryWeapons extends JavaPlugin {
    }
 
    public void onDisable() {
+      if (this.bossManager != null) {
+         this.bossManager.shutdown();
+      }
+
       if (this.eventManager != null) {
          this.eventManager.shutdown();
       }
@@ -318,6 +324,10 @@ public class LegendaryWeapons extends JavaPlugin {
 
    public CustomItems getCustomItems() {
       return this.customItems;
+   }
+
+   public com.legendaryweapons.bosses.BossManager getBossManager() {
+      return this.bossManager;
    }
 
    public EventManager getEventManager() {
