@@ -367,6 +367,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             attribute.setBaseValue(attribute.getBaseValue() + granted);
             this.grantedHealth.put(uuid, alreadyGranted + granted);
             this.createHealthBonusEffect(killer);
+            com.legendaryweapons.managers.SpriteFx.burst(killer, 0.6, org.bukkit.Color.fromRGB(255, 240, 200), 1.8, 1, 2, 6);
+            com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(255, 245, 220), 2.4, 5);
          }
       }
    }
@@ -466,6 +468,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
             if (damager.getAttackCooldown() > 0.9F && Math.random() < blindnessChance && this.plugin.getProtectionManager().canAffect(damager, victim)) {
                victim.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, abilities.getInt("blindness-duration", 60), 0));
                this.createBlindnessEffect(victim.getLocation());
+               com.legendaryweapons.managers.SpriteFx.burst(victim, 0.85, org.bukkit.Color.fromRGB(45, 20, 70), 1.8, 1, 3, 6);
             }
 
             if (this.dualWielding.getOrDefault(damager.getUniqueId(), false)) {
@@ -636,6 +639,8 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       int killsPerStage = Math.max(1, this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 3));
       if (kills % killsPerStage == 0) {
          this.createStageUpEffect(killer.getLocation(), kills / killsPerStage + 1);
+         com.legendaryweapons.managers.SpriteFx.burst(killer.getLocation().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 1.2 + 0.25 * Math.min(4, kills / killsPerStage + 1), 4, 8, 6);
+         com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(255, 150, 235), 3.5, 7);
       }
 
       this.plugin.getSoundManager().world(deathLoc, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 1.0F, 0.8F);
@@ -1021,6 +1026,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
 
    private void createDualWieldDeactivation(final Location center) {
       final World world = center.getWorld();
+      com.legendaryweapons.managers.SpriteFx.burst(center.clone().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.0, 1, 2, 7);
 
       for (int i = 0; i < 3; i++) {
          final int layer = i;

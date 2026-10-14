@@ -105,6 +105,7 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
                this.removeShrink(player);
                shrinking.remove();
                ParticleManager.spawn(Particle.WITCH, player.getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.5, 0.3, 0.02);
+               com.legendaryweapons.managers.SpriteFx.wave(player.getLocation(), org.bukkit.Color.fromRGB(190, 90, 255), 1.6, 5);
                this.plugin.getSoundManager().world(player.getLocation(), Sound.ENTITY_ILLUSIONER_CAST_SPELL, 0.5F, 0.8F);
             } else {
                Long warned = this.noRoomWarned.get(player.getUniqueId());
@@ -124,6 +125,7 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
             growing.remove();
             if (Bukkit.getEntity(entry.getKey()) instanceof LivingEntity living) {
                remove(living, Attribute.SCALE, this.enlargeKey);
+               com.legendaryweapons.managers.SpriteFx.burst(living, 0.5, org.bukkit.Color.fromRGB(190, 90, 255), 1.2, 1, 0, 4);
             }
          }
       }
@@ -237,7 +239,7 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
             ParticleManager.spawn(Particle.WITCH, victim.getLocation().add(0.0, 1.0, 0.0), 12, 0.4, 0.6, 0.4, 0.02);
             this.plugin.getSoundManager().world(victim.getLocation(), Sound.ENTITY_PUFFER_FISH_BLOW_UP, 0.8F, 0.8F);
             com.legendaryweapons.managers.AnimationFx.ring(victim.getLocation(), Material.PURPLE_STAINED_GLASS, 0.3, 1.8, 8, true);
-            com.legendaryweapons.managers.SpriteFx.burst(victim.getLocation().add(0.0, victim.getHeight() * 0.6, 0.0), org.bukkit.Color.fromRGB(190, 90, 255), 2.0, 2, 1, 5);
+            com.legendaryweapons.managers.SpriteFx.burst(victim, 0.6, org.bukkit.Color.fromRGB(190, 90, 255), 2.0, 2, 1, 5);
             if (victim instanceof Player enlarged) {
                HudManager.message(enlarged, Component.text("You have been enlarged!", NamedTextColor.LIGHT_PURPLE));
             }

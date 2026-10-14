@@ -103,11 +103,13 @@ final class EnderColossus extends Boss {
    }
 
    private void move(Player player, Location to) {
+      com.legendaryweapons.managers.SpriteFx.burst(player.getLocation().add(0.0, 1.0, 0.0), Color.fromRGB(170, 80, 255), 1.8, 1, 1, 5);
       Location target = to.clone();
       target.setYaw(player.getLocation().getYaw());
       target.setPitch(player.getLocation().getPitch());
       this.events().relics().teleportAllowed(player, target);
       ParticleManager.showcase(Particle.REVERSE_PORTAL, target.clone().add(0.0, 1.0, 0.0), 30, 0.3, 0.8, 0.3, 0.05, null);
+      com.legendaryweapons.managers.SpriteFx.burst(player, 0.55, Color.fromRGB(170, 80, 255), 1.8, 1, 1, 5);
       this.plugin.getSoundManager().world(target, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 0.6F);
    }
 

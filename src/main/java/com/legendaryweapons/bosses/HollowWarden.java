@@ -423,6 +423,7 @@ final class HollowWarden extends Boss {
 
       this.later(warn, () -> {
          this.plugin.getSoundManager().world(origin, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.5F, 1.0F);
+         com.legendaryweapons.managers.SpriteFx.burst(origin, Color.fromRGB(40, 200, 210), 2.8, 1, 1, 5);
          for (double d = 1.0; d <= length; d += 1.5) {
             ParticleManager.showcase(Particle.SONIC_BOOM, origin.clone().add(dir.clone().multiply(d)), 1, 0.0, 0.0, 0.0, 0.0, null);
          }
@@ -432,6 +433,7 @@ final class HollowWarden extends Boss {
             double along = rel.dot(dir);
             if (along > 0.0 && along <= length && rel.clone().subtract(dir.clone().multiply(along)).length() <= this.num("sonic-width", 1.4)) {
                this.trueDamage(player, this.num("sonic-damage", 12.0));
+               com.legendaryweapons.managers.SpriteFx.burst(player, 0.55, Color.fromRGB(40, 200, 210), 1.8, 1, 1, 4);
                player.setVelocity(dir.clone().multiply(1.2).setY(0.4));
             }
          }

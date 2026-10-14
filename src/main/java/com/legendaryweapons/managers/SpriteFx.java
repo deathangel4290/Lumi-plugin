@@ -22,12 +22,17 @@ import org.joml.Vector3f;
 
 /**
  * Textured ability effects: a sprite from the resource pack (assets/luminara/items/vfx) on an item
- * display that the client animates. Kept for the signature moments only -- one per weapon -- so a
- * fight never turns into a wall of effects. Everything else stays particles and display blocks.
+ * display that the client animates. One per ability moment, in the weapon's colours, so a fight
+ * never turns into a wall of effects.
+ *
+ * Tracking: a slash rides along with the player who swung it (a dash would otherwise leave it
+ * behind), and a burst on someone can follow them. Followers are moved every tick with a one-tick
+ * client smoothing, so they keep up with sprinting and dashing.
  *
  * Same PvP rules as AnimationFx: short (well under a second unless it is a telegraph), no collision,
- * hidden from players on /lwfx minimal or off. effects.sprites (or effects.animations) turns them
- * off, and every caller falls back to its old effect when a method returns false.
+ * hidden from players on /lwfx minimal or off, and a burst is never shown to the person it lands on.
+ * effects.sprites (or effects.animations) turns them off, and callers fall back to their old effect
+ * when a method returns false.
  */
 public final class SpriteFx {
    public enum Sprite {
@@ -46,6 +51,7 @@ public final class SpriteFx {
    private static LegendaryWeapons plugin;
    private static final Map<Sprite, ItemStack> ITEMS = new EnumMap<>(Sprite.class);
    private static final Set<ItemDisplay> LIVE = new HashSet<>();
+   private static final Map<String, Long> LAST = new java.util.HashMap<>();
 
    private SpriteFx() {
    }
@@ -63,6 +69,26 @@ public final class SpriteFx {
       }
 
       LIVE.clear();
+   }
+
+   /**
+    * Throttle for moments that can fire several times in one swing (a sweep hits each target):
+    * true at most once per `millis` for this player and key.
+    */
+   public static boolean ready(Player player, String key, long millis) {
+      long now = System.currentTimeMillis();
+      String id = player.getUniqueId() + key;
+      Long last = LAST.get(id);
+      if (last != null && now - last < millis) {
+         return false;
+      }
+
+      LAST.put(id, now);
+      if (LAST.size() > 512) {
+         LAST.values().removeIf(t -> now - t > 10000L);
+      }
+
+      return true;
    }
 
    public static boolean enabled() {
@@ -137,6 +163,28 @@ public final class SpriteFx {
       }, Math.max(1L, at));
    }
 
+   /** Keep `display` at `anchor` + `offset` for `ticks`, moving it every tick. */
+   private static void track(ItemDisplay display, org.bukkit.entity.Entity anchor, Vector offset, long ticks) {
+      display.setTeleportDuration(1);
+      new org.bukkit.scheduler.BukkitRunnable() {
+         long age = 0L;
+
+         public void run() {
+            if (++this.age > ticks || !display.isValid() || !anchor.isValid() || !anchor.getWorld().equals(display.getWorld())) {
+               this.cancel();
+               return;
+            }
+
+            Location to = anchor.getLocation().add(offset);
+            to.setYaw(0.0F);
+            to.setPitch(0.0F);
+            if (display.getLocation().distanceSquared(to) > 1.0E-4) {
+               display.teleport(to);
+            }
+         }
+      }.runTaskTimer(plugin, 1L, 1L);
+   }
+
    private static void removeAt(ItemDisplay display, long at) {
       plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
          LIVE.remove(display);
@@ -187,6 +235,7 @@ public final class SpriteFx {
          shape(new Quaternionf().rotationY(yaw + sweep).rotateX(tilt), size * 0.7));
       morph(display, 2L, 3, shape(new Quaternionf().rotationY(yaw - sweep * 0.25F).rotateX(tilt), size));
       morph(display, 5L, 3, shape(new Quaternionf().rotationY(yaw - sweep).rotateX(tilt), size * 0.8));
+      track(display, player, centre.toVector().subtract(player.getLocation().toVector()), 8L);
       removeAt(display, 8L);
       return true;
    }
@@ -231,19 +280,34 @@ public final class SpriteFx {
 
    /** A burst of light in any colour around a white core. */
    public static boolean burst(Location at, org.bukkit.Color colour, double size, int growTicks, int holdTicks, int fadeTicks) {
-      return enabled() && burst(at, com.legendaryweapons.rituals.RitualScene.model("vfx/flash_tint", colour), size, growTicks, holdTicks, fadeTicks);
+      return enabled() && burst(at, com.legendaryweapons.rituals.RitualScene.model("vfx/flash_tint", colour), size, growTicks, holdTicks, fadeTicks, null);
+   }
+
+   /** A burst on an entity at `height` x its height, following it while it plays. */
+   public static boolean burst(org.bukkit.entity.Entity on, double height, org.bukkit.Color colour, double size, int growTicks, int holdTicks, int fadeTicks) {
+      return enabled() && on.isValid()
+         && burst(on.getLocation().add(0.0, on.getHeight() * height, 0.0), com.legendaryweapons.rituals.RitualScene.model("vfx/flash_tint", colour), size, growTicks, holdTicks, fadeTicks, on);
    }
 
    private static boolean burst(Location at, ItemStack shown, double size, int growTicks, int holdTicks, int fadeTicks) {
+      return burst(at, shown, size, growTicks, holdTicks, fadeTicks, null);
+   }
+
+   private static boolean burst(Location at, ItemStack shown, double size, int growTicks, int holdTicks, int fadeTicks, org.bukkit.entity.Entity follow) {
       if (at.getWorld() == null) {
          return false;
       }
 
       ItemDisplay display = spawn(at, shown, Display.Billboard.CENTER, shape(new Quaternionf(), size * 0.4), size * 0.5 + 0.6);
       int grow = Math.max(1, growTicks);
+      long life = 3L + grow + Math.max(0, holdTicks) + Math.max(1, fadeTicks);
       morph(display, 2L, grow, shape(new Quaternionf(), size));
       morph(display, 2L + grow + Math.max(0, holdTicks), Math.max(1, fadeTicks), shape(new Quaternionf(), size * 0.05));
-      removeAt(display, 3L + grow + Math.max(0, holdTicks) + Math.max(1, fadeTicks));
+      if (follow != null) {
+         track(display, follow, at.toVector().subtract(follow.getLocation().toVector()), life);
+      }
+
+      removeAt(display, life);
       return true;
    }
 
@@ -253,8 +317,21 @@ public final class SpriteFx {
          return null;
       }
 
-      ItemDisplay display = spawn(at, sprite, faceCamera ? Display.Billboard.CENTER : Display.Billboard.FIXED, shape(new Quaternionf(), size));
-      display.setTeleportDuration(2);
+      return hold(at, item(sprite), faceCamera, size, maxLifeTicks);
+   }
+
+   /** A held sprite from any pack model ("vfx/ritual_circle_inner", ...), tinted when `tint` is set. */
+   public static Held hold(Location at, String model, org.bukkit.Color tint, boolean faceCamera, double size, int maxLifeTicks) {
+      if (!enabled() || at.getWorld() == null) {
+         return null;
+      }
+
+      return hold(at, com.legendaryweapons.rituals.RitualScene.model(model, tint), faceCamera, size, maxLifeTicks);
+   }
+
+   private static Held hold(Location at, ItemStack shown, boolean faceCamera, double size, int maxLifeTicks) {
+      ItemDisplay display = spawn(at, shown, faceCamera ? Display.Billboard.CENTER : Display.Billboard.FIXED, shape(new Quaternionf(), size));
+      display.setTeleportDuration(1);                           // followers keep up with fast movement
       Held held = new Held(display, size);
       removeAt(display, Math.max(20, maxLifeTicks));            // safety net if the caller never lets go
       return held;

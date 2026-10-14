@@ -421,6 +421,7 @@ public class LostTridentListener implements Listener, WeaponAbility {
       final double halfWidth = width / 2.0 + 0.5;
       final Set<UUID> hit = new HashSet<>();
       this.plugin.getSoundManager().world(anchor, Sound.ITEM_TRIDENT_RIPTIDE_2, 0.7F, 0.9F);
+      com.legendaryweapons.managers.SpriteFx.burst(anchor.clone().add(facing.clone().multiply(1.0)).add(0.0, 1.2, 0.0), org.bukkit.Color.fromRGB(90, 215, 255), 2.8, 2, 1, 6);
       (new BukkitRunnable() {
          int step = 0;
 

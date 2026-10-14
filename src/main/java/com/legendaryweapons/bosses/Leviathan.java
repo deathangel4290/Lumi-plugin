@@ -364,6 +364,7 @@ final class Leviathan extends Boss {
       this.model.setState("surfaced");
       this.plugin.getSoundManager().world(this.body.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, 1.5F, 0.5F);
       ParticleManager.showcase(Particle.SPLASH, this.body.getLocation().add(0.0, 1.5, 0.0), 80, 2.5, 1.0, 2.5, 0.3, null);
+      com.legendaryweapons.managers.SpriteFx.wave(this.body.getLocation(), Color.fromRGB(90, 215, 255), 7.0, 8);
       this.say("☠ The Leviathan SURFACES - strike now!");
    }
 
@@ -468,7 +469,9 @@ final class Leviathan extends Boss {
          int top = this.waterTop(at);
          if (top != Integer.MIN_VALUE) {
             at.setY(top + 0.9);
-            this.whirlpools.add(new Object[]{at, System.currentTimeMillis() + (long)(this.num("whirlpool-seconds", 8.0) * 1000.0)});
+            com.legendaryweapons.managers.SpriteFx.Held disc = com.legendaryweapons.managers.SpriteFx.hold(at.clone().add(0.0, 0.05, 0.0), "vfx/ritual_circle_inner", Color.fromRGB(40, 120, 210), false,
+               this.num("whirlpool-radius", 4.5) * 2.0 / 0.95, (int)(this.num("whirlpool-seconds", 8.0) * 20.0) + 40);
+            this.whirlpools.add(new Object[]{at, System.currentTimeMillis() + (long)(this.num("whirlpool-seconds", 8.0) * 1000.0), disc});
             this.plugin.getSoundManager().world(at, Sound.BLOCK_BUBBLE_COLUMN_WHIRLPOOL_AMBIENT, 1.5F, 0.6F);
          }
       }
@@ -476,9 +479,23 @@ final class Leviathan extends Boss {
 
    private void tickWhirlpools(long now) {
       double radius = this.num("whirlpool-radius", 4.5);
-      this.whirlpools.removeIf(w -> (Long)w[1] <= now);
+      this.whirlpools.removeIf(w -> {
+         if ((Long)w[1] > now) {
+            return false;
+         }
+
+         if (w.length > 2 && w[2] instanceof com.legendaryweapons.managers.SpriteFx.Held disc) {
+            disc.release(6);
+         }
+
+         return true;
+      });
       for (Object[] whirl : this.whirlpools) {
          Location centre = (Location)whirl[0];
+         if (this.ticks % 5L == 0L && whirl.length > 2 && whirl[2] instanceof com.legendaryweapons.managers.SpriteFx.Held disc) {
+            disc.animate(disc.size(), disc.angle() - 0.7F, 5);         // turning the way the water drags
+         }
+
          if (this.ticks % 2L == 0L) {
             double spin = this.ticks * 0.35;
             Particle.DustOptions dust = new Particle.DustOptions(Color.fromRGB(40, 110, 190), 1.3F);

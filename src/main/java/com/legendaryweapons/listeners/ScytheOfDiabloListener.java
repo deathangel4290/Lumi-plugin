@@ -59,6 +59,8 @@ public class ScytheOfDiabloListener implements Listener {
             AttributeInstance maxHealth = killer.getAttribute(Attribute.MAX_HEALTH);
             killer.setHealth(maxHealth != null ? maxHealth.getValue() : 20.0);
             this.createSoulAbsorptionEffect(killed.getLocation(), killer);
+            com.legendaryweapons.managers.SpriteFx.burst(killed.getLocation().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(150, 0, 20), 2.2, 2, 2, 8);
+            com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(220, 30, 50), 3.0, 6);
          }
       }
    }
@@ -105,7 +107,10 @@ public class ScytheOfDiabloListener implements Listener {
                double sweepMultiplier = abilities.getDouble("sweep-damage-multiplier", 1.25);
                event.setDamage(event.getDamage() * sweepMultiplier);
                isSweep = true;
-               this.createSweepEffects(damager.getLocation());
+               // a sweep fires once per target hit: draw it once per swing
+               if (com.legendaryweapons.managers.SpriteFx.ready(damager, "scythe-sweep", 400L) && !com.legendaryweapons.managers.SpriteFx.slash(damager, org.bukkit.Color.fromRGB(200, 25, 40), 3.8, 0.0)) {
+                  this.createSweepEffects(damager.getLocation());
+               }
             }
 
             int combo = this.comboMap.getOrDefault(damager.getUniqueId(), 0);

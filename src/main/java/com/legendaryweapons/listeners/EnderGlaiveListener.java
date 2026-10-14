@@ -36,6 +36,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
    private final WeaponManager weaponManager;
    private final HashMap<UUID, Long> chargingPlayers = new HashMap<>();
    private final HashMap<UUID, BukkitRunnable> chargeTasks = new HashMap<>();
+   private final HashMap<UUID, com.legendaryweapons.managers.SpriteFx.Held> chargeRings = new HashMap<>();
    private final NamespacedKey glaiveKey;
    private final HashMap<UUID, UUID> tridentOwners = new HashMap<>();
    private final HashMap<UUID, ItemStack> glaiveItems = new HashMap<>();
@@ -153,6 +154,13 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("ender-glaive");
       final long maxChargeTime = abilities != null ? abilities.getLong("max-charge-time", 3000L) : 3000L;
       final long startedAt = System.currentTimeMillis();
+      this.releaseRing(player.getUniqueId());
+      // a rune ring under the player that widens and turns faster as the pearl charges
+      final com.legendaryweapons.managers.SpriteFx.Held ring = com.legendaryweapons.managers.SpriteFx.hold(player.getLocation().add(0.0, 0.06, 0.0), "vfx/ritual_circle_inner", org.bukkit.Color.fromRGB(150, 60, 235), false, 1.0, (int)(maxChargeTime / 50L) + 200);
+      if (ring != null) {
+         this.chargeRings.put(player.getUniqueId(), ring);
+      }
+
       BukkitRunnable chargeTask = new BukkitRunnable() {
          int ticks = 0;
          boolean announcedFull = false;
@@ -161,6 +169,13 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
             if (EnderGlaiveListener.this.chargingPlayers.containsKey(player.getUniqueId()) && player.isOnline()) {
                Location loc = player.getLocation().add(0.0, 1.0, 0.0);
                double progress = Math.min(1.0, (double)(System.currentTimeMillis() - startedAt) / maxChargeTime);
+               if (ring != null) {
+                  ring.follow(player.getLocation().add(0.0, 0.06, 0.0));
+                  if (this.ticks % 4 == 0) {
+                     ring.animate(1.0 + 1.8 * progress, ring.angle() + 0.3F + 0.5F * (float)progress, 4);
+                  }
+               }
+
                if (this.ticks % 2 == 0) {
                   EnderGlaiveListener.this.plugin.getParticleManager().trail(loc, Particle.PORTAL, 4, 0.4, 0.5, 0.4, 0.05);
                }
@@ -184,6 +199,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
 
                this.ticks++;
             } else {
+               EnderGlaiveListener.this.releaseRing(player.getUniqueId());
                this.cancel();
             }
          }
@@ -192,7 +208,15 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       this.chargeTasks.put(player.getUniqueId(), chargeTask);
    }
 
+   private void releaseRing(UUID id) {
+      com.legendaryweapons.managers.SpriteFx.Held ring = this.chargeRings.remove(id);
+      if (ring != null) {
+         ring.release(4);
+      }
+   }
+
    private void stopChargeEffects(Player player) {
+      this.releaseRing(player.getUniqueId());
       if (this.chargeTasks.containsKey(player.getUniqueId())) {
          this.chargeTasks.get(player.getUniqueId()).cancel();
          this.chargeTasks.remove(player.getUniqueId());
@@ -211,6 +235,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       pearl.setVelocity(direction.multiply(throwStrength));
       pearl.setShooter(player);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.ENTITY_ENDER_PEARL_THROW, 0.7F, 1.0F);
+      com.legendaryweapons.managers.SpriteFx.burst(startLoc.clone().add(direction.clone().normalize().multiply(1.2)).subtract(0.0, 0.3, 0.0), org.bukkit.Color.fromRGB(150, 60, 235), 1.0 + chargeRatio, 1, 0, 4);
       this.trackSpearPearl(pearl, player);
    }
 
@@ -391,6 +416,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                double finalDamage = damage + Math.random() * 2.0;
                event.setDamage(finalDamage);
                this.plugin.getSoundManager().hit(event.getEntity().getLocation(), Sound.ENTITY_ENDERMAN_HURT, 0.6F, 1.2F);
+               com.legendaryweapons.managers.SpriteFx.burst(event.getEntity(), 0.55, org.bukkit.Color.fromRGB(150, 60, 235), 1.7, 1, 1, 5);
             }
          }
       }

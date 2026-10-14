@@ -128,6 +128,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                   }
                }, 1L);
                this.plugin.getSoundManager().world(blocking.getLocation(), Sound.ITEM_SHIELD_BREAK, 0.7F, 0.8F);
+               com.legendaryweapons.managers.SpriteFx.burst(blocking, 0.55, org.bukkit.Color.fromRGB(230, 235, 245), 1.5, 1, 1, 4);
             }
          }
       }
@@ -163,7 +164,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
             equipment.setArmorContents(armour);
             Location loc = target.getLocation().add(0.0, 1.0, 0.0);
             ParticleManager.spawn(Particle.CRIT, loc, 12, 0.4, 0.5, 0.4, 0.1);
-            com.legendaryweapons.managers.SpriteFx.burst(loc, org.bukkit.Color.fromRGB(255, 190, 80), 1.4, 1, 1, 4);
+            com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(255, 190, 80), 1.4, 1, 1, 4);
             this.plugin.getSoundManager().world(loc, Sound.ENTITY_ZOMBIE_ATTACK_IRON_DOOR, 0.5F, 1.4F);
             HudManager.message(source, Component.text("Armour cracked (-" + amount + " durability)", NamedTextColor.GOLD));
          }
@@ -207,13 +208,26 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
       this.windingUp.add(id);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.BLOCK_GRINDSTONE_USE, 1.0F, 0.6F);
       this.plugin.getSoundManager().world(player.getLocation(), Sound.BLOCK_ANVIL_PLACE, 0.6F, 0.5F);
+      // the telegraph: a molten rune circle at the slam's full reach that closes in on the player
+      final com.legendaryweapons.managers.SpriteFx.Held ring = com.legendaryweapons.managers.SpriteFx.hold(player.getLocation().add(0.0, 0.06, 0.0), "vfx/ritual_circle_outer", org.bukkit.Color.fromRGB(255, 120, 30), false, radius * 2.0 / 0.965, ticks + 40);
       (new BukkitRunnable() {
          int elapsed = 0;
 
          public void run() {
+            if (ring != null) {
+               ring.follow(player.getLocation().add(0.0, 0.06, 0.0));
+               if (this.elapsed == 2) {
+                  ring.animate(1.2, 1.4F, Math.max(1, ticks - 2));
+               }
+            }
+
             if (!player.isOnline() || player.isDead() || !TitansAxeListener.this.isHolding(player)) {
                TitansAxeListener.this.windingUp.remove(id);
                this.cancel();
+               if (ring != null) {
+                  ring.release(3);
+               }
+
                // An interrupted slam never landed: give the charge and the cooldown back.
                TitansAxeListener.this.plugin.getChargeMeter().set(player, CHARGE_KEY, spent, TitansAxeListener.this.max());
                TitansAxeListener.this.plugin.getCooldownManager().clear(player, SLAM_COOLDOWN_KEY, TitansAxeListener.this.weaponMaterial());
@@ -223,6 +237,10 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
             } else if (this.elapsed++ >= ticks) {
                TitansAxeListener.this.windingUp.remove(id);
                this.cancel();
+               if (ring != null) {
+                  ring.remove();                                 // the slam's own shockwave takes over
+               }
+
                TitansAxeListener.this.slam(player);
             } else if (this.elapsed % 3 == 0) {
                double r = radius * (1.0 - (double)this.elapsed / (ticks + 1));

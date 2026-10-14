@@ -174,7 +174,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       final UUID id = target.getUniqueId();
       this.unfreeze(target);
       this.immuneUntil.put(id, System.currentTimeMillis() + (duration + this.abilityLong("freeze-immunity", 100L)) * 50L);
-      com.legendaryweapons.managers.SpriteFx.burst(target.getLocation().add(0.0, target.getHeight() * 0.55, 0.0), org.bukkit.Color.fromRGB(150, 215, 255), 1.6, 1, 2, 5);
+      com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(150, 215, 255), 1.6, 1, 2, 5);
       this.addModifier(target, Attribute.MOVEMENT_SPEED, this.freezeSpeedKey);
       this.addModifier(target, Attribute.JUMP_STRENGTH, this.freezeJumpKey);
       Vector v = target.getVelocity();

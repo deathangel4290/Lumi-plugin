@@ -85,11 +85,25 @@ public class TetherChainListener extends AbstractWeaponListener {
 
       this.plugin.getSoundManager().world(eye, Sound.ENTITY_FISHING_BOBBER_THROW, 1.0F, 0.6F);
       final Particle.DustOptions chain = new Particle.DustOptions(Color.fromRGB(120, 120, 130), 0.9F);
+      // the hook itself flies out at the head of the chain
+      Location start = eye.clone().add(direction.clone().multiply(0.8));
+      start.setYaw(eye.getYaw());
+      start.setPitch(0.0F);
+      final org.bukkit.entity.ItemDisplay hook = eye.getWorld().spawn(start, org.bukkit.entity.ItemDisplay.class, d -> {
+         d.setPersistent(false);
+         d.setItemStack(new org.bukkit.inventory.ItemStack(org.bukkit.Material.TRIPWIRE_HOOK));
+         d.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
+         d.setTeleportDuration(1);
+         d.setShadowRadius(0.0F);
+         d.setTransformation(new org.bukkit.util.Transformation(new org.joml.Vector3f(), new org.joml.Quaternionf().rotationX((float)Math.toRadians(eye.getPitch())),
+            new org.joml.Vector3f(0.7F, 0.7F, 0.7F), new org.joml.Quaternionf()));
+      });
       (new BukkitRunnable() {
          double travelled = 0.0;
 
          public void run() {
             if (!player.isOnline()) {
+               hook.remove();
                this.cancel();
                return;
             }
@@ -103,8 +117,16 @@ public class TetherChainListener extends AbstractWeaponListener {
                ParticleManager.spawn(Particle.DUST, eye.clone().add(direction.clone().multiply(d)), 1, 0.0, 0.0, 0.0, 0.0, chain);
             }
 
+            if (hook.isValid()) {
+               Location at = eye.clone().add(direction.clone().multiply(Math.max(0.8, this.travelled)));
+               at.setYaw(eye.getYaw());
+               at.setPitch(0.0F);
+               hook.teleport(at);
+            }
+
             if (this.travelled >= reach) {
                this.cancel();
+               TetherChainListener.this.plugin.getServer().getScheduler().runTaskLater(TetherChainListener.this.plugin, hook::remove, 3L);
                if (target != null && target.isValid() && !target.isDead()) {
                   TetherChainListener.this.hooked(player, target);
                } else {
@@ -117,7 +139,7 @@ public class TetherChainListener extends AbstractWeaponListener {
 
    private void hooked(Player owner, LivingEntity target) {
       com.legendaryweapons.managers.AnimationFx.ring(target.getLocation(), Material.CHAIN, 1.4, 0.3, 8, false);
-      com.legendaryweapons.managers.SpriteFx.burst(target.getLocation().add(0.0, target.getHeight() * 0.55, 0.0), org.bukkit.Color.fromRGB(200, 205, 215), 1.3, 1, 1, 4);
+      com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(200, 205, 215), 1.3, 1, 1, 4);
       Vector pull = owner.getLocation().toVector().subtract(target.getLocation().toVector());
       double distance = pull.length();
       if (distance > 0.5) {
@@ -135,6 +157,7 @@ public class TetherChainListener extends AbstractWeaponListener {
          if (this.plugin.getDashTracker().isDashing(victim)) {
             long lock = this.abilityLong("dash-lock-duration", 60L);
             this.plugin.getDashTracker().lock(victim, lock);
+            com.legendaryweapons.managers.SpriteFx.wave(victim.getLocation(), org.bukkit.Color.fromRGB(200, 60, 60), 1.8, 4);
             HudManager.message(victim, Component.text("Chained! You cannot dash for " + HudManager.seconds(lock / 20.0), NamedTextColor.RED));
             HudManager.message(owner, Component.text("Caught " + this.plugin.getEventManager().publicName(victim) + " mid-dash!", NamedTextColor.GOLD));
          } else {

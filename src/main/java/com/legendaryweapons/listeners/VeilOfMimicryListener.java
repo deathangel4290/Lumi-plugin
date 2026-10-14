@@ -205,6 +205,8 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
          Location loc = player.getLocation();
          ParticleManager.spawn(Particle.SMOKE, loc.clone().add(0.0, 1.0, 0.0), 20, 0.35, 0.7, 0.35, 0.03);
          this.plugin.getSoundManager().world(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 0.6F, 0.8F);
+         com.legendaryweapons.managers.SpriteFx.burst(player, 0.55, org.bukkit.Color.fromRGB(110, 60, 140), 2.0, 1, 1, 6);
+         com.legendaryweapons.managers.SpriteFx.wave(loc, org.bukkit.Color.fromRGB(120, 70, 150), 2.2, 6);
       }
    }
 
