@@ -86,7 +86,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
             int tier = count >= forTwo ? 2 : 1;
             com.legendaryweapons.managers.HudManager.message(killer, Component.text("Swiftness " + tier, NamedTextColor.WHITE));
             this.plugin.getSoundManager().self(killer, Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.7F, 1.7F);
-            com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(210, 240, 255), 2.0 + tier, 6);
+            com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(170, 225, 255), 2.0 + tier, 6);
          }
       }
 
@@ -157,11 +157,11 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
       }
 
       direction.normalize().multiply(power);
-      if (!com.legendaryweapons.managers.SpriteFx.wave(player.getLocation(), org.bukkit.Color.fromRGB(210, 240, 255), 2.2, 5)) {
+      if (!com.legendaryweapons.managers.SpriteFx.wave(player.getLocation(), org.bukkit.Color.fromRGB(170, 225, 255), 2.2, 5)) {
          com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_STAINED_GLASS, 0.4, 1.8, 6, false);
       }
 
-      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(200, 245, 255), 2.8, 0.0);
+      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(170, 225, 255), 2.8, 0.0);
       direction.setY(lift);
       player.setVelocity(direction);
       this.plugin.getDashTracker().markDashing(player, duration + 4L);

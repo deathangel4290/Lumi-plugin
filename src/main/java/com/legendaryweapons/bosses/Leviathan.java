@@ -298,7 +298,7 @@ final class Leviathan extends Boss {
       final Vector side = new Vector(-dir.getZ(), 0.0, dir.getX());
       final double half = this.num("wave-width", 9.0) / 2.0;
       final double reach = this.num("wave-length", 34.0);
-      final Color foam = Color.fromRGB(200, 245, 255);
+      final Color foam = Color.fromRGB(170, 225, 255);
       for (Player player : this.fighters()) {
          com.legendaryweapons.managers.HudManager.message(player, Component.text("≈ A tidal wave is coming - get out of its path!", NamedTextColor.AQUA));
       }

@@ -141,39 +141,17 @@ public class ScytheOfDiabloListener implements Listener {
       }
    }
 
+   /**
+    * Every hit: a small crimson puff where the blade lands and a wisp of soul torn loose. (It used to
+    * draw a dust line between the two players' FEET and spray grey gravel; noise, not a hit.)
+    */
    private void createAttackEffects(Location damagerLoc, Location victimLoc) {
-      World world = damagerLoc.getWorld();
-      this.createEnergyBeam(damagerLoc, victimLoc);
-      ParticleManager.spawn(Particle.BLOCK, victimLoc, 15, 0.5, 0.5, 0.5, 0.1, Material.GRAVEL.createBlockData());
-      ParticleManager.spawn(Particle.DAMAGE_INDICATOR, victimLoc, 5, 0.3, 0.3, 0.3, 0.0);
-      
-
-      for (int i = 0; i < 3; i++) {
-         Vector direction = damagerLoc.toVector().subtract(victimLoc.toVector()).normalize();
-         Location soulLoc = victimLoc.clone().add((Math.random() - 0.5) * 0.5, Math.random() * 1.0, (Math.random() - 0.5) * 0.5);
-         ParticleManager.spawn(Particle.SOUL, soulLoc, 1, direction.getX() * 0.1, direction.getY() * 0.1, direction.getZ() * 0.1, 0.1);
-      }
+      Location chest = victimLoc.clone().add(0.0, 1.1, 0.0);
+      ParticleManager.spawn(Particle.DUST_COLOR_TRANSITION, chest, 6, 0.22, 0.3, 0.22, 0.0,
+         new Particle.DustTransition(Color.fromRGB(200, 20, 40), Color.fromRGB(40, 0, 8), 1.1F));
+      ParticleManager.spawn(Particle.SOUL, chest, 1, 0.15, 0.2, 0.15, 0.02);
    }
 
-   private void createEnergyBeam(Location start, Location end) {
-      World world = start.getWorld();
-      Vector direction = end.toVector().subtract(start.toVector());
-      double distance = start.distance(end);
-      int steps = (int)(distance * 3.0);
-
-      for (int i = 0; i <= steps; i++) {
-         double ratio = (double)i / steps;
-         Location point = start.clone().add(direction.clone().multiply(ratio));
-         ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(Color.fromRGB(75, 0, 130), 1.5F));
-         if (i % 3 == 0) {
-            ParticleManager.spawn(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(Color.RED, 0.8F));
-         }
-
-         if (i % 7 == 0) {
-            ParticleManager.spawn(Particle.SOUL_FIRE_FLAME, point, 1, 0.05, 0.05, 0.05, 0.0);
-         }
-      }
-   }
 
    private void createBackstabEffects(final Location victimLoc) {
       World world = victimLoc.getWorld();
@@ -182,7 +160,7 @@ public class ScytheOfDiabloListener implements Listener {
       for (int i = 0; i < 6; i++) {
          Vector bloodDir = new Vector((Math.random() - 0.5) * 2.0, Math.random() * 1.5, (Math.random() - 0.5) * 2.0).normalize();
          Location bloodLoc = victimLoc.clone().add(bloodDir.multiply(0.5));
-         ParticleManager.spawn(Particle.BLOCK, bloodLoc, 3, 0.2, 0.2, 0.2, 0.1, Material.GRAVEL.createBlockData());
+         ParticleManager.spawn(Particle.DUST, bloodLoc.add(0.0, 0.8, 0.0), 2, 0.15, 0.15, 0.15, 0.0, new DustOptions(Color.fromRGB(120, 0, 12), 1.2F));
       }
 
       for (int i = 0; i < 3; i++) {

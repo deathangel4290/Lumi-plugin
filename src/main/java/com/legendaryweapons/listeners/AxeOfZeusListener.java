@@ -398,7 +398,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
          }
       }, 1L);
       this.plugin.getSoundManager().world(victim.getLocation(), Sound.ITEM_SHIELD_BREAK, 0.7F, 1.0F);
-      com.legendaryweapons.managers.SpriteFx.burst(victim, 0.55, org.bukkit.Color.fromRGB(230, 235, 245), 1.5, 1, 1, 4);
+      com.legendaryweapons.managers.SpriteFx.burst(victim, 0.55, org.bukkit.Color.fromRGB(205, 220, 240), 1.5, 1, 1, 4);
    }
 
    @EventHandler

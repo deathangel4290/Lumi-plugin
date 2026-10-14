@@ -78,7 +78,7 @@ def flash(name):
     rays = (np.abs(np.cos(a * 4)) ** 24 + 0.5 * np.abs(np.cos(a * 4 + math.pi / 4)) ** 30) * np.clip(1 - r, 0, 1) ** 1.5
     v = np.clip(glow + rays * 0.7, 0, 1)
     v *= smooth(1.0, 0.85, r)
-    rgb = ramp(v, [(0, (255, 170, 40)), (0.5, (255, 225, 140)), (1, (255, 255, 245))])
+    rgb = ramp(v, [(0, (235, 135, 20)), (0.5, (255, 205, 100)), (1, (255, 252, 235))])
     save(name, rgb, v ** 0.9)
 
 
@@ -126,7 +126,7 @@ def rune_circle(name):
     v = np.maximum(v, (band & tick) * 0.9)
     glow = np.exp(-(r / 0.22) ** 2) * 0.35
     v = np.clip(np.maximum(v, glow), 0, 1)
-    save(name, ramp(v, [(0, (255, 160, 30)), (0.6, (255, 210, 90)), (1, (255, 250, 210))]), v)
+    save(name, ramp(v, [(0, (210, 115, 15)), (0.6, (250, 185, 55)), (1, (255, 240, 190))]), v)
 
 
 def eclipse(name):
@@ -264,7 +264,8 @@ def slash_layers(name):
     smear = np.clip(1 - (outer - thick - r) / 0.35, 0, 1) * (depth > 1) * t ** 2 * 0.22
     alpha = np.maximum.reduce([np.clip(core * 1.25, 0, 1) * (0.45 + 0.55 * t ** 0.5), halo * 0.5, smear])
     white = np.full(r.shape + (3,), 255.0)
-    save(name + "_body", white * (0.55 + 0.45 * core[..., None]), alpha)
+    # bright at the leading edge, deepening toward the trailing side: reads against a bright sky too
+    save(name + "_body", white * (0.32 + 0.68 * core[..., None] ** 0.8), np.clip(alpha * 1.12, 0, 1))
     edge = np.where(body, np.clip(1 - depth / 0.22, 0, 1), 0.0) * t ** 0.6
     save(name + "_edge", white, np.clip(edge * 0.95, 0, 1))
 
@@ -275,7 +276,8 @@ def flash_layers(name):
     rays = (np.abs(np.cos(a * 4)) ** 24 + 0.5 * np.abs(np.cos(a * 4 + math.pi / 4)) ** 30) * np.clip(1 - r, 0, 1) ** 1.5
     v = np.clip(glow + rays * 0.7, 0, 1) * smooth(1.0, 0.85, r)
     white = np.full(r.shape + (3,), 255.0)
-    save(name + "_body", white, v ** 0.9)
+    # the glow deepens toward its rim so the colour holds against a bright sky
+    save(name + "_body", white * (0.62 + 0.38 * np.clip(v, 0, 1)[..., None]), np.clip(v, 0, 1) ** 1.1)
     core = np.exp(-(r / 0.13) ** 2)
     save(name + "_core", white, np.clip(core * 1.2, 0, 1))
 
@@ -341,10 +343,10 @@ def main():
     for d in (TEX, MODELS, ITEMS):
         os.makedirs(d, exist_ok=True)
     slash("slash_red", [(0, (90, 0, 10)), (0.55, (230, 40, 40)), (1, (255, 215, 200))], (120, 10, 20))
-    slash("slash_light", [(0, (200, 160, 60)), (0.55, (255, 235, 170)), (1, (255, 255, 255))], (255, 230, 160))
+    slash("slash_light", [(0, (170, 115, 25)), (0.5, (245, 200, 90)), (1, (255, 250, 225))], (230, 190, 110))
     slash("slash_dark", [(0, (20, 0, 40)), (0.6, (90, 30, 170)), (1, (200, 150, 255))], (40, 0, 70))
     flash("flash")
-    ring("shockwave_gold", [(0, (255, 150, 30)), (0.6, (255, 215, 100)), (1, (255, 255, 230))])
+    ring("shockwave_gold", [(0, (215, 115, 10)), (0.6, (255, 190, 60)), (1, (255, 245, 200))])
     ring("shockwave_magma", [(0, (120, 20, 0)), (0.5, (255, 90, 10)), (1, (255, 220, 120))], cracks=True)
     rune_circle("rune_gold")
     eclipse("eclipse")

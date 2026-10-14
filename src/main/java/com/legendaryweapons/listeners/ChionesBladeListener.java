@@ -178,7 +178,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       final UUID id = target.getUniqueId();
       this.unfreeze(target);
       this.immuneUntil.put(id, System.currentTimeMillis() + (duration + this.abilityLong("freeze-immunity", 100L)) * 50L);
-      com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(150, 215, 255), 1.6, 1, 2, 5);
+      com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(110, 190, 255), 1.6, 1, 2, 5);
       this.addModifier(target, Attribute.MOVEMENT_SPEED, this.freezeSpeedKey);
       this.addModifier(target, Attribute.JUMP_STRENGTH, this.freezeJumpKey);
       Vector v = target.getVelocity();
@@ -303,7 +303,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       final Vector facing = flat.lengthSquared() < 1.0E-4 ? new Vector(0, 0, 1) : flat.normalize();
       final Vector across = new Vector(-facing.getZ(), 0.0, facing.getX()).normalize();
       final Location origin = player.getLocation().add(0.0, 0.3, 0.0);
-      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(150, 215, 255), 3.0, 0.15);
+      com.legendaryweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(110, 190, 255), 3.0, 0.15);
       final Set<UUID> hit = new HashSet<>();
       this.plugin.getSoundManager().world(origin, Sound.BLOCK_POWDER_SNOW_BREAK, 0.9F, 0.7F);
       this.plugin.getSoundManager().world(origin, Sound.ENTITY_PLAYER_ATTACK_SWEEP, 0.6F, 0.6F);

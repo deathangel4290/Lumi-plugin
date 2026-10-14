@@ -132,7 +132,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                   }
                }, 1L);
                this.plugin.getSoundManager().world(blocking.getLocation(), Sound.ITEM_SHIELD_BREAK, 0.7F, 0.8F);
-               com.legendaryweapons.managers.SpriteFx.burst(blocking, 0.55, org.bukkit.Color.fromRGB(230, 235, 245), 1.5, 1, 1, 4);
+               com.legendaryweapons.managers.SpriteFx.burst(blocking, 0.55, org.bukkit.Color.fromRGB(205, 220, 240), 1.5, 1, 1, 4);
             }
          }
       }

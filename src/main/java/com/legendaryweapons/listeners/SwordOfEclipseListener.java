@@ -732,36 +732,19 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       World world = damager.getWorld();
       Location damagerLoc = damager.getLocation();
       Location victimLoc = victim.getLocation();
-      this.createCosmicBeam(damagerLoc, victimLoc, stage);
-      ParticleManager.spawn(Particle.SWEEP_ATTACK, victimLoc, 5, 0.5, 0.5, 0.5, 0.1);
+      // the hit lands at the chest: a stage-coloured puff and a glint (no more feet-to-feet beam)
+      Location chest = victimLoc.clone().add(0.0, victim.getHeight() * 0.6, 0.0);
       Color impactColor = this.getStageColor(stage);
-      ParticleManager.spawn(Particle.DUST, victimLoc, 10, 0.3, 0.3, 0.3, 0.0, new DustOptions(impactColor, 1.5F));
+      ParticleManager.spawn(Particle.DUST, chest, 6, 0.22, 0.28, 0.22, 0.0, new DustOptions(impactColor, 1.2F));
+      if (stage >= 3) {
+         ParticleManager.spawn(Particle.END_ROD, chest, 2, 0.15, 0.2, 0.15, 0.02);
+      }
       this.plugin.getSoundManager().hit(victimLoc, Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.6F, 1.2F);
       if (stage >= 3) {
          this.plugin.getSoundManager().hit(victimLoc, Sound.BLOCK_BEACON_POWER_SELECT, 0.4F, 1.5F);
       }
    }
 
-   private void createCosmicBeam(Location start, Location end, int stage) {
-      World world = start.getWorld();
-      Vector direction = end.toVector().subtract(start.toVector());
-      double distance = start.distance(end);
-      int steps = (int)(distance * 3.0);
-
-      for (int i = 0; i <= steps; i++) {
-         double ratio = (double)i / steps;
-         Location point = start.clone().add(direction.clone().multiply(ratio));
-         Color beamColor = this.getStageColor(stage);
-         ParticleManager.spawn(Particle.DUST, point, 1, 0.05, 0.05, 0.05, 0.0, new DustOptions(beamColor, 1.2F));
-         if (i % 2 == 0) {
-            ParticleManager.spawn(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.03);
-         }
-
-         if (stage >= 3 && i % 4 == 0) {
-            ParticleManager.spawn(Particle.END_ROD, point, 1, 0.05, 0.05, 0.05, 0.0);
-         }
-      }
-   }
 
    private void createBlindnessEffect(Location location) {
       World world = location.getWorld();
@@ -778,8 +761,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       if (combo >= 3) {
          this.createComboBurst(playerLoc, combo);
       }
-
-      this.createSwordTrail(playerLoc, victimLoc, combo);
+      // the light/dark slash sprite is the trail now
    }
 
    private void createComboBurst(Location center, int combo) {
@@ -795,19 +777,6 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       }
    }
 
-   private void createSwordTrail(Location start, Location end, int combo) {
-      World world = start.getWorld();
-      Vector direction = end.toVector().subtract(start.toVector());
-      double distance = start.distance(end);
-      int steps = (int)(distance * 2.0);
-
-      for (int i = 0; i <= steps; i++) {
-         double ratio = (double)i / steps;
-         Location point = start.clone().add(direction.clone().multiply(ratio));
-         Color trailColor = combo % 2 == 0 ? Color.WHITE : Color.BLACK;
-         ParticleManager.spawn(Particle.DUST, point, 1, 0.1, 0.1, 0.1, 0.0, new DustOptions(trailColor, 1.0F));
-      }
-   }
 
    private void createSwordSwapEffect(Player player) {
       World world = player.getWorld();
@@ -855,13 +824,28 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       }
 
       if (this.dualWielding.getOrDefault(uuid, false)) {
+         // a small eclipse rides above the player for as long as the sword is split: easy to read in a fight
+         final com.legendaryweapons.managers.SpriteFx.Held sigil = com.legendaryweapons.managers.SpriteFx.hold(player.getLocation().add(0.0, 3.0, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, true, 0.9, 20 * 600);
          BukkitRunnable dualWieldTask = new BukkitRunnable() {
             int ticks = 0;
+
+            @Override
+            public synchronized void cancel() {
+               if (sigil != null) {
+                  sigil.release(6);
+               }
+
+               super.cancel();
+            }
 
             public void run() {
                if (player.isOnline()
                   && SwordOfEclipseListener.this.dualWielding.getOrDefault(uuid, false)
                   && SwordOfEclipseListener.this.isHoldingSwordOfEclipse(player)) {
+                  if (sigil != null) {
+                     sigil.follow(player.getLocation().add(0.0, 3.0, 0.0));
+                  }
+
                   if (!SwordOfEclipseListener.this.plugin.getParticleManager().passiveEnabled()) {
                      this.ticks++;
                      return;
