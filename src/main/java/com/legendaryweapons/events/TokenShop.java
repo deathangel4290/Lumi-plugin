@@ -78,7 +78,7 @@ public final class TokenShop implements Listener {
       this.file = new File(plugin.getDataFolder(), "traders.yml");
       this.load();
       plugin.getServer().getPluginManager().registerEvents(this, plugin);
-      plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L, 2L);
+      plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 20L, 1L);
    }
 
    // ------------------------------------------------------------------ persistence

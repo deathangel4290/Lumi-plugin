@@ -276,6 +276,8 @@ public class Ritual {
          }
 
          float spin = (float)(time * (1.0 + progress * 2.0));
+         this.floatingItem.setInterpolationDelay(0);
+         this.floatingItem.setInterpolationDuration(3);
          this.floatingItem.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 1.6) * 0.12), 0.0F), new Quaternionf().rotateY(spin), new Vector3f(1.3F, 1.3F, 1.3F), new Quaternionf()));
       }
    }

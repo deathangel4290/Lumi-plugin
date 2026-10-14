@@ -227,6 +227,10 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       // Players only: a mob whose chunk unloaded mid-enlarge kept the giant size saved on it for good.
       if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && event.getEntity() instanceof Player victim) {
          long now = System.currentTimeMillis();

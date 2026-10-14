@@ -29,6 +29,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
  */
 public final class AbilityDamage implements Listener {
    private static AbilityDamage instance;
+   private static int dealing;
    private final LegendaryWeapons plugin;
    private final Map<UUID, Credit> recent = new HashMap<>();
 
@@ -45,6 +46,14 @@ public final class AbilityDamage implements Listener {
    }
 
    /**
+    * True while an ability hit is being dealt. Weapon listeners skip their on-hit effects then: a
+    * Slam's damage is not a melee swing, so it must not build Slam charge, count as a backstab, etc.
+    */
+   public static boolean active() {
+      return dealing > 0;
+   }
+
+   /**
     * Hit `target` for `amount` from an ability. `pierce` (0..1) of it ignores armour and Protection.
     * `deathMessage` uses {victim} and {killer}, e.g. "{victim} was flattened by {killer}'s Slam";
     * null keeps vanilla's message. Returns the health (and absorption) actually taken.
@@ -54,6 +63,15 @@ public final class AbilityDamage implements Listener {
          return 0.0;
       }
 
+      dealing++;
+      try {
+         return deal(source, target, amount, pierce, from, deathMessage);
+      } finally {
+         dealing--;
+      }
+   }
+
+   private static double deal(Player source, LivingEntity target, double amount, double pierce, Location from, String deathMessage) {
       double before = target.getHealth() + target.getAbsorptionAmount();
       double piercing = amount * Math.max(0.0, Math.min(1.0, pierce));
       if (instance != null && deathMessage != null && target instanceof Player victim && source != null) {

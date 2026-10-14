@@ -93,6 +93,10 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player attacker && this.isHolding(attacker)) {
          if (event.getEntity() instanceof LivingEntity victim && this.isFullSwing(attacker)) {
             boolean mobsCount = this.abilities() != null && this.abilities().getBoolean("charge-from-mobs", false);

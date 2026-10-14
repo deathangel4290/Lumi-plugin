@@ -162,6 +162,9 @@ public class LostTridentListener implements Listener, WeaponAbility {
             }
 
             Location at = trident.getLocation();
+            // the projectile's own yaw/pitch would turn the model a second time on top of `pointing`
+            at.setYaw(0.0F);
+            at.setPitch(0.0F);
             display.teleport(at);
             Vector v = trident.getVelocity();
             double speed = v.length();

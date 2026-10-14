@@ -67,6 +67,10 @@ public class ScytheOfDiabloListener implements Listener {
 
    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)   // a blocked hit (no-PvP region, trusted player) builds nothing
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
          LivingEntity victim = (LivingEntity)event.getEntity();

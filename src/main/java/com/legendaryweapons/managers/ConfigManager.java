@@ -80,6 +80,11 @@ public class ConfigManager {
       {4, "bosses.hollow_warden.damage-multiplier", 1.0, 1.2},
       {4, "bosses.leviathan.damage-multiplier", 1.0, 1.4},
       {4, "bosses.ender_colossus.damage-multiplier", 1.0, 1.4},
+      // the big armour-ignoring hits, so that with the multipliers they hurt but do not one-shot
+      {5, "bosses.wither_king.nova-damage", 14, 11},
+      {5, "bosses.wither_king.slam-damage", 14, 10},
+      {5, "bosses.ender_colossus.stomp-damage", 13, 10},
+      {5, "bosses.leviathan.wave-damage", 11, 9},
    };
 
    private void retune() {

@@ -73,7 +73,7 @@ public class HellstormCrossbowListener implements Listener {
 
    private void fireHellstorm(final Player player, final HellstormCrossbowListener.Settings settings) {
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.ORANGE_STAINED_GLASS, 0.3, 1.5, 6, true);
-      com.legendaryweapons.managers.SpriteFx.burst(player.getEyeLocation().subtract(0.0, 0.3, 0.0).add(player.getLocation().getDirection().multiply(1.3)), org.bukkit.Color.fromRGB(255, 140, 40), 1.3, 1, 1, 4);
+      com.legendaryweapons.managers.SpriteFx.burst(player.getEyeLocation().subtract(0.0, 0.3, 0.0).add(player.getLocation().getDirection().multiply(2.4)), org.bukkit.Color.fromRGB(255, 140, 40), 0.9, 1, 0, 3);
       // each arrow leaves along wherever the player is aiming at that moment, so a volley can be walked onto a target
       for (int i = 0; i < settings.arrowCount(); i++) {
          final int arrowIndex = i;

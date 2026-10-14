@@ -335,7 +335,7 @@ final class Leviathan extends Boss {
                double along = off.getX() * dir.getX() + off.getZ() * dir.getZ();
                double across = Math.abs(off.getX() * side.getX() + off.getZ() * side.getZ());
                if (Math.abs(along - front) <= 1.2 && across <= half && Math.abs(off.getY()) < 5.0 && struck.add(player.getUniqueId())) {
-                  this.trueDamage(player, this.num("wave-damage", 11.0));
+                  this.trueDamage(player, this.num("wave-damage", 9.0));
                   player.setVelocity(dir.clone().multiply(1.8).setY(0.6));
                   player.setRemainingAir(Math.max(0, player.getRemainingAir() - 120));
                }

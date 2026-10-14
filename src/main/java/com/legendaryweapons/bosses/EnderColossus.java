@@ -264,7 +264,7 @@ final class EnderColossus extends Boss {
          this.plugin.getSoundManager().world(land, Sound.ENTITY_ENDERMAN_SCREAM, 1.2F, 0.6F);
          for (Player player : this.fighters()) {
             if (player.getLocation().distanceSquared(land) <= radius * radius) {
-               this.trueDamage(player, this.num("stomp-damage", 13.0));
+               this.trueDamage(player, this.num("stomp-damage", 10.0));
                player.setVelocity(new Vector(0.0, 1.0, 0.0));
             }
          }

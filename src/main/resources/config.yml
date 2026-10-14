@@ -25,7 +25,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 4                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 5                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -1140,7 +1140,8 @@ token-shop:
 #    health            pool for one fighter; + health-per-player for each extra
 #                      fighter (also when people join mid-fight), capped at
 #                      health x max-health-multiplier
-#    damage-multiplier everything the boss and its summons deal
+#    damage-multiplier everything the boss and its summons deal, including the
+#                      armour-ignoring hits below (their numbers are before it)
 #    feed-heal         a player dying in the arena heals the boss this fraction
 #                      and makes it hit 10% harder (stacks to 5) for feed-seconds
 #    arrive-minutes    time people get to reach the arena before anyone counts as missing (5)
@@ -1249,14 +1250,14 @@ bosses:
     soul-beam-damage: 10          # ignores armour; locks its aim 0.6s before firing
     nova-interval: 22             # from 70%
     nova-radius: 9
-    nova-damage: 14               # ignores armour
+    nova-damage: 11               # ignores armour (x damage-multiplier: ~8 hearts)
     rain-interval: 9
     landed-scale: 2.6
     landed-attack-damage: 12
     landed-summons: 2             # wither skeletons per slam (4 alive at most)
     slam-interval: 8
     slam-radius: 6
-    slam-damage: 14
+    slam-damage: 10               # ignores armour (x damage-multiplier)
     leap-interval: 7              # leaps at the furthest player
     leap-radius: 3.5
     leap-damage: 9
@@ -1317,7 +1318,7 @@ bosses:
     wave-interval: 18             # from 60%: a wall of water across the arena
     wave-width: 9
     wave-length: 34
-    wave-damage: 11               # ignores armour
+    wave-damage: 9                # ignores armour (x damage-multiplier)
     restore-seconds: 20
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_leviathan.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
@@ -1367,7 +1368,7 @@ bosses:
     rift-damage: 9                # ignores armour
     stomp-interval: 14            # from 60%: it drops out of the sky onto someone
     stomp-radius: 3.5
-    stomp-damage: 13              # ignores armour
+    stomp-damage: 10              # ignores armour (x damage-multiplier: ~7 hearts)
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_ender_colossus.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
     model:

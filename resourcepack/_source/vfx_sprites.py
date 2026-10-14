@@ -281,18 +281,21 @@ def flash_layers(name):
 
 
 def layered_model(name, shape, layers, gap):
-    """Layer 0 is tinted (tintindex 0), the rest are drawn untinted `gap` units in front of it."""
+    """Layer 0 is tinted (tintindex 0). Each other layer is drawn untinted `gap` units to BOTH sides of
+    it, so whichever side the sprite is seen from, the bright layer is the nearer one and is not
+    hidden behind the tinted body."""
     elements = []
+    axis = 1 if shape["faces"][0] == "up" else 2
     for i, layer in enumerate(layers):
-        frm, to = list(shape["from"]), list(shape["to"])
-        axis = 1 if shape["faces"][0] == "up" else 2
-        frm[axis] += gap * i
-        to[axis] += gap * i
-        faces = {f: {"uv": [0, 0, 16, 16], "texture": "#" + str(i)} for f in shape["faces"]}
-        if i == 0:
-            for face in faces.values():
-                face["tintindex"] = 0
-        elements.append({"from": frm, "to": to, "shade": False, "light_emission": 15, "faces": faces})
+        for side in ((0,) if i == 0 else (1, -1)):
+            frm, to = list(shape["from"]), list(shape["to"])
+            frm[axis] += gap * i * side
+            to[axis] += gap * i * side
+            faces = {f: {"uv": [0, 0, 16, 16], "texture": "#" + str(i)} for f in shape["faces"]}
+            if i == 0:
+                for face in faces.values():
+                    face["tintindex"] = 0
+            elements.append({"from": frm, "to": to, "shade": False, "light_emission": 15, "faces": faces})
     textures = {str(i): "luminara:item/vfx/" + layer for i, layer in enumerate(layers)}
     textures["particle"] = textures["0"]
     with open(os.path.join(MODELS, name + ".json"), "w") as f:

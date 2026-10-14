@@ -173,6 +173,8 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    private void orientAxe(ItemDisplay display, double spinRadians) {
       Transformation current = display.getTransformation();
       Quaternionf left = new Quaternionf().rotateY((float)Math.toRadians(90.0)).rotateX((float)spinRadians);
+      display.setInterpolationDelay(0);
+      display.setInterpolationDuration(1);                          // the spin turns smoothly between ticks
       display.setTransformation(new Transformation(current.getTranslation(), left, current.getScale(), current.getRightRotation()));
    }
 
@@ -401,6 +403,10 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
 
    @EventHandler
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player damager) {
          ItemStack weapon = damager.getInventory().getItemInMainHand();
          if (this.weaponManager.isLegendaryWeapon(weapon) && "axe-of-zeus".equals(this.weaponManager.getWeaponKey(weapon))) {

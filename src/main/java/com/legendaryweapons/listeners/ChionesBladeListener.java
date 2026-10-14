@@ -147,6 +147,10 @@ public class ChionesBladeListener extends AbstractWeaponListener {
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player attacker && this.isHolding(attacker)) {
          if (event.getEntity() instanceof Player victim && event.getCause() != DamageCause.ENTITY_SWEEP_ATTACK && this.isFullSwing(attacker)) {
             int required = this.abilityInt("combo-hits-required", 5);

@@ -313,7 +313,11 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       org.bukkit.entity.ItemDisplay display = this.glaiveDisplays.get(trident.getUniqueId());
       if (display != null && display.isValid()) {
          Vector velocity = trident.getVelocity();
-         display.teleport(trident.getLocation());
+         // the projectile's own yaw/pitch would turn the model a second time on top of `pointing`
+         Location at = trident.getLocation();
+         at.setYaw(0.0F);
+         at.setPitch(0.0F);
+         display.teleport(at);
          if (velocity.lengthSquared() > 1.0E-4) {
             org.joml.Quaternionf pointing = new org.joml.Quaternionf().rotationTo(0.0F, 1.0F, 0.0F,
                (float)velocity.getX(), (float)velocity.getY(), (float)velocity.getZ());
@@ -385,7 +389,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                ParticleManager.spawn(Particle.PORTAL, hitLoc, 20, 1.0, 1.0, 1.0, 0.2);
                com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.PURPLE_STAINED_GLASS, 0.3, 1.6, 8, true);
                com.legendaryweapons.managers.AnimationFx.ring(hitLoc, Material.PURPLE_STAINED_GLASS, 1.6, 0.3, 8, true);
-               com.legendaryweapons.managers.SpriteFx.burst(hitLoc.clone().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(150, 60, 235), 1.8, 2, 1, 5);
+               com.legendaryweapons.managers.SpriteFx.wave(hitLoc, org.bukkit.Color.fromRGB(150, 60, 235), 2.2, 5);   // a ring, not a burst: the thrower lands right here
             }
          }
       }
@@ -408,6 +412,10 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
 
    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Trident) {
          Trident trident = (Trident)event.getDamager();
          if (trident.getPersistentDataContainer().has(this.glaiveKey, PersistentDataType.BYTE)) {

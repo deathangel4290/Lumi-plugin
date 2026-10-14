@@ -448,6 +448,10 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
 
    @EventHandler(priority = org.bukkit.event.EventPriority.HIGH, ignoreCancelled = true)   // after trust/region checks
    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
          LivingEntity victim = (LivingEntity)event.getEntity();
@@ -639,7 +643,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       int killsPerStage = Math.max(1, this.plugin.getConfigManager().getWeaponAbilities("sword-of-eclipse").getInt("kills-per-stage", 3));
       if (kills % killsPerStage == 0) {
          this.createStageUpEffect(killer.getLocation(), kills / killsPerStage + 1);
-         com.legendaryweapons.managers.SpriteFx.burst(killer.getLocation().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 1.2 + 0.25 * Math.min(4, kills / killsPerStage + 1), 4, 8, 6);
+         com.legendaryweapons.managers.SpriteFx.burst(killer.getLocation().add(0.0, 3.6, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 1.2 + 0.25 * Math.min(4, kills / killsPerStage + 1), 4, 8, 6);
          com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(255, 150, 235), 3.5, 7);
       }
 
@@ -901,7 +905,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       this.dualWielding.put(uuid, true);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.WHITE_CONCRETE, 0.4, 2.4, 10, true);
       com.legendaryweapons.managers.AnimationFx.ring(player.getLocation(), Material.BLACK_CONCRETE, 2.4, 0.4, 10, false);
-      com.legendaryweapons.managers.SpriteFx.burst(player.getLocation().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.4, 5, 14, 6);
+      com.legendaryweapons.managers.SpriteFx.burst(player.getLocation().add(0.0, 3.6, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.4, 5, 14, 6);
       this.mainSlot.put(uuid, player.getInventory().getHeldItemSlot());
       ItemStack held = player.getInventory().getItemInMainHand();
       ItemStack original = this.isRealEclipse(held) ? held.clone() : this.weaponManager.getWeapon("sword-of-eclipse");
@@ -1026,7 +1030,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
 
    private void createDualWieldDeactivation(final Location center) {
       final World world = center.getWorld();
-      com.legendaryweapons.managers.SpriteFx.burst(center.clone().add(0.0, 2.7, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.0, 1, 2, 7);
+      com.legendaryweapons.managers.SpriteFx.burst(center.clone().add(0.0, 3.6, 0.0), com.legendaryweapons.managers.SpriteFx.Sprite.ECLIPSE, 2.0, 1, 2, 7);
 
       for (int i = 0; i < 3; i++) {
          final int layer = i;

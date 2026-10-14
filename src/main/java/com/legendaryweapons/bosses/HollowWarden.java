@@ -65,6 +65,9 @@ final class HollowWarden extends Boss {
    private long nextTendril;
    private long nextDarkness;
    private long nextEruption;
+   /** Jumps since the last noise update. Players move client-side, so jumps are seen leaving the ground. */
+   private final Map<UUID, Integer> jumps = new HashMap<>();
+   private final Map<UUID, Boolean> grounded = new HashMap<>();
    private long nextRoar;
    private Tendril tendril;
 
@@ -255,6 +258,14 @@ final class HollowWarden extends Boss {
    @Override
    protected void onTick() {
       long now = System.currentTimeMillis();
+      for (Player player : this.fighters()) {
+         boolean ground = player.isOnGround();
+         Boolean was = this.grounded.put(player.getUniqueId(), ground);
+         if (Boolean.TRUE.equals(was) && !ground && !player.isFlying() && !player.isInWater()) {
+            this.jumps.merge(player.getUniqueId(), 1, Integer::sum);
+         }
+      }
+
       if (this.ticks % 20L == 0L) {
          for (Player player : this.fighters()) {
             double change = player.isSneaking() ? -12.0 : -5.0;
@@ -262,8 +273,9 @@ final class HollowWarden extends Boss {
                change += 9.0;
             }
 
-            if (player.getVelocity().getY() > 0.3) {
-               change += 4.0;
+            Integer jumped = this.jumps.remove(player.getUniqueId());
+            if (jumped != null) {
+               change += 4.0 * Math.min(3, jumped);
             }
 
             this.addNoise(player, change);

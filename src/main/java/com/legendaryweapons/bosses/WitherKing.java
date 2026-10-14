@@ -77,6 +77,9 @@ final class WitherKing extends Boss {
    private long nextLeap;
    private long nextLure;
    private int decay;
+   /** Where each fighter was last tick: players move client-side, so getVelocity() says nothing. */
+   private final java.util.Map<UUID, Location> lastSeen = new java.util.HashMap<>();
+   private final java.util.Map<UUID, Vector> motion = new java.util.HashMap<>();
 
    private enum Kind {
       NORTH("Melee only", 0, -1), SOUTH("Lure its skulls here", 0, 1), EAST("Stand on it", 1, 0), WEST("Slay its summons", -1, 0);
@@ -443,6 +446,17 @@ final class WitherKing extends Boss {
    @Override
    protected void onTick() {
       long now = System.currentTimeMillis();
+      for (Player player : this.fighters()) {
+         Location here = player.getLocation();
+         Location before = this.lastSeen.put(player.getUniqueId(), here);
+         if (before != null && before.getWorld().equals(here.getWorld())) {
+            Vector step = here.toVector().subtract(before.toVector());
+            // smoothed, and anything teleport-sized is not walking
+            Vector old = this.motion.getOrDefault(player.getUniqueId(), new Vector());
+            this.motion.put(player.getUniqueId(), step.lengthSquared() > 4.0 ? new Vector() : old.multiply(0.6).add(step.multiply(0.4)));
+         }
+      }
+
       if (!this.landed) {
          this.tameVanillaWither();
       }
@@ -526,8 +540,8 @@ final class WitherKing extends Boss {
       Location aim = target.getLocation().add(0.0, 1.0, 0.0);
       if (lead) {
          double flight = aim.distance(from) / 1.1;               // ticks the skull needs to get there
-         Vector v = target.getVelocity().setY(0.0);
-         aim.add(v.multiply(Math.min(14.0, flight * 0.6)));
+         Vector v = this.motion.getOrDefault(target.getUniqueId(), new Vector()).clone().setY(0.0);
+         aim.add(v.multiply(Math.min(14.0, flight * 0.8)));
       }
 
       Vector dir = aim.toVector().subtract(from.toVector());
@@ -672,7 +686,7 @@ final class WitherKing extends Boss {
          for (Player player : this.fighters()) {
             Vector off = player.getLocation().toVector().subtract(centre.toVector());
             if (off.clone().setY(0.0).lengthSquared() <= radius * radius && Math.abs(off.getY()) <= radius) {
-               this.trueDamage(player, this.num("nova-damage", 14.0));
+               this.trueDamage(player, this.num("nova-damage", 11.0));
                player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 120, 1, false, true, true));
                Vector push = off.setY(0.0);
                player.setVelocity((push.lengthSquared() < 0.01 ? new Vector(1, 0, 0) : push.normalize()).multiply(1.6).setY(0.7));
@@ -740,7 +754,7 @@ final class WitherKing extends Boss {
          this.plugin.getSoundManager().world(at, Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.5F, 0.6F);
          for (Player player : this.fighters()) {
             if (player.getLocation().distanceSquared(at) <= radius * radius) {
-               this.trueDamage(player, this.num("slam-damage", 14.0));
+               this.trueDamage(player, this.num("slam-damage", 10.0));
                player.addPotionEffect(new PotionEffect(PotionEffectType.WITHER, 80, 1, false, true, true));
                Vector push = player.getLocation().toVector().subtract(at.toVector()).setY(0.0);
                player.setVelocity((push.lengthSquared() < 0.01 ? new Vector(1, 0, 0) : push.normalize()).multiply(1.3).setY(0.6));

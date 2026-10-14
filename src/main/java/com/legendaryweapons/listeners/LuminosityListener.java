@@ -153,6 +153,10 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
          this.plugin.getChargeMeter().markCombat(hitter);
       }
 
+      if (com.legendaryweapons.abilities.AbilityDamage.active() && event.getDamager() instanceof org.bukkit.entity.Player) {
+         return;                                      // an ability's own damage, not a swing
+      }
+
       if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && !(event.getFinalDamage() <= 0.0) && !this.detonating.contains(attacker.getUniqueId())) {
          boolean isPlayer = event.getEntity() instanceof Player;
          boolean mobsCount = this.abilities() != null && this.abilities().getBoolean("charge-from-mobs", false);
@@ -333,15 +337,15 @@ public class LuminosityListener extends AbstractWeaponListener implements Charge
                      LuminosityListener.this.warningRing(player, radius);
                   }
 
-                  Vector v = player.getVelocity();
-                  if (v.getY() < 0.0) {
-                     player.setVelocity(new Vector(v.getX() * 0.5, Math.max(v.getY(), -0.05), v.getZ() * 0.5));
+                  // hang at the top of the leap while the light gathers. (A player's server-side
+                  // velocity does not follow their real movement, so it cannot be read back here.)
+                  if (this.ticks > Math.min(6, windup / 2)) {
+                     player.setVelocity(new Vector(0.0, -0.02, 0.0));
                   }
                } else {
                   if (!this.driving) {
                      this.driving = true;
-                     Vector v = player.getVelocity();
-                     player.setVelocity(new Vector(v.getX(), slamVelocity, v.getZ()));
+                     player.setVelocity(new Vector(0.0, slamVelocity, 0.0));
                      LuminosityListener.this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_MACE_SMASH_AIR, 1.0F, 0.7F);
                   }
 
