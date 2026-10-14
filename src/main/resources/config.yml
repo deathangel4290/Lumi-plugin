@@ -1125,6 +1125,9 @@ token-shop:
     # Custom model (template: resourcepack/_source/blockbench/templates/token_trader.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
     model:
+      # Animated model (BetterModel plugin), used instead of the static one when set and loaded.
+      bettermodel: ""
+      bettermodel-scale: 1.0
       enabled: false
       scale: 0.975                # template units -> blocks (32 units = a villager's 1.95)
       hide-body: true
@@ -1209,6 +1212,13 @@ bosses:
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_hollow_warden.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
     model:
+      # Animated model (BetterModel plugin; used instead of the static one below when both exist).
+      # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
+      # the boss's states play animations of the same name (attack, roar once; enraged lasting).
+      # attack also plays on each melee hit.
+      bettermodel: ""
+      bettermodel-scale: 1.0      # on top of the mob's own scale
+      # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false
       scale: 1.32
       hide-body: true
@@ -1265,6 +1275,14 @@ bosses:
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_wither_king.bbmodel, and _landed for phase 4).
     # Model over the template, export it into the pack, then set enabled: true.
     model:
+      # Animated model (BetterModel plugin; used instead of the static one below when both exist).
+      # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
+      # the boss's states play animations of the same name (attack once, also on each melee hit;
+      # enraged, landed lasting).
+      bettermodel: ""
+      bettermodel-scale: 1.0      # on top of the mob's own scale
+      # animations: {attack: "swipe"}   # if an animation is named differently from the state
+      bettermodel-landed: ""      # optional: a separate model for the landed form
       enabled: false
       scale: 2.06
       hide-body: true
@@ -1323,6 +1341,13 @@ bosses:
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_leviathan.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
     model:
+      # Animated model (BetterModel plugin; used instead of the static one below when both exist).
+      # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
+      # the boss's states play animations of the same name (attack once on each melee hit;
+      # surfaced lasting).
+      bettermodel: ""
+      bettermodel-scale: 1.0      # on top of the mob's own scale
+      # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false
       scale: 2.67
       hide-body: true
@@ -1372,6 +1397,13 @@ bosses:
     # Custom model (template: resourcepack/_source/blockbench/templates/boss_ender_colossus.bbmodel).
     # Model over the template, export it into the pack, then set enabled: true.
     model:
+      # Animated model (BetterModel plugin; used instead of the static one below when both exist).
+      # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
+      # the boss's states play animations of the same name (cast, and attack on each melee hit,
+      # once; enraged lasting).
+      bettermodel: ""
+      bettermodel-scale: 1.0      # on top of the mob's own scale
+      # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false
       scale: 2.9
       hide-body: true

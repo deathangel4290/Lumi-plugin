@@ -3,7 +3,7 @@ version: ${project.version}
 main: com.legendaryweapons.LegendaryWeapons
 api-version: 1.21
 description: Luminara legendary weapons, rituals, fragments, events, outposts and seasons.
-softdepend: [WorldGuard, Towny]
+softdepend: [WorldGuard, Towny, BetterModel]
 commands:
   recipes:
     description: Shows the recipes for legendary weapons.

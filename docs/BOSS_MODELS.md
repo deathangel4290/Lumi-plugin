@@ -1,5 +1,8 @@
 # Boss and Token Trader models
 
+Two ways to give a boss its own look: an animated **BetterModel** model (next section), or a
+static **template** (the rest of this page). BetterModel wins when both are set.
+
 Every boss works without a model: it shows as its vanilla mob (Warden, Wither, Elder Guardian,
 Enderman), and the Token Trader is a plain cleric villager. Each one has a **template** already
 wired into the resource pack and the config. You model over the template, export it into the
@@ -16,6 +19,38 @@ pack, and switch it on.
 
 The templates are blocky stand-ins at the right proportions (a preview is in
 `resourcepack/_source/blockbench/templates/templates_preview.png`).
+
+## Animated models with BetterModel (recommended)
+
+If the [BetterModel](https://github.com/toxicity188/BetterModel) plugin is installed, a boss (or
+the Token Trader) can use an animated Blockbench model instead of the static template:
+
+1. Put your `.bbmodel` in `plugins/BetterModel/models/` and reload BetterModel, so it builds
+   its resource pack.
+2. In `config.yml`, set `bettermodel: "<model name>"` under `bosses.<boss>.model` (or
+   `token-shop.trader.model`). The name is the file name without `.bbmodel`.
+3. `/lw reload`. The next fight uses it. You don't need `enabled: true`; that switch is only for
+   the static template.
+
+How the animations are used:
+
+| Animation | When it plays |
+|---|---|
+| `idle`, `walk`, `idle_fly`, `walk_fly`, `spawn` | BetterModel plays these by itself. `walk` plays only while the mob is actually moving, at its pace. |
+| `attack` | once, every time the boss lands a melee hit, and on the Warden's and Wither's attack moments |
+| `roar` (Warden), `cast` (Colossus) | once, on those moments |
+| `enraged` (all), `landed` (Wither), `surfaced` (Leviathan) | becomes the standing animation for as long as the state lasts. `walk` still takes over while the boss moves. |
+
+- An animation your model doesn't have is skipped; the model stays in idle/walk.
+- If yours are named differently, map them: `animations: {attack: "swipe", roar: "scream"}`.
+- `once: [attack, roar, cast]` lists which states play once rather than lasting.
+- `bettermodel-scale` multiplies the mob's own size (BetterModel already follows the mob's scale).
+- The Wither King can switch to a separate model when it lands: `bettermodel-landed: "<name>"`.
+- **Fallback:** if BetterModel isn't installed, or the model name isn't loaded (the console says
+  which), the static template below is used when `enabled: true`. Otherwise the vanilla mob is
+  shown.
+- The jar is built against BetterModel 2.2 (Minecraft 1.21.x, Java 21). It uses only calls that
+  3.x keeps unchanged.
 
 ## The workflow
 

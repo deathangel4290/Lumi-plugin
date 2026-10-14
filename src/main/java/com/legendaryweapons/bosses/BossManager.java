@@ -442,6 +442,9 @@ public final class BossManager implements Listener {
 
       if (this.ownedByFight(source)) {
          boss.onHitPlayer((Player)event.getEntity(), source, event);
+         if (source == boss.body && event.getDamager() == boss.body) {
+            boss.model.pulse("attack");                 // its own melee swing: the animated model swings too
+         }
       }
    }
 
