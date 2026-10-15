@@ -235,6 +235,7 @@ final class Leviathan extends Boss {
 
    /** Bubbles mark the water under people, then it erupts and throws them into the air. */
    private void geysers() {
+      this.model.pulse("geyser");                      // rears and roars as the water erupts (1.5 s)
       List<Location> marks = new ArrayList<>();
       for (Player player : this.fighters()) {
          marks.add(player.getLocation());
@@ -288,6 +289,7 @@ final class Leviathan extends Boss {
          return;
       }
 
+      this.model.pulse("wave");                        // rears high, slams down as the wave leaves (1.5 s)
       final Location origin = this.arena.surface(this.body.getLocation());
       final Vector dir = target.getLocation().toVector().subtract(origin.toVector()).setY(0.0);
       if (dir.lengthSquared() < 1.0) {
@@ -422,6 +424,8 @@ final class Leviathan extends Boss {
          return;
       }
 
+      this.model.pulse("drag");                        // eyes its victim, dives as it drags them down (1.0 s)
+
       final Player victim = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
       for (int t = 0; t < 20; t += 4) {
          this.later(t, () -> ParticleManager.showcase(Particle.BUBBLE_COLUMN_UP, victim.getLocation(), 15, 0.4, 0.2, 0.4, 0.05, null));
@@ -451,6 +455,8 @@ final class Leviathan extends Boss {
          return;
       }
 
+      this.model.pulse("bolt");                        // rears back and spits
+
       Player target = targets.get(ThreadLocalRandom.current().nextInt(targets.size()));
       Location from = this.body.getLocation().add(0.0, 2.0, 0.0);
       this.plugin.getSoundManager().world(from, Sound.ENTITY_DROWNED_SHOOT, 1.2F, 0.6F);
@@ -462,6 +468,7 @@ final class Leviathan extends Boss {
    }
 
    private void openWhirlpools() {
+      this.model.pulse("whirl");                       // coils round itself and spins the water
       for (int i = 0; i < (this.phase >= 2 ? 3 : 2); i++) {
          double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2.0);
          double r = ThreadLocalRandom.current().nextDouble(0.3, 0.8) * this.arena.radius();
@@ -523,6 +530,7 @@ final class Leviathan extends Boss {
    }
 
    private void summon() {
+      this.model.pulse("summon");                      // calls the deep: head up, a long roar
       int fighters = Math.max(1, this.fighters().size());
       for (int i = 0; i < Math.min(6, 1 + fighters); i++) {
          double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2.0);
@@ -551,6 +559,7 @@ final class Leviathan extends Boss {
 
    /** Phase 3: standing water on the arena's dry ground (it never flows, healed after the fight). */
    private void flood() {
+      this.model.pulse("flood");                       // thrashes its whole length
       int placed = 0;
       for (int attempt = 0; attempt < 40 && placed < 3; attempt++) {
          double a = ThreadLocalRandom.current().nextDouble(Math.PI * 2.0);

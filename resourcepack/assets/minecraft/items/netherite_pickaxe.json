@@ -7,8 +7,23 @@
       {
         "threshold": 301,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/amethyst_pickaxe"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/amethyst_pickaxe__netherite_pickaxe"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/amethyst_pickaxe"
+          }
         }
       }
     ],

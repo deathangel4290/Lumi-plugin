@@ -25,7 +25,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 5                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 6                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -1126,7 +1126,7 @@ token-shop:
     # Model over the template, export it into the pack, then set enabled: true.
     model:
       # Animated model (BetterModel plugin), used instead of the static one when set and loaded.
-      bettermodel: ""
+      bettermodel: "token_trader"   # greet when someone walks up, trade when the shop opens
       bettermodel-scale: 1.0
       enabled: false
       scale: 0.975                # template units -> blocks (32 units = a villager's 1.95)
@@ -1216,7 +1216,7 @@ bosses:
       # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
       # the boss's states play animations of the same name (attack, roar once; enraged lasting).
       # attack also plays on each melee hit.
-      bettermodel: ""
+      bettermodel: "hollow_warden"
       bettermodel-scale: 1.0      # on top of the mob's own scale
       # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false
@@ -1279,10 +1279,10 @@ bosses:
       # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
       # the boss's states play animations of the same name (attack once, also on each melee hit;
       # enraged, landed lasting).
-      bettermodel: ""
+      bettermodel: "wither_king"
       bettermodel-scale: 1.0      # on top of the mob's own scale
       # animations: {attack: "swipe"}   # if an animation is named differently from the state
-      bettermodel-landed: ""      # optional: a separate model for the landed form
+      bettermodel-landed: "wither_king_landed"   # its spawn animation tears the wings off
       enabled: false
       scale: 2.06
       hide-body: true
@@ -1304,7 +1304,7 @@ bosses:
   leviathan:
     enabled: true
     arena-radius: 28              # set the centre over open water (a platform there is fine)
-    scale: 2.2
+    scale: 1.3                    # the Elder Guardian body: its 2.6-block box matches the serpent's body (the model x1.692 keeps it 2.2x)
     health: 1000
     health-per-player: 0.35
     max-health-multiplier: 4.0
@@ -1345,8 +1345,8 @@ bosses:
       # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
       # the boss's states play animations of the same name (attack once on each melee hit;
       # surfaced lasting).
-      bettermodel: ""
-      bettermodel-scale: 1.0      # on top of the mob's own scale
+      bettermodel: "leviathan"
+      bettermodel-scale: 1.692    # x the body's 1.3 = the serpent at 2.2x; its b_ hitboxes cover head, neck and tail
       # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false
       scale: 2.67
@@ -1401,7 +1401,7 @@ bosses:
       # The name of a model in plugins/BetterModel/models. Its idle/walk/spawn play on their own;
       # the boss's states play animations of the same name (cast, and attack on each melee hit,
       # once; enraged lasting).
-      bettermodel: ""
+      bettermodel: "ender_colossus"   # decoys wear it too
       bettermodel-scale: 1.0      # on top of the mob's own scale
       # animations: {attack: "swipe"}   # if an animation is named differently from the state
       enabled: false

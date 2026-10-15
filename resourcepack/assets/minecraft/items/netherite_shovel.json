@@ -7,8 +7,23 @@
       {
         "threshold": 302,
         "model": {
-          "type": "minecraft:model",
-          "model": "luminara:item/amethyst_shovel"
+          "type": "minecraft:select",
+          "property": "minecraft:display_context",
+          "cases": [
+            {
+              "when": [
+                "gui"
+              ],
+              "model": {
+                "type": "minecraft:model",
+                "model": "luminara:item/amethyst_shovel__netherite_shovel"
+              }
+            }
+          ],
+          "fallback": {
+            "type": "minecraft:model",
+            "model": "luminara:item/amethyst_shovel"
+          }
         }
       }
     ],

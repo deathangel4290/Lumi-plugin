@@ -559,6 +559,7 @@ final class WitherKing extends Boss {
    }
 
    private void volley() {
+      this.model.pulse("attack");                       // animated model: the three skulls snap in turn
       for (Player target : this.fighters()) {
          this.skullAt(target, true);
       }
@@ -576,6 +577,7 @@ final class WitherKing extends Boss {
          return;
       }
 
+      this.model.pulse("cast");                         // rears back while it tracks, lunges as it fires (1.9 s)
       final Color tracking = Color.fromRGB(120, 60, 190);
       final Color locked = Color.fromRGB(230, 40, 90);
       com.legendaryweapons.managers.HudManager.message(target, Component.text("☠ The King's gaze locks onto you...", ASH));
@@ -654,6 +656,7 @@ final class WitherKing extends Boss {
     * damage, withering and knockback to everyone inside, and a ring of skulls flung outward.
     */
    private void witherNova() {
+      this.model.pulse("nova");                         // curls in behind its wings, bursts open at 2.0 s
       final double radius = this.num("nova-radius", 9.0);
       final Color edge = Color.fromRGB(60, 20, 90);
       final Color core = Color.fromRGB(170, 90, 255);
@@ -708,6 +711,7 @@ final class WitherKing extends Boss {
 
    /** Phase 3: circles mark where skulls will fall, then they fall. */
    private void skullRain() {
+      this.model.pulse("rain");                         // all three skulls cry skyward
       List<Location> marks = new ArrayList<>();
       for (Player player : this.fighters()) {
          marks.add(player.getLocation());
@@ -743,7 +747,9 @@ final class WitherKing extends Boss {
    private void slam() {
       final Location at = this.body.getLocation();
       final double radius = this.num("slam-radius", 6.0);
-      this.model.setState("attack");
+      // animated: rears up, hurls itself down at 1.45 s. ("attack" is not used here: BossManager plays it
+      // on every melee hit, and the static model has no attack look, so it only ever fell back to landed)
+      this.model.pulse("slam");
       for (int t = 0; t < 30; t += 5) {
          this.later(t, () -> dustRing(at, radius, Color.fromRGB(90, 30, 120), 1.6F));
       }
@@ -790,6 +796,7 @@ final class WitherKing extends Boss {
          return;
       }
 
+      this.model.pulse("leap");                         // crouch, launch at 0.2 s, crash down at 1.1 s
       final Location land = target.getLocation();
       final double radius = this.num("leap-radius", 3.5);
       for (int t = 0; t < 20; t += 4) {

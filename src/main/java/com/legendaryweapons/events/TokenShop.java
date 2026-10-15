@@ -67,6 +67,8 @@ public final class TokenShop implements Listener {
    private final Map<UUID, Location> traders = new LinkedHashMap<>();       // entity -> home
    private final Map<UUID, Long> warned = new HashMap<>();
    private final Map<UUID, com.legendaryweapons.bosses.BossModel> models = new HashMap<>();
+   /** Traders someone is standing near right now: the greeting plays once when the first visitor arrives. */
+   private final java.util.Set<UUID> visited = new java.util.HashSet<>();
    private org.bukkit.configuration.ConfigurationSection modelConfig;
 
    private record Offer(String spec, int cost) {
@@ -290,7 +292,16 @@ public final class TokenShop implements Listener {
       }
    }
 
+   /** A one-off animation on a trader's animated model (nothing happens on the static one). */
+   private void pulse(UUID id, String animation) {
+      com.legendaryweapons.bosses.BossModel model = this.models.get(id);
+      if (model != null) {
+         model.pulse(animation);
+      }
+   }
+
    private void dropModel(UUID id) {
+      this.visited.remove(id);
       com.legendaryweapons.bosses.BossModel model = this.models.remove(id);
       if (model != null) {
          model.remove();
@@ -328,6 +339,12 @@ public final class TokenShop implements Listener {
             }
          }
 
+         if (nearest == null) {
+            this.visited.remove(entry.getKey());
+         } else if (this.visited.add(entry.getKey())) {
+            this.pulse(entry.getKey(), "greet");          // tips his hat to whoever walks up
+         }
+
          if (nearest != null) {
             Vector to = nearest.getEyeLocation().toVector().subtract(villager.getEyeLocation().toVector());
             double flat = Math.hypot(to.getX(), to.getZ());
@@ -347,6 +364,7 @@ public final class TokenShop implements Listener {
          event.setCancelled(true);
          if (event.getHand() == EquipmentSlot.HAND) {
             this.open(event.getPlayer());
+            this.pulse(event.getRightClicked().getUniqueId(), "trade");   // presents a glowing token
          }
       }
    }

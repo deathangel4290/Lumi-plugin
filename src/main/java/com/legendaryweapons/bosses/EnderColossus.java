@@ -47,6 +47,8 @@ final class EnderColossus extends Boss {
    private static final TextColor VOID = TextColor.color(175, 80, 235);
    private final Map<UUID, Double> recentDamage = new HashMap<>();
    private final Set<UUID> decoys = new HashSet<>();
+   /** The decoys wear the Colossus's own model, so only the portal drip at the real one's feet gives it away. */
+   private final Map<UUID, BossModel> decoyLooks = new HashMap<>();
    private long nextSwap;
    private long nextBanish;
    private long nextPull;
@@ -138,13 +140,25 @@ final class EnderColossus extends Boss {
          ParticleManager.showcase(Particle.PORTAL, this.body.getLocation().add(0.0, 0.2, 0.0), 10, 0.4, 0.1, 0.4, 0.3, null);
          this.decoys.removeIf(id -> {
             Entity entity = this.plugin.getServer().getEntity(id);
-            return entity == null || entity.isDead();
+            boolean gone = entity == null || entity.isDead();
+            if (gone) {
+               this.dropLook(id);
+            }
+
+            return gone;
          });
       }
 
       if (this.ticks % 200L == 0L) {
          this.recentDamage.clear();                  // "most damage" means lately, not all fight
       }
+
+      this.decoyLooks.forEach((id, look) -> {        // the static fallback model follows by teleporting
+         Entity entity = this.plugin.getServer().getEntity(id);
+         if (entity instanceof LivingEntity living && living.isValid()) {
+            look.follow(living);
+         }
+      });
 
       if (now >= this.nextSwap) {
          this.nextSwap = now + (long)(this.num("swap-interval", 12.0) * 1000.0);
@@ -189,6 +203,7 @@ final class EnderColossus extends Boss {
 
    /** Rifts open under people, drag everything near them in, then collapse. Get clear early. */
    private void voidRifts() {
+      this.model.pulse("rift");                        // claws at the ground while they pull, clenches as they collapse
       List<Player> picks = new ArrayList<>(this.fighters());
       Collections.shuffle(picks);
       int count = Math.min(picks.size(), this.integer("rifts", 3));
@@ -238,6 +253,7 @@ final class EnderColossus extends Boss {
          return;
       }
 
+      this.model.pulse("stomp");                       // gathers, vanishes at 0.9 s, crashes down at 1.35 s
       final Location land = this.arena.surface(target.getLocation());
       final double radius = this.num("stomp-radius", 3.5);
       final Color shadow = Color.fromRGB(15, 5, 25);
@@ -339,6 +355,8 @@ final class EnderColossus extends Boss {
          return;
       }
 
+      this.model.pulse("banish");                      // points at them, then backhands them away at 1.5 s
+
       this.plugin.getSoundManager().world(target.getLocation(), Sound.ENTITY_ENDERMAN_SCREAM, 1.0F, 0.6F);
       for (int t = 0; t < 30; t += 2) {
          final int step = t;
@@ -376,6 +394,8 @@ final class EnderColossus extends Boss {
          return;
       }
 
+      this.model.pulse("pull");                        // reaches out, yanks them in at 1.0 s
+
       for (int t = 0; t < 20; t += 2) {
          this.later(t, () -> ParticleManager.showcase(Particle.PORTAL, target.getLocation(), 12, 0.4, 0.1, 0.4, 0.4, null));
       }
@@ -391,6 +411,7 @@ final class EnderColossus extends Boss {
    }
 
    private void splitIntoDecoys() {
+      this.model.pulse("split");                       // it glitches as it comes apart
       int count = (int)this.num("decoys", 3.0);
       List<Location> spots = new ArrayList<>();
       spots.add(this.body.getLocation());
@@ -410,10 +431,18 @@ final class EnderColossus extends Boss {
          decoy.customName(this.body.customName());
          decoy.setCustomNameVisible(false);
          this.decoys.add(decoy.getUniqueId());
+         BossModel look = new BossModel(this.cfg() == null ? null : this.cfg().getConfigurationSection("model"));
+         look.attach(decoy);
+         if (this.phase >= 2) {
+            look.setState("enraged");
+         }
+
+         this.decoyLooks.put(decoy.getUniqueId(), look);
          ParticleManager.showcase(Particle.REVERSE_PORTAL, spots.get(i).clone().add(0.0, 2.0, 0.0), 40, 0.6, 1.5, 0.6, 0.05, null);
          this.later((long)(this.num("decoy-seconds", 20.0) * 20.0), () -> {
             if (decoy.isValid()) {
                ParticleManager.showcase(Particle.PORTAL, decoy.getLocation().add(0.0, 2.0, 0.0), 40, 0.6, 1.5, 0.6, 0.3, null);
+               this.dropLook(decoy.getUniqueId());
                decoy.remove();
             }
          });
@@ -425,6 +454,7 @@ final class EnderColossus extends Boss {
 
    @Override
    protected void onMinionDeath(LivingEntity minion, Player killer) {
+      this.dropLook(minion.getUniqueId());
       if (this.decoys.remove(minion.getUniqueId())) {
          Location at = minion.getLocation();
          ParticleManager.showcase(Particle.REVERSE_PORTAL, at.clone().add(0.0, 2.0, 0.0), 60, 1.0, 1.5, 1.0, 0.1, null);
@@ -441,11 +471,20 @@ final class EnderColossus extends Boss {
       }
    }
 
+   private void dropLook(UUID id) {
+      BossModel look = this.decoyLooks.remove(id);
+      if (look != null) {
+         look.remove();
+      }
+   }
+
    private void scramble() {
       final List<Player> fighters = this.fighters();
       if (fighters.isEmpty()) {
          return;
       }
+
+      this.model.pulse("scramble");                    // arms high, the halo whirls, the hands slam together at 2.0 s
 
       for (Player player : fighters) {
          player.showTitle(Title.title(Component.empty(), Component.text("SCRAMBLE", VOID, TextDecoration.BOLD)));
@@ -487,6 +526,10 @@ final class EnderColossus extends Boss {
 
    @Override
    protected void cleanup() {
+      for (UUID id : new ArrayList<>(this.decoyLooks.keySet())) {
+         this.dropLook(id);
+      }
+
       this.decoys.clear();
       super.cleanup();
    }

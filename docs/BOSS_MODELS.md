@@ -26,9 +26,10 @@ If the [BetterModel](https://github.com/toxicity188/BetterModel) plugin is insta
 the Token Trader) can use an animated Blockbench model instead of the static template:
 
 1. Put your `.bbmodel` in `plugins/BetterModel/models/` and reload BetterModel, so it builds
-   its resource pack.
+   its resource pack. The finished models are in this repo's `bettermodel/models/`: copy all six.
 2. In `config.yml`, set `bettermodel: "<model name>"` under `bosses.<boss>.model` (or
-   `token-shop.trader.model`). The name is the file name without `.bbmodel`.
+   `token-shop.trader.model`). The name is the file name without `.bbmodel`. The defaults already
+   name the six models, and existing servers get them through the config migration.
 3. `/lw reload`. The next fight uses it. You don't need `enabled: true`; that switch is only for
    the static template.
 

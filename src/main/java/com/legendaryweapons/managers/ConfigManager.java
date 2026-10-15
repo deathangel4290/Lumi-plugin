@@ -85,6 +85,15 @@ public class ConfigManager {
       {5, "bosses.wither_king.slam-damage", 14, 10},
       {5, "bosses.ender_colossus.stomp-damage", 13, 10},
       {5, "bosses.leviathan.wave-damage", 11, 9},
+      // the animated BetterModel models (plugins/BetterModel/models); unused until BetterModel is installed
+      {6, "bosses.hollow_warden.model.bettermodel", "", "hollow_warden"},
+      {6, "bosses.wither_king.model.bettermodel", "", "wither_king"},
+      {6, "bosses.wither_king.model.bettermodel-landed", "", "wither_king_landed"},
+      {6, "bosses.ender_colossus.model.bettermodel", "", "ender_colossus"},
+      {6, "bosses.leviathan.model.bettermodel", "", "leviathan"},
+      {6, "bosses.leviathan.model.bettermodel-scale", 1.0, 1.692},
+      {6, "bosses.leviathan.scale", 2.2, 1.3},
+      {6, "token-shop.trader.model.bettermodel", "", "token_trader"},
    };
 
    private void retune() {

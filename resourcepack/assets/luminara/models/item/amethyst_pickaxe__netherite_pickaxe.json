@@ -1,0 +1,6 @@
+{
+ "parent": "minecraft:item/handheld",
+ "textures": {
+  "layer0": "luminara:item/amethyst_pickaxe__netherite_pickaxe"
+ }
+}

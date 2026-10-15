@@ -137,8 +137,13 @@ public class TetherChainListener extends AbstractWeaponListener {
       }).runTaskTimer(this.plugin, 0L, 1L);
    }
 
+   /** The chain block: CHAIN before 1.21.9, IRON_CHAIN after. Looked up by name so the jar runs on both. */
+   private static final Material CHAIN = java.util.Optional.ofNullable(Material.matchMaterial("IRON_CHAIN"))
+      .or(() -> java.util.Optional.ofNullable(Material.matchMaterial("CHAIN")))
+      .orElse(Material.IRON_INGOT);
+
    private void hooked(Player owner, LivingEntity target) {
-      com.legendaryweapons.managers.AnimationFx.ring(target.getLocation(), Material.CHAIN, 1.4, 0.3, 8, false);
+      com.legendaryweapons.managers.AnimationFx.ring(target.getLocation(), CHAIN, 1.4, 0.3, 8, false);
       com.legendaryweapons.managers.SpriteFx.burst(target, 0.55, org.bukkit.Color.fromRGB(150, 165, 190), 1.3, 1, 1, 4);
       Vector pull = owner.getLocation().toVector().subtract(target.getLocation().toVector());
       double distance = pull.length();
