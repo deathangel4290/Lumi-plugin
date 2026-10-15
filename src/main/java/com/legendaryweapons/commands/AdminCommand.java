@@ -32,6 +32,9 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
       if (!sender.hasPermission("legendaryweapons.admin")) {
          sender.sendMessage("§cYou don't have permission to use this command.");
          return true;
+      } else if (args.length == 0 && sender instanceof Player panel) {
+         new com.legendaryweapons.guis.AdminMenu(this.plugin, panel, null).open();
+         return true;
       } else if (args.length == 0) {
          sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns>");
          return true;

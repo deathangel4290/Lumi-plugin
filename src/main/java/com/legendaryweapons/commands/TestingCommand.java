@@ -5,7 +5,6 @@ import com.legendaryweapons.abilities.AbilityDispatcher;
 import com.legendaryweapons.abilities.ChargedWeapon;
 import com.legendaryweapons.abilities.KillTrackedWeapon;
 import com.legendaryweapons.abilities.WeaponAbility;
-import com.legendaryweapons.guis.WeaponGiveGUI;
 import com.legendaryweapons.items.CustomItems;
 import com.legendaryweapons.managers.ParticleManager;
 import java.util.ArrayList;
@@ -42,12 +41,10 @@ import org.jetbrains.annotations.NotNull;
 public class TestingCommand implements CommandExecutor, TabCompleter {
    private final LegendaryWeapons plugin;
    private final AbilityDispatcher dispatcher;
-   private final WeaponGiveGUI giveGUI;
 
-   public TestingCommand(LegendaryWeapons plugin, AbilityDispatcher dispatcher, WeaponGiveGUI giveGUI) {
+   public TestingCommand(LegendaryWeapons plugin, AbilityDispatcher dispatcher) {
       this.plugin = plugin;
       this.dispatcher = dispatcher;
-      this.giveGUI = giveGUI;
    }
 
    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -74,7 +71,9 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
          sender.sendMessage("§cRun this in-game.");
       } else {
          ParticleManager.Level level = args.length > 0 ? ParticleManager.Level.parse(args[0]) : null;
-         if (level == null) {
+         if (level == null && args.length == 0) {
+            new com.legendaryweapons.guis.SettingsMenu(this.plugin, player, null).open();
+         } else if (level == null) {
             player.sendMessage(Component.text("Particles: " + this.plugin.getParticleManager().levelOf(player).name().toLowerCase(Locale.ROOT) + ". Use /lwfx <full|reduced|minimal|off>.", NamedTextColor.GRAY));
          } else {
             this.plugin.getParticleManager().setLevel(player, level);
@@ -87,7 +86,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
 
    private boolean handleGui(CommandSender sender) {
       if (sender instanceof Player player) {
-         this.giveGUI.open(player);
+         new com.legendaryweapons.guis.GiveMenu(this.plugin, player, null).open();
       } else {
          sender.sendMessage("§cThis command can only be used by a player.");
       }

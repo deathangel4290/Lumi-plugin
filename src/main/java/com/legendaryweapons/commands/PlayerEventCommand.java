@@ -50,8 +50,7 @@ public class PlayerEventCommand implements CommandExecutor, TabCompleter {
                   events.season().summary(id, args[0]).forEach(sender::sendMessage);
                }
             } else if (sender instanceof Player player) {
-               events.season().summary(player.getUniqueId(), player.getName()).forEach(sender::sendMessage);
-               sender.sendMessage(Component.text("Leaderboards: /renown top [" + String.join("|", this.categories()) + "]", NamedTextColor.DARK_GRAY));
+               new com.legendaryweapons.guis.RenownMenu(this.plugin, player, null).open();
             } else {
                events.season().leaderboard(SeasonManager.Stat.RENOWN, 10).forEach(sender::sendMessage);
             }

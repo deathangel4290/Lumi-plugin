@@ -1,6 +1,7 @@
 package com.legendaryweapons.commands;
 
-import com.legendaryweapons.guis.BindsGUI;
+import com.legendaryweapons.LegendaryWeapons;
+import com.legendaryweapons.guis.SettingsMenu;
 import com.legendaryweapons.managers.KeybindManager;
 import java.util.Collections;
 import java.util.List;
@@ -12,12 +13,12 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 public class BindsCommand implements CommandExecutor, TabCompleter {
-   private final BindsGUI bindsGUI;
+   private final LegendaryWeapons plugin;
    private final KeybindManager keybindManager;
 
-   public BindsCommand(BindsGUI bindsGUI, KeybindManager keybindManager) {
-      this.bindsGUI = bindsGUI;
-      this.keybindManager = keybindManager;
+   public BindsCommand(LegendaryWeapons plugin) {
+      this.plugin = plugin;
+      this.keybindManager = plugin.getKeybindManager();
    }
 
    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
@@ -35,7 +36,7 @@ public class BindsCommand implements CommandExecutor, TabCompleter {
 
             return true;
          } else {
-            this.bindsGUI.open(player);
+            new SettingsMenu(this.plugin, player, null).open();
             return true;
          }
       }

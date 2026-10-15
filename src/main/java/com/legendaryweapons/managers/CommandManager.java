@@ -9,8 +9,6 @@ import com.legendaryweapons.commands.GiveRitualBlockCommand;
 import com.legendaryweapons.commands.RecipesCommand;
 import com.legendaryweapons.commands.TestingCommand;
 import com.legendaryweapons.commands.WpSparkCommand;
-import com.legendaryweapons.guis.BindsGUI;
-import com.legendaryweapons.guis.WeaponGiveGUI;
 import com.legendaryweapons.listeners.SwordOfEclipseListener;
 
 public class CommandManager {
@@ -27,22 +25,23 @@ public class CommandManager {
       this.plugin.getCommand("lw").setTabCompleter(adminCommand);
       this.plugin.getCommand("recipes").setExecutor(new RecipesCommand(this.plugin));
       this.plugin.getCommand("giveritualblock").setExecutor(new GiveRitualBlockCommand(this.plugin));
-      BindsGUI bindsGUI = new BindsGUI(this.plugin);
-      BindsCommand bindsCommand = new BindsCommand(bindsGUI, this.plugin.getKeybindManager());
+      BindsCommand bindsCommand = new BindsCommand(this.plugin);
       this.plugin.getCommand("binds").setExecutor(bindsCommand);
       this.plugin.getCommand("binds").setTabCompleter(bindsCommand);
       this.plugin.getCommand("unbind").setExecutor(bindsCommand);
       WpSparkCommand wpSparkCommand = new WpSparkCommand(this.plugin, abilityDispatcher);
       this.plugin.getCommand("wpspark").setExecutor(wpSparkCommand);
       this.plugin.getCommand("wpspark").setTabCompleter(wpSparkCommand);
-      WeaponGiveGUI weaponGiveGUI = new WeaponGiveGUI(this.plugin);
-      TestingCommand testingCommand = new TestingCommand(this.plugin, abilityDispatcher, weaponGiveGUI);
+      TestingCommand testingCommand = new TestingCommand(this.plugin, abilityDispatcher);
 
       for (String name : new String[]{"gui", "resetcd", "setkills", "charge", "lwtest", "lwfx"}) {
          this.plugin.getCommand(name).setExecutor(testingCommand);
          this.plugin.getCommand(name).setTabCompleter(testingCommand);
       }
 
+      com.legendaryweapons.commands.LumiCommand lumiCommand = new com.legendaryweapons.commands.LumiCommand(this.plugin);
+      this.plugin.getCommand("lumi").setExecutor(lumiCommand);
+      this.plugin.getCommand("lumi").setTabCompleter(lumiCommand);
       EventCommand eventCommand = new EventCommand(this.plugin);
       this.plugin.getCommand("lwevent").setExecutor(eventCommand);
       this.plugin.getCommand("lwevent").setTabCompleter(eventCommand);

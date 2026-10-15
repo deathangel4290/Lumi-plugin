@@ -171,18 +171,32 @@ template already wired into the pack and the config. Model over it, export, and 
 
 ## Commands
 
+**`/lumi`** (also `/luminara`) opens the Luminara menu: recipes, Season Renown and leaderboards,
+the reward chest, your settings (ability key, effect level), trusted players, and what's on in
+the world. Admins also get the **Admin Panel** (`/lw` or `/lumi admin`), with:
+- **Server Settings:** every config.yml setting in game, with the comments from the file as descriptions.
+  - Booleans toggle on click. Numbers go up and down with left and right click (shift for ten
+    steps, Q to type a value). Text is typed in chat.
+  - Changes save to config.yml and apply straight away, like `/lw reload`. A few, such as crafting
+    recipes, need a restart. Saving keeps the file's comments but normalises its spacing.
+- **Events and Bosses:** start or stop each event, run the Event Director, summon bosses and set their arenas.
+- **Give Items and Testing Tools.**
+
 | Command | Who | |
 |---|---|---|
-| `/recipes`, `/binds`, `/wpspark` | everyone | recipe book, ability keybind, fire ability from a client keybind |
-| `/renown [player]`, `/renown top [board]` | everyone | season stats and leaderboards |
+| `/lumi [settings\|recipes\|renown\|trust\|world]` | everyone | the Luminara menu, or one page of it |
+| `/recipes`, `/binds`, `/wpspark` | everyone | recipe book, ability key (opens settings), fire ability from a client keybind |
+| `/renown [player]`, `/renown top [board]` | everyone | season stats and leaderboards (no argument: the menu) |
 | `/rewards`, `/tokenshop`, `/outposts` | everyone | reward chest, where the Token Traders are, outpost list |
-| `/lwfx <full\|reduced\|minimal\|off>` | everyone | your own particle level |
+| `/lwfx [full\|reduced\|minimal\|off]` | everyone | your own particle level (no argument: your settings) |
+| `/trust <player>`, `/untrust <player>`, `/trustlist` | everyone | trust (`/trustlist` opens the menu) |
+| `/lumi admin\|config [section]\|events\|give` | admin | the admin panel, or one page of it |
 | `/gui` | admin | take any weapon, fragment or tool |
 | `/resetcd [player]` | admin | clear cooldowns, dash charges/locks, freeze immunity |
 | `/setkills <n> [player] [weapon]` | admin | kill count on Sword of Eclipse / Hermes's Blade |
 | `/charge [percent] [player] [weapon]` | admin | fill Luminosity's SuperNova or Titan's Slam |
 | `/lwtest reset \| finishrituals \| fragments \| give <item> [n]` | admin | undo all effects, finish rituals, get test items |
-| `/lw give\|reload\|...` | admin | original admin commands |
+| `/lw`, `/lw give\|reload\|...` | admin | the admin panel; the original admin commands |
 
 Permissions: `legendaryweapons.admin` (op), `legendaryweapons.veil.spy` (op) — see who is really
 talking when a disguised player chats.

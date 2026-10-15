@@ -9,7 +9,6 @@ import com.legendaryweapons.listeners.AxeOfZeusListener;
 import com.legendaryweapons.listeners.BladeOfDiminutionListener;
 import com.legendaryweapons.listeners.ChionesBladeListener;
 import com.legendaryweapons.listeners.EnderGlaiveListener;
-import com.legendaryweapons.listeners.GUIListener;
 import com.legendaryweapons.listeners.HellstormCrossbowListener;
 import com.legendaryweapons.listeners.HermesBladeListener;
 import com.legendaryweapons.listeners.LostTridentListener;
@@ -151,7 +150,8 @@ public class LegendaryWeapons extends JavaPlugin {
          this.customItems,
          new com.legendaryweapons.listeners.AmethystToolsListener(this),
          new AbilityListener(this, this.abilityDispatcher, enderGlaiveListener),
-         new GUIListener(this.guiManager),
+         new com.legendaryweapons.guis.MenuListener(),
+         new com.legendaryweapons.guis.ChatPrompt(this),
          new TrustListener(this, this.trustManager, this.configManager, this.weaponManager)
       }) {
          this.getServer().getPluginManager().registerEvents(listener, this);

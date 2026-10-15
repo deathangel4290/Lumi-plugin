@@ -28,7 +28,7 @@ public class TrustCommand implements CommandExecutor {
          } else if (command.getName().equalsIgnoreCase("untrust")) {
             this.handleUntrust(player, args);
          } else if (command.getName().equalsIgnoreCase("trustlist")) {
-            this.handleTrustList(player);
+            new com.legendaryweapons.guis.TrustMenu(this.plugin, player, null).open();
          }
 
          return true;
@@ -67,23 +67,6 @@ public class TrustCommand implements CommandExecutor {
             this.trustManager.removeTrustedPlayer(player, target);
             player.sendMessage(ChatColor.GREEN + "You no longer trust " + target.getName() + ".");
          }
-      }
-   }
-
-   private void handleTrustList(Player player) {
-      List<String> trustedUUIDs = this.trustManager.getTrustedPlayers(player);
-      if (trustedUUIDs.isEmpty()) {
-         player.sendMessage(ChatColor.YELLOW + "You have not trusted any players.");
-      } else {
-         player.sendMessage(ChatColor.GOLD + "--- Your Trusted Players ---");
-
-         for (String uuidStr : trustedUUIDs) {
-            UUID uuid = UUID.fromString(uuidStr);
-            OfflinePlayer trustedPlayer = Bukkit.getOfflinePlayer(uuid);
-            player.sendMessage(ChatColor.GREEN + "- " + trustedPlayer.getName());
-         }
-
-         player.sendMessage(ChatColor.GOLD + "-------------------------");
       }
    }
 }

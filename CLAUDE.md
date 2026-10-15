@@ -57,6 +57,13 @@ Renaming either side breaks the other, so change both in the same commit or leav
 - **Weapon models:** item model ids and custom_model_data numbers are set in `config.yml`; the pack's
   `assets/minecraft/items/*.json` must match them.
 
+## Menus
+
+Every chest menu extends `guis/Menu` and builds its buttons with `guis/Icon`. Those two classes hold
+the shared look: frame, colours, sounds, controls in fixed places on the bottom row, and pages.
+`/lumi` is the hub. A menu icon can use a custom item model with `Icon.model("luminara:...")`, so
+the art session can give menus their own icons later.
+
 ## Building
 
 - `mvn -B package` produces `target/LegendaryWeapons-1.2.0.jar`. It needs paper-api 1.21.11 and

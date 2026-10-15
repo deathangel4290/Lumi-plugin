@@ -42,7 +42,7 @@ public class RitualGUI implements InventoryHolder {
    public RitualGUI(LegendaryWeapons plugin, Location altar) {
       this.plugin = plugin;
       this.altar = altar;
-      this.inventory = Bukkit.createInventory(this, 45, Component.text("✦ Luminara Ritual Altar ✦", NamedTextColor.DARK_PURPLE));
+      this.inventory = Bukkit.createInventory(this, 45, Component.text("✦ ", Menu.ACCENT).append(Component.text("Ritual Altar", NamedTextColor.DARK_GRAY)));
    }
 
    public Location getAltar() {
@@ -73,13 +73,16 @@ public class RitualGUI implements InventoryHolder {
    }
 
    public void setup() {
-      ItemStack filler = named(Material.GRAY_STAINED_GLASS_PANE, Component.text(" "), List.of());
-      ItemStack accent = named(Material.PURPLE_STAINED_GLASS_PANE, Component.text(" "), List.of());
+      ItemStack filler = Icon.pane(Material.GRAY_STAINED_GLASS_PANE);
+      ItemStack frame = Icon.pane(Material.BLACK_STAINED_GLASS_PANE);
+      ItemStack corner = Icon.pane(Material.PURPLE_STAINED_GLASS_PANE);
 
       for (int i = 0; i < this.inventory.getSize(); i++) {
          int row = i / 9;
          int col = i % 9;
-         this.inventory.setItem(i, row == 0 || row == 4 || col == 0 || col == 8 ? accent : filler);
+         boolean edge = row == 0 || row == 4 || col == 0 || col == 8;
+         boolean isCorner = (row == 0 || row == 4) && (col == 0 || col == 8);
+         this.inventory.setItem(i, isCorner ? corner : (edge ? frame : filler));
       }
 
       for (int slot : INGREDIENT_SLOTS) {

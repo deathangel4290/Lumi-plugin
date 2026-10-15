@@ -5,11 +5,15 @@ api-version: 1.21
 description: Luminara legendary weapons, rituals, fragments, events, outposts and seasons.
 softdepend: [WorldGuard, Towny, BetterModel]
 commands:
+  lumi:
+    description: Opens the Luminara menu (settings, recipes, renown, trust, events; admin panel for admins).
+    usage: /lumi [settings|recipes|renown|trust|world|admin|config|events|give]
+    aliases: [luminara, lmenu]
   recipes:
     description: Shows the recipes for legendary weapons.
     usage: /recipes
   binds:
-    description: Binds a legendary weapon ability to a key.
+    description: Opens your settings to choose the key that fires legendary abilities.
     usage: /binds [unbind]
   unbind:
     description: Clears your legendary weapon ability bind.
@@ -19,18 +23,18 @@ commands:
     usage: /wpspark [alt]
     aliases: [spark, wps]
   lwfx:
-    description: Sets how many legendary weapon particles you see.
-    usage: /lwfx <full|reduced|minimal|off>
+    description: Sets how many legendary weapon particles you see (no argument opens your settings).
+    usage: /lwfx [full|reduced|minimal|off]
   lw:
-    description: Admin commands for LegendaryWeapons.
-    usage: /lw <subcommand>
+    description: Admin commands for LegendaryWeapons (no argument opens the admin panel).
+    usage: /lw [give|giveritualblock|reload|setkills|resetcooldowns]
     permission: legendaryweapons.admin
   giveritualblock:
     description: Gives the player a ritual block.
     usage: /giveritualblock
     permission: legendaryweapons.admin
   gui:
-    description: Opens the legendary weapon give-menu (testing).
+    description: Opens the give menu with every legendary and custom item (testing).
     usage: /gui
     permission: legendaryweapons.admin
   resetcd:
@@ -54,7 +58,7 @@ commands:
     usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|season|status|stopall>
     permission: legendaryweapons.admin
   renown:
-    description: Season Renown, your stats and the leaderboards.
+    description: Season Renown, your stats and the leaderboards (no argument opens the menu).
     usage: /renown [player] | /renown top [category]
     aliases: [season, leaderboard, lb]
   rewards:
@@ -75,7 +79,7 @@ commands:
     description: Untrusts a player.
     usage: /untrust <player>
   trustlist:
-    description: Shows your trusted players.
+    description: Opens your trusted players.
     usage: /trustlist
 permissions:
   legendaryweapons.admin:
