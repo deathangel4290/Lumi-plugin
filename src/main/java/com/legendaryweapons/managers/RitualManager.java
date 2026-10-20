@@ -56,11 +56,17 @@ public class RitualManager implements Listener {
    private final ConfigManager configManager;
    private final Set<Location> altars = new HashSet<>();
    private final List<String> pendingAltars = new ArrayList<>();
+   private final List<String> pendingAncient = new ArrayList<>();
    private final List<Ritual> activeRituals = new ArrayList<>();
    private final List<Map<?, ?>> pendingRituals = new ArrayList<>();
    private final List<String> craftedWeapons = new ArrayList<>();
    private final Map<Location, ItemDisplay> altarCores = new HashMap<>();
    private final Map<Location, ItemDisplay> altarShells = new HashMap<>();
+   /** Ancient Altars: found around the map, never crafted, unbreakable, at most ritual.ancient-altars.max. */
+   private final Set<Location> ancient = new HashSet<>();
+   private final Set<Location> discovered = new HashSet<>();
+   private final Map<Location, org.bukkit.entity.TextDisplay> labels = new HashMap<>();
+   private final com.legendaryweapons.rituals.RitualClock clock;
    private final File dataFile;
    private final FileConfiguration dataConfig;
 
@@ -69,8 +75,33 @@ public class RitualManager implements Listener {
       this.configManager = plugin.getConfigManager();
       this.dataFile = new File(plugin.getDataFolder(), "rituals.yml");
       this.dataConfig = YamlConfiguration.loadConfiguration(this.dataFile);
+      this.clock = new com.legendaryweapons.rituals.RitualClock(plugin);
       this.craftedWeapons.addAll(this.dataConfig.getStringList("crafted-weapons"));
       this.loadAltars();
+      for (String key : this.dataConfig.getStringList("ancient-altars")) {
+         try {
+            Location location = parseKey(key);
+            if (location != null) {
+               this.ancient.add(location);
+               this.altars.add(location);
+            } else {
+               this.pendingAltars.add(key);
+               this.pendingAncient.add(key);
+            }
+         } catch (NumberFormatException ignored) {
+         }
+      }
+
+      for (String key : this.dataConfig.getStringList("discovered-altars")) {
+         try {
+            Location location = parseKey(key);
+            if (location != null) {
+               this.discovered.add(location);
+            }
+         } catch (NumberFormatException ignored) {
+         }
+      }
+
       this.loadRituals();
       this.registerRitualBlockRecipe();
       plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -195,9 +226,14 @@ public class RitualManager implements Listener {
       Iterator<String> it = this.pendingAltars.iterator();
 
       while (it.hasNext()) {
-         Location location = parseKey(it.next());
+         String key = it.next();
+         Location location = parseKey(key);
          if (location != null) {
             this.altars.add(location);
+            if (this.pendingAncient.remove(key)) {
+               this.ancient.add(location);
+            }
+
             it.remove();
          }
       }
@@ -224,6 +260,18 @@ public class RitualManager implements Listener {
          rituals.add(map);
       }
 
+      List<String> ancientKeys = new ArrayList<>(this.pendingAncient);
+      for (Location location : this.ancient) {
+         ancientKeys.add(key(location));
+      }
+
+      List<String> discoveredKeys = new ArrayList<>();
+      for (Location location : this.discovered) {
+         discoveredKeys.add(key(location));
+      }
+
+      this.dataConfig.set("ancient-altars", ancientKeys);
+      this.dataConfig.set("discovered-altars", discoveredKeys);
       this.dataConfig.set("altars", altarKeys);
       this.dataConfig.set("rituals", rituals);
       this.dataConfig.set("crafted-weapons", this.craftedWeapons);
@@ -259,13 +307,28 @@ public class RitualManager implements Listener {
       }
 
       this.altarShells.clear();
+      for (org.bukkit.entity.TextDisplay label : this.labels.values()) {
+         if (label.isValid()) {
+            label.remove();
+         }
+      }
+
+      this.labels.clear();
       RitualScene.shutdown();
    }
 
    // ------------------------------------------------------------------ altar recipe & visuals
 
+   /** Re-reads the altar recipe (after the altar mode or the recipe changed). */
+   public void refreshRecipe() {
+      this.registerRitualBlockRecipe();
+   }
+
    private void registerRitualBlockRecipe() {
-      if (!this.configManager.isRitualBlockRecipeEnabled()) {
+      if (!this.craftedAltarsAllowed()) {
+         Bukkit.removeRecipe(new NamespacedKey(this.plugin, "ritual_block_recipe"));
+         this.plugin.getLogger().info("Altar mode ANCIENT: altars can't be crafted, only found.");
+      } else if (!this.configManager.isRitualBlockRecipeEnabled()) {
          this.plugin.getLogger().info("Ritual Block recipe is disabled in the config.");
       } else {
          NamespacedKey recipeKey = new NamespacedKey(this.plugin, "ritual_block_recipe");
@@ -315,6 +378,8 @@ public class RitualManager implements Listener {
          if (loaded) {
             this.keepAltarBlock(altar);
          }
+
+         this.label(altar, loaded && watched && this.ancient.contains(altar));
 
          boolean custom = this.customAltar();
          ItemDisplay core = this.altarCores.get(altar);
@@ -379,7 +444,7 @@ public class RitualManager implements Listener {
          if (shell == null || !shell.isValid()) {
             shell = altar.getWorld().spawn(altar.clone().add(0.5, 0.5, 0.5), ItemDisplay.class, display -> {
                display.setPersistent(false);
-               display.setItemStack(RitualScene.model("ritual_altar", null));
+               display.setItemStack(this.ancient.contains(altar) ? this.ancientModel() : RitualScene.model("ritual_altar", null));
                display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
                display.setBillboard(Billboard.FIXED);
                display.setViewRange(2.0F);
@@ -394,6 +459,169 @@ public class RitualManager implements Listener {
          }
 
          this.altarShells.remove(altar);
+      }
+   }
+
+   // ------------------------------------------------------------------ altar kinds & crafting times
+
+   /** CRAFTED (players craft and place altars), ANCIENT (only the Ancient Altars around the map), or BOTH. */
+   public String altarMode() {
+      String mode = this.plugin.getConfig().getString("ritual.altar-mode", "BOTH");
+      mode = mode == null ? "BOTH" : mode.trim().toUpperCase(java.util.Locale.ROOT);
+      return mode.equals("CRAFTED") || mode.equals("ANCIENT") ? mode : "BOTH";
+   }
+
+   public boolean craftedAltarsAllowed() {
+      return !this.altarMode().equals("ANCIENT");
+   }
+
+   public boolean isAncient(Location location) {
+      return this.ancient.contains(blockOf(location));
+   }
+
+   public Set<Location> ancientAltars() {
+      return new HashSet<>(this.ancient);
+   }
+
+   public int ancientMax() {
+      return Math.max(0, this.plugin.getConfig().getInt("ritual.ancient-altars.max", 3));
+   }
+
+   public com.legendaryweapons.rituals.RitualClock clock() {
+      return this.clock;
+   }
+
+   /** This weapon's ritual length in seconds: weapons.<key>.ritual-time, else ritual.timer. */
+   public int ritualSeconds(String weaponKey) {
+      int fallback = this.configManager.getRitualTimer();
+      return Math.max(1, this.plugin.getConfig().getInt("weapons." + weaponKey + ".ritual-time", fallback));
+   }
+
+   private ItemStack ancientModel() {
+      String model = this.plugin.getConfig().getString("ritual.ancient-altars.model", "luminara:ritual_altar");
+      ItemStack item = new ItemStack(Material.PAPER);
+      NamespacedKey key = model == null ? null : NamespacedKey.fromString(model.trim().toLowerCase(java.util.Locale.ROOT));
+      if (key != null) {
+         item.editMeta(meta -> meta.setItemModel(key));
+      }
+
+      return item;
+   }
+
+   /** Null when a ritual may start at this altar now; otherwise why not, for the player. */
+   public String whyClosed(Player player, Location location) {
+      boolean ancientAltar = this.isAncient(location);
+      if (!ancientAltar && this.altarMode().equals("ANCIENT")) {
+         return "This altar has gone dormant. Only the Ancient Altars hidden around the map work now.";
+      }
+
+      if (ancientAltar && this.altarMode().equals("CRAFTED")) {
+         return "The Ancient Altars are asleep on this server.";
+      }
+
+      if (!player.hasPermission("legendaryweapons.admin") && !this.clock.openNow()) {
+         String next = this.clock.nextOpening();
+         return "Rituals can only be started " + this.clock.describe() + "." + (next == null ? "" : " Next: " + next + ".");
+      }
+
+      return null;
+   }
+
+   /** First use of an Ancient Altar: tell the server it has been found (not where). */
+   public void discover(Player player, Location location) {
+      Location block = blockOf(location);
+      if (this.ancient.contains(block) && this.discovered.add(block)) {
+         this.save();
+         if (this.plugin.getConfig().getBoolean("ritual.ancient-altars.announce-discovery", true)) {
+            Bukkit.broadcast(Component.text("✦ " + this.plugin.getEventManager().publicName(player) + " has found an Ancient Altar! ", NamedTextColor.LIGHT_PURPLE)
+               .append(Component.text("(" + this.discovered.size() + " of " + this.ancient.size() + " found)", NamedTextColor.GRAY)));
+         }
+
+         this.plugin.getSoundManager().world(block, org.bukkit.Sound.BLOCK_END_PORTAL_SPAWN, 0.6F, 1.4F);
+      }
+   }
+
+   /** Places an Ancient Altar on this block. Null on success, else why not. */
+   public String placeAncient(Location location) {
+      Location block = blockOf(location);
+      if (this.ancient.size() >= this.ancientMax()) {
+         return "There are already " + this.ancient.size() + " Ancient Altars (ritual.ancient-altars.max is " + this.ancientMax() + ").";
+      }
+
+      if (this.altars.contains(block)) {
+         return "There's already an altar there.";
+      }
+
+      block.getBlock().setType(this.customAltar() ? Material.SPAWNER : Material.ENCHANTING_TABLE);
+      this.altars.add(block);
+      this.ancient.add(block);
+      this.save();
+      this.keepAltarBlock(block);
+      return null;
+   }
+
+   /**
+    * Ancient Altars at random spots within `radius` of the world spawn, on the surface, at least a
+    * fifth of the radius apart, up to the cap. Returns how many were placed.
+    */
+   public int scatterAncient(World world, int count, int radius) {
+      java.util.Random random = new java.util.Random();
+      Location spawn = world.getSpawnLocation();
+      int placed = 0;
+      for (int attempt = 0; attempt < count * 40 && placed < count && this.ancient.size() < this.ancientMax(); attempt++) {
+         double angle = random.nextDouble() * Math.PI * 2.0;
+         double distance = radius * (0.25 + 0.75 * Math.sqrt(random.nextDouble()));
+         int x = spawn.getBlockX() + (int)(Math.cos(angle) * distance);
+         int z = spawn.getBlockZ() + (int)(Math.sin(angle) * distance);
+         org.bukkit.block.Block ground = world.getHighestBlockAt(x, z);
+         if (ground.isLiquid() || !ground.getType().isSolid() || ground.getType().name().contains("LEAVES")) {
+            continue;
+         }
+
+         Location spot = ground.getLocation().add(0.0, 1.0, 0.0);
+         boolean crowded = false;
+         for (Location other : this.ancient) {
+            if (other.getWorld().equals(world) && other.distanceSquared(spot) < Math.pow(radius / 5.0, 2.0)) {
+               crowded = true;
+               break;
+            }
+         }
+
+         if (!crowded && this.placeAncient(spot) == null) {
+            placed++;
+            this.plugin.getLogger().info("Ancient Altar placed at " + world.getName() + " " + spot.getBlockX() + ", " + spot.getBlockY() + ", " + spot.getBlockZ());
+         }
+      }
+
+      return placed;
+   }
+
+   /** The "Ancient Altar" name over an ancient altar while someone is near. */
+   private void label(Location altar, boolean show) {
+      org.bukkit.entity.TextDisplay label = this.labels.get(altar);
+      boolean wanted = show && this.plugin.getConfig().getBoolean("ritual.ancient-altars.label", true);
+      if (!wanted) {
+         if (label != null) {
+            if (label.isValid()) {
+               label.remove();
+            }
+
+            this.labels.remove(altar);
+         }
+
+         return;
+      }
+
+      if (label == null || !label.isValid()) {
+         label = altar.getWorld().spawn(altar.clone().add(0.5, 2.1, 0.5), org.bukkit.entity.TextDisplay.class, display -> {
+            display.setPersistent(false);
+            display.text(Component.text("✦ Ancient Altar ✦", NamedTextColor.LIGHT_PURPLE));
+            display.setBillboard(Billboard.CENTER);
+            display.setViewRange(0.25F);                  // only up close: they are meant to be found
+            display.setSeeThrough(false);
+            display.setShadowed(true);
+         });
+         this.labels.put(altar, label);
       }
    }
 
@@ -421,6 +649,9 @@ public class RitualManager implements Listener {
    public void removeRitualBlock(Location location) {
       Location block = blockOf(location);
       this.altars.remove(block);
+      this.ancient.remove(block);
+      this.discovered.remove(block);
+      this.label(block, false);
       ItemDisplay core = this.altarCores.remove(block);
       if (core != null && core.isValid()) {
          core.remove();
@@ -452,8 +683,12 @@ public class RitualManager implements Listener {
    }
 
    public boolean startRitual(Player player, Location location, String weaponKey, List<ItemStack> consumed) {
+      String closed = this.whyClosed(player, location);
       if (!this.configManager.isRitualCraftingEnabled()) {
          player.sendMessage(Component.text("Ritual crafting is disabled on this server.", NamedTextColor.RED));
+         return false;
+      } else if (closed != null) {
+         player.sendMessage(Component.text(closed, NamedTextColor.RED));
          return false;
       } else if (this.getRitualAtLocation(location) != null) {
          player.sendMessage(Component.text("This altar is already busy.", NamedTextColor.RED));
@@ -469,7 +704,8 @@ public class RitualManager implements Listener {
          Location at = ritual.getLocation();
          Bukkit.broadcast(Component.text("A ritual for ", NamedTextColor.LIGHT_PURPLE)
             .append(LegacyComponentSerializer.legacySection().deserialize(ritual.displayName()))
-            .append(Component.text(" has begun in the " + Ritual.dimensionName(at.getWorld()) + " at " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ() + "!", NamedTextColor.LIGHT_PURPLE)));
+            .append(Component.text(" has begun in the " + Ritual.dimensionName(at.getWorld()) + " at " + at.getBlockX() + ", " + at.getBlockY() + ", " + at.getBlockZ() + "!", NamedTextColor.LIGHT_PURPLE))
+            .append(Component.text(" It completes at " + this.clock.clockIn(this.ritualSeconds(weaponKey) * 1000L) + ".", NamedTextColor.GRAY)));
          return true;
       }
    }

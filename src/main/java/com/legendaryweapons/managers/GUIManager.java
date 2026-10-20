@@ -24,6 +24,7 @@ public class GUIManager {
    public void openRitualGUI(Player player, org.bukkit.Location altar) {
       RitualGUI ritualGUI = new RitualGUI(this.plugin, altar);
       ritualGUI.setup();
+      ritualGUI.update(player);
       player.openInventory(ritualGUI.getInventory());
       this.openRitualGUIs.put(player.getUniqueId(), ritualGUI);
    }

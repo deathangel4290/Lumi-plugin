@@ -29,11 +29,11 @@ import org.bukkit.inventory.ItemStack;
 public final class ConfigMenu extends Menu {
    private static final String[] QUICK_TOGGLES = {
       "acquisition.ritual-crafting", "acquisition.single-craft-per-weapon", "acquisition.require-fragments",
-      "effects.sprites", "effects.animations", "ritual.custom-altar", "trust-system.prevent-ability-damage"
+      "effects.sprites", "ritual.windows.enabled", "ritual.custom-altar", "trust-system.prevent-ability-damage"
    };
    private static final String[] QUICK_VALUES = {
       "effects.default-player-level", "ritual.timer", "fragments.fusion-cost", "audio.volume",
-      "effects.density", "outposts.capture-seconds", "passives.off-hand-strength"
+      "ritual.altar-mode", "outposts.capture-seconds", "passives.off-hand-strength"
    };
    private static final String[][] SHORTCUTS = {
       {"weapons", "Weapons"}, {"bosses", "Bosses"}, {"events", "Events"}, {"effects", "Effects"},
@@ -43,7 +43,8 @@ public final class ConfigMenu extends Menu {
    private static final Map<String, List<String>> CHOICES = Map.of(
       "effects.default-player-level", List.of("FULL", "REDUCED", "MINIMAL", "OFF"),
       "director.supply-tier", List.of("early", "mid", "late"),
-      "passives.off-hand-strength", List.of("FULL", "REDUCED")
+      "passives.off-hand-strength", List.of("FULL", "REDUCED"),
+      "ritual.altar-mode", List.of("CRAFTED", "ANCIENT", "BOTH")
    );
    /** Bookkeeping the plugin manages itself. */
    private static final List<String> HIDDEN = List.of("config-version", "balance-revision");
@@ -360,8 +361,7 @@ public final class ConfigMenu extends Menu {
    private void change(String key, Object value) {
       this.config().set(key, value);
       this.plugin.saveConfig();
-      this.plugin.getConfigManager().reloadConfig();
-      this.plugin.getWeaponManager().reload();
+      this.plugin.reloadSettings();
       this.plugin.getLogger().info(this.viewer.getName() + " set " + key + " to " + value + " (settings menu)");
       this.refresh();
    }

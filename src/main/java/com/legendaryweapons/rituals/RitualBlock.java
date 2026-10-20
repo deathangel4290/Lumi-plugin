@@ -37,6 +37,34 @@ public class RitualBlock {
       return item;
    }
 
+   private static NamespacedKey ancientKey() {
+      return new NamespacedKey(LegendaryWeapons.getPlugin(LegendaryWeapons.class), "ancient-altar");
+   }
+
+   /** Admins only: placing it sets an Ancient Altar (counts against ritual.ancient-altars.max). */
+   public static ItemStack getAncientAltarItem() {
+      ItemStack item = new ItemStack(Material.ENCHANTING_TABLE);
+      item.editMeta(meta -> {
+         meta.displayName(Component.text("✦ Ancient Altar ✦", NamedTextColor.DARK_PURPLE).decoration(TextDecoration.ITALIC, false));
+         meta.lore(List.of(
+            Component.text("Admin item. Place it somewhere players", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("will have to find it.", NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+            Component.text("It can't be broken (admins: sneak to break).", NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
+         ));
+         if (LegendaryWeapons.getPlugin(LegendaryWeapons.class).getConfig().getBoolean("ritual.custom-altar", true)) {
+            meta.setItemModel(new NamespacedKey("luminara", "ritual_altar"));
+         }
+
+         meta.setEnchantmentGlintOverride(true);
+         meta.getPersistentDataContainer().set(ancientKey(), PersistentDataType.BYTE, (byte)1);
+      });
+      return item;
+   }
+
+   public static boolean isAncientAltarItem(ItemStack item) {
+      return item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(ancientKey(), PersistentDataType.BYTE);
+   }
+
    public static boolean isRitualBlock(ItemStack item) {
       return item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(key(), PersistentDataType.BYTE);
    }

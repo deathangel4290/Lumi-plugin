@@ -116,8 +116,23 @@ public final class AdminMenu extends Menu {
             .text("Stands where you are, facing you. Nobody can hurt it or build next to it.").blank().click("place").build(), "lwevent trader spawn");
          this.action(30, Icon.of(Material.LAVA_BUCKET).name("Remove nearby Token Trader", BAD)
             .text("Any trader within 4 blocks of you.").blank().click("remove").build(), "lwevent trader remove");
-         this.action(32, Icon.of(Material.SPAWNER).name("Ritual Altar", ACCENT)
+         this.action(31, Icon.of(Material.SPAWNER).name("Ritual Altar", ACCENT)
             .text("Gives you a Ritual Altar block.").blank().click("take").build(), "lw giveritualblock");
+         var rituals = this.plugin.getRitualManager();
+         this.button(32, Icon.of(Material.CRYING_OBSIDIAN).name("Ancient Altars", ACCENT)
+            .stat("Mode", rituals.altarMode(), NamedTextColor.WHITE)
+            .stat("Placed", rituals.ancientAltars().size() + "/" + rituals.ancientMax(), NamedTextColor.WHITE)
+            .blank().hint("Left-click", "place one where you stand").hint("Right-click", "take the Ancient Altar item")
+            .hint("Shift-click", "list them in chat").build(), click -> {
+            this.toggleSound(click.player(), true);
+            if (click.shift()) {
+               run(this, click.player(), "lwevent altar list");
+            } else if (click.right()) {
+               click.player().getInventory().addItem(com.legendaryweapons.rituals.RitualBlock.getAncientAltarItem());
+            } else {
+               run(this, click.player(), "lwevent altar place");
+            }
+         });
          this.action(33, Icon.of(Material.NETHERITE_SWORD).name("Set kills to 10", NamedTextColor.WHITE)
             .text("Sets the kill count on the kill-based weapon in your hand to 10.").blank().click("set").build(), "setkills 10");
       }

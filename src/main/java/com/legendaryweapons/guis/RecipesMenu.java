@@ -38,19 +38,30 @@ public final class RecipesMenu extends Menu {
 
    @Override
    protected int pages() {
-      return pagesFor(this.weapons().size() + 1, this.inner().length);
+      return pagesFor(this.weapons().size() + 2, this.inner().length);
    }
 
    @Override
    protected void draw() {
       var config = this.plugin.getConfigManager();
-      this.show(4, Icon.of(Material.KNOWLEDGE_BOOK).name("How to forge a legendary", ACCENT)
+      Icon how = Icon.of(Material.KNOWLEDGE_BOOK).name("How to forge a legendary", ACCENT)
          .text("Put a recipe's ingredients into a Ritual Altar and begin the ritual.")
-         .blank().text("It takes " + config.getRitualTimer() / 60 + " minutes, and everyone on the server can see where it is. Breaking the altar ends it.", DIM)
-         .build());
+         .blank().text("It takes about " + config.getRitualTimer() / 60 + " minutes, and everyone on the server can see where it is. Breaking the altar ends it.", DIM);
+      if (this.plugin.getRitualManager().clock().windowsEnabled()) {
+         how.blank().text("Rituals can be started " + this.plugin.getRitualManager().clock().describe() + ".", GOLD);
+      }
+
+      this.show(4, how.build());
 
       List<ItemStack> entries = new ArrayList<>();
-      if (config.isRitualBlockRecipeEnabled()) {
+      var rituals = this.plugin.getRitualManager();
+      if (!rituals.ancientAltars().isEmpty() || !rituals.craftedAltarsAllowed()) {
+         entries.add(Icon.of(RitualBlock.getAncientAltarItem()).clearLore().name("Ancient Altars", ACCENT)
+            .text(rituals.ancientAltars().size() + " are hidden around the map. Find one to forge a legendary there.")
+            .blank().text(rituals.craftedAltarsAllowed() ? "You can also craft your own altar." : "Altars can't be crafted on this server.", DIM).build());
+      }
+
+      if (config.isRitualBlockRecipeEnabled() && rituals.craftedAltarsAllowed()) {
          Icon altar = Icon.of(RitualBlock.getRitualBlockItem()).clearLore().name("Ritual Altar", ACCENT).line(Icon.plain("Crafting table:", GOLD));
          for (String row : config.getRitualBlockRecipeShape()) {
             altar.line(Icon.plain("   " + row.replace(' ', '·'), NamedTextColor.WHITE));

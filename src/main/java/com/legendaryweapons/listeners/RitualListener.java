@@ -39,6 +39,43 @@ public class RitualListener implements Listener {
       this.ritualManager = plugin.getRitualManager();
    }
 
+   /** Crafted altars can't be placed when only Ancient Altars are allowed; the Ancient Altar item is for admins. */
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onBlockPlaceCheck(BlockPlaceEvent event) {
+      Player player = event.getPlayer();
+      boolean admin = player.hasPermission("legendaryweapons.admin");
+      if (RitualBlock.isAncientAltarItem(event.getItemInHand())) {
+         if (!admin) {
+            event.setCancelled(true);
+            return;
+         }
+
+         event.setCancelled(true);                     // placed by the manager instead (it sets the block itself)
+         String error = this.ritualManager.placeAncient(event.getBlock().getLocation());
+         if (error != null) {
+            player.sendMessage(Component.text(error, NamedTextColor.RED));
+         } else {
+            player.sendMessage(Component.text("Ancient Altar placed (" + this.ritualManager.ancientAltars().size() + "/" + this.ritualManager.ancientMax() + ").", NamedTextColor.LIGHT_PURPLE));
+            this.plugin.getSoundManager().world(event.getBlock().getLocation(), Sound.BLOCK_END_PORTAL_FRAME_FILL, 1.0F, 0.6F);
+         }
+      } else if (RitualBlock.isRitualBlock(event.getItemInHand()) && !this.ritualManager.craftedAltarsAllowed() && !admin) {
+         event.setCancelled(true);
+         HudManager.message(player, Component.text("Altars can't be built here. Find one of the Ancient Altars.", NamedTextColor.LIGHT_PURPLE));
+      }
+   }
+
+   /** Ancient Altars stay put. An admin can sneak-break one to remove it. */
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onBreakAncient(BlockBreakEvent event) {
+      if (!ProtectionManager.isProbing() && this.ritualManager.isAncient(event.getBlock().getLocation())) {
+         Player player = event.getPlayer();
+         if (!player.hasPermission("legendaryweapons.admin") || !player.isSneaking()) {
+            event.setCancelled(true);
+            HudManager.message(player, Component.text("An Ancient Altar can't be broken.", NamedTextColor.LIGHT_PURPLE));
+         }
+      }
+   }
+
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onBlockPlace(BlockPlaceEvent event) {
       if (RitualBlock.isRitualBlock(event.getItemInHand())) {
@@ -52,11 +89,16 @@ public class RitualListener implements Listener {
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onBlockBreak(BlockBreakEvent event) {
       if (!ProtectionManager.isProbing() && this.ritualManager.isRitualBlock(event.getBlock().getLocation())) {
+         boolean ancientAltar = this.ritualManager.isAncient(event.getBlock().getLocation());
          this.ritualManager.removeRitualBlock(event.getBlock().getLocation());
-         // Give the altar back rather than a plain enchanting table.
          event.setDropItems(false);
          event.setExpToDrop(0);                       // the altar is a spawner underneath: no free XP
-         event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5), RitualBlock.getRitualBlockItem());
+         if (ancientAltar) {
+            event.getPlayer().sendMessage(Component.text("Ancient Altar removed.", NamedTextColor.LIGHT_PURPLE));
+         } else {
+            // give the altar back rather than a plain enchanting table
+            event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation().add(0.5, 0.5, 0.5), RitualBlock.getRitualBlockItem());
+         }
       }
    }
 
@@ -99,6 +141,7 @@ public class RitualListener implements Listener {
                   .append(Component.text(active.getFormattedTimeRemaining() + " remaining", NamedTextColor.GRAY))
             );
          } else {
+            this.ritualManager.discover(player, location);
             this.plugin.getGuiManager().openRitualGUI(player, location);
          }
       }

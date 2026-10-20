@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
  *   director on | off | status | skip | run <event>
  *   outpost create <name> <type> [radius] | remove <name> | reset <name> | list
  *   draft start [captain...] | cancel | status   (no captains: opens the set-up menu)
+ *   altar place | scatter [count] [radius] | remove | list    Ancient Altars
  *   team add <player> <team> | remove <player> | create <name> <colour> | disband <team|all> | list
  *   boss arena <id> [radius] | start [id] | stop | status
  *   status | stopall
@@ -328,6 +329,57 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                }
                break;
             }
+            case "altar":
+            case "altars": {
+               var rituals = this.plugin.getRitualManager();
+               switch (action) {
+                  case "place" -> {
+                     if (!(sender instanceof Player player)) {
+                        reply(sender, "Run this in-game, standing where the altar should be.", null);
+                     } else {
+                        String error = rituals.placeAncient(player.getLocation());
+                        reply(sender, error, "Ancient Altar placed at your feet (" + rituals.ancientAltars().size() + "/" + rituals.ancientMax() + ").");
+                     }
+                  }
+                  case "scatter" -> {
+                     int count = minutes(args, 2, rituals.ancientMax());
+                     int radius = minutes(args, 3, this.plugin.getConfig().getInt("ritual.ancient-altars.scatter-radius", 1500));
+                     World world = sender instanceof Player player ? player.getWorld() : Bukkit.getWorlds().get(0);
+                     int placed = rituals.scatterAncient(world, count, radius);
+                     reply(sender, placed == 0 ? "No Ancient Altars placed (the cap is " + rituals.ancientMax() + ", or no open ground was found)." : null,
+                        placed + " Ancient Altar" + (placed == 1 ? "" : "s") + " hidden within " + radius + " blocks of spawn. Their spots are in the server log; /lwevent altar list shows them.");
+                  }
+                  case "remove" -> {
+                     if (!(sender instanceof Player player)) {
+                        reply(sender, "Run this in-game, next to the altar.", null);
+                     } else {
+                        Location nearest = null;
+                        for (Location altar : rituals.ancientAltars()) {
+                           if (altar.getWorld().equals(player.getWorld()) && altar.distanceSquared(player.getLocation()) < 36.0) {
+                              nearest = altar;
+                           }
+                        }
+
+                        if (nearest == null) {
+                           reply(sender, "No Ancient Altar within 6 blocks.", null);
+                        } else {
+                           nearest.getBlock().setType(org.bukkit.Material.AIR);
+                           rituals.removeRitualBlock(nearest);
+                           reply(sender, null, "Ancient Altar removed.");
+                        }
+                     }
+                  }
+                  default -> {
+                     sender.sendMessage(Component.text("Altar mode " + rituals.altarMode() + ". Ancient Altars (" + rituals.ancientAltars().size() + "/" + rituals.ancientMax() + "):", NamedTextColor.LIGHT_PURPLE));
+                     for (Location altar : rituals.ancientAltars()) {
+                        sender.sendMessage(Component.text("  " + altar.getWorld().getName() + " " + altar.getBlockX() + ", " + altar.getBlockY() + ", " + altar.getBlockZ(), NamedTextColor.GRAY));
+                     }
+
+                     sender.sendMessage(Component.text("Rituals start " + rituals.clock().describe() + (rituals.clock().windowsEnabled() ? "" : " (ritual.windows.enabled is off)") + ".", NamedTextColor.GRAY));
+                  }
+               }
+               break;
+            }
             case "boss":
             case "bosses":
                switch (action) {
@@ -426,6 +478,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          "/lwevent boss arena <boss> [radius] | start [boss] | stop | status",
          "/lwevent trader spawn | remove | list",
          "/lwevent draft start [captains...] | cancel | status",
+         "/lwevent altar place | scatter [count] [radius] | remove | list",
          "/lwevent team add <player> <team> | remove <player> | create <name> <colour> | disband <team|all> | list",
          "/lwevent status | stopall"
       }) {
@@ -435,7 +488,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       List<String> options = switch (args.length) {
-         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "draft", "team", "boss", "trader", "status", "stopall");
+         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "draft", "team", "altar", "boss", "trader", "status", "stopall");
          case 2 -> switch (args[0].toLowerCase(Locale.ROOT)) {
             case "bounty" -> List.of("start", "stop", "status");
             case "koth" -> List.of("marker", "setcenter", "start", "stop", "status");
@@ -447,6 +500,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
             case "boss", "bosses" -> List.of("arena", "start", "stop", "status");
             case "trader", "traders" -> List.of("spawn", "remove", "list");
             case "draft" -> List.of("start", "cancel", "status");
+            case "altar", "altars" -> List.of("place", "scatter", "remove", "list");
             case "team", "teams" -> List.of("add", "remove", "create", "disband", "list");
             default -> List.of();
          };

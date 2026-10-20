@@ -345,6 +345,15 @@ public class LegendaryWeapons extends JavaPlugin {
       return this.bossManager;
    }
 
+   /** /lw reload and the settings menu: config.yml, lore.yml, weapons and the altar recipe. */
+   public void reloadSettings() {
+      this.configManager.reloadConfig();
+      this.weaponManager.reload();
+      if (this.ritualManager != null) {
+         this.ritualManager.refreshRecipe();
+      }
+   }
+
    public com.legendaryweapons.teams.TeamManager getTeamManager() {
       return this.teamManager;
    }

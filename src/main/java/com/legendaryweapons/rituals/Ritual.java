@@ -67,7 +67,8 @@ public class Ritual {
       this.weaponKey = weaponKey;
       this.startTime = startTime;
       this.consumed = consumed == null ? new ArrayList<>() : new ArrayList<>(consumed);
-      this.duration = Math.max(1, plugin.getConfigManager().getRitualTimer());
+      // weapons.<key>.ritual-time, else ritual.timer (read here: rituals resume before the manager exists)
+      this.duration = Math.max(1, plugin.getConfig().getInt("weapons." + weaponKey + ".ritual-time", plugin.getConfigManager().getRitualTimer()));
       this.world = this.location.getWorld();
       this.secondsRemaining = this.duration - (int)((System.currentTimeMillis() - startTime) / 1000L);
       this.scene = new RitualScene(plugin, this.location, this.theme()[0]);

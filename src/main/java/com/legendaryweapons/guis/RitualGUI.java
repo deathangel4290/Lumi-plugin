@@ -93,8 +93,11 @@ public class RitualGUI implements InventoryHolder {
          line("Place a recipe's ingredients in the", NamedTextColor.GRAY),
          line("five slots below, then press Begin.", NamedTextColor.GRAY),
          Component.empty(),
-         line("The ritual takes " + this.plugin.getConfigManager().getRitualTimer() / 60 + " minutes and everyone", NamedTextColor.GRAY),
+         line("A ritual takes about " + this.plugin.getConfigManager().getRitualTimer() / 60 + " minutes and everyone", NamedTextColor.GRAY),
          line("on the server sees where it is.", NamedTextColor.GRAY),
+         this.plugin.getRitualManager().clock().windowsEnabled()
+            ? line("Rituals start " + this.plugin.getRitualManager().clock().describe() + ".", NamedTextColor.YELLOW)
+            : Component.empty(),
          line("Breaking the altar ends it and spills", NamedTextColor.DARK_GRAY),
          line("the ingredients.", NamedTextColor.DARK_GRAY),
          Component.empty(),
@@ -127,9 +130,17 @@ public class RitualGUI implements InventoryHolder {
             this.inventory.setItem(BUTTON_SLOT, named(Material.BARRIER, Component.text("Already forged", NamedTextColor.RED), List.of(line("Each legendary can only exist once.", NamedTextColor.GRAY))));
          } else if (this.plugin.getRitualManager().getRitualAtLocation(this.altar) != null) {
             this.inventory.setItem(BUTTON_SLOT, named(Material.BARRIER, Component.text("Altar busy", NamedTextColor.RED), List.of()));
+         } else if (viewer != null && this.plugin.getRitualManager().whyClosed(viewer, this.altar) != null) {
+            List<Component> why = new ArrayList<>();
+            for (String part : Icon.wrap(this.plugin.getRitualManager().whyClosed(viewer, this.altar))) {
+               why.add(line(part, NamedTextColor.GRAY));
+            }
+
+            this.inventory.setItem(BUTTON_SLOT, named(Material.CLOCK, Component.text("Not now", NamedTextColor.RED), why));
          } else {
+            int seconds = this.plugin.getRitualManager().ritualSeconds(match.weaponKey());
             this.inventory.setItem(BUTTON_SLOT, named(Material.ANVIL, Component.text("Begin Ritual", NamedTextColor.GREEN), List.of(
-               line("Takes " + this.plugin.getConfigManager().getRitualTimer() / 60 + " minutes.", NamedTextColor.GRAY),
+               line("Takes " + (seconds >= 60 ? seconds / 60 + " minutes" : seconds + " seconds") + ", done at " + this.plugin.getRitualManager().clock().clockIn(seconds * 1000L) + ".", NamedTextColor.GRAY),
                line("Extra items are handed back.", NamedTextColor.DARK_GRAY)
             )));
          }

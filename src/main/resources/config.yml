@@ -475,6 +475,22 @@ ritual:
   # altars convert when their chunk loads. false = plain enchanting tables, for servers whose pack
   # is optional (players without it would see a missing-model cube).
   custom-altar: true
+  # Which altars exist: CRAFTED (players craft and place their own), ANCIENT (no crafting: only the
+  # few Ancient Altars set around the map, which players have to find), or BOTH.
+  altar-mode: BOTH
+  ancient-altars:
+    max: 3                              # at most this many at once
+    scatter-radius: 1500                # /lwevent altar scatter hides them within this many blocks of spawn
+    label: true                         # "Ancient Altar" floats over one when you are right next to it
+    announce-discovery: true            # the first player to use each one is announced (never where)
+    model: "luminara:ritual_altar"      # the item model drawn over Ancient Altars (art: luminara:ancient_altar)
+  # Crafting times. Ritual messages show clock times in this time zone ("done at 8:42 PM CDT").
+  timezone: "America/Chicago"           # Central Time (CST/CDT); any IANA zone, e.g. "America/New_York"
+  windows:
+    enabled: true                       # rituals can only be STARTED in these windows (admins always can)
+    times:                              # "DAYS HH:MM-HH:MM" in the time zone above; DAYS = ALL, WEEKDAYS,
+      - "ALL 16:00-23:59"               # WEEKEND, or MON,TUE,...  Running rituals finish whenever.
+  # A weapon can take longer or shorter than ritual.timer: weapons.<weapon>.ritual-time (seconds).
 
 ritual-block-recipe:
   enabled: true

@@ -28,6 +28,7 @@ public final class GiveMenu extends Menu {
 
       out.addAll(CustomItems.get().sampleSet());
       out.add(RitualBlock.getRitualBlockItem());
+      out.add(RitualBlock.getAncientAltarItem());
       return out;
    }
 
