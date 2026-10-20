@@ -138,6 +138,20 @@ public class ConfigManager {
          this.config.set("balance-revision", latest);
       }
 
+      // lore now lives in lore.yml: a weapon still carrying an old default lore list (never edited) drops it
+      java.io.InputStream bundled = this.plugin.getResource("old-lore.yml");
+      if (bundled != null && this.config.isConfigurationSection("weapons")) {
+         YamlConfiguration old = YamlConfiguration.loadConfiguration(new java.io.InputStreamReader(bundled, java.nio.charset.StandardCharsets.UTF_8));
+         for (String weapon : this.config.getConfigurationSection("weapons").getKeys(false)) {
+            List<String> current = this.config.getStringList("weapons." + weapon + ".lore");
+            List<?> variants = old.getList(weapon);
+            if (!current.isEmpty() && variants != null && variants.contains(current)) {
+               this.config.set("weapons." + weapon + ".lore", null);
+               this.plugin.getLogger().info("Moved " + weapon + " to the new lore (lore.yml)");
+            }
+         }
+      }
+
       for (String path : OBSOLETE) {
          if (this.config.isSet(path)) {
             this.config.set(path, null);

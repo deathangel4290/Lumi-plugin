@@ -139,88 +139,49 @@ passives:
   reduced-multiplier: 0.5
 
 
+# ============================================================================
+#  Weapons -- name, item, model, power tier, numbers, enchantments and ritual
+#  recipe. The tooltip text is in lore.yml and fills in these numbers itself.
+#  Ticks: 20 = 1 second. Damage: 2 = 1 heart.
+# ============================================================================
 weapons:
 
-  # --------------------------------------------------------------------------
-  # Scythe Of Diablo -- netherite sword + Sharpness V = 11 base damage
-  # --------------------------------------------------------------------------
+  # ---- Scythe Of Diablo -- netherite sword + Sharpness V = 11 base damage
   scythe-of-diablo:
     display-name: "§c§lScythe Of Diablo"
     material: NETHERITE_SWORD
     custom-model-data: 1
     power-tier: 3
-    lore:
-      - "§8Reaps what it kills."
-      - ""
-      - "§7Kill a player  §f»  §7heal to full"
-      - "§7Strike from behind  §f»  §c{x:backstab-damage-multiplier} §7damage"
-      - "§7Sweep attacks  §f»  §c{x:sweep-damage-multiplier} §7damage"
-      - "§7{n:combo-hits-required} hits on a player  §f»  §7Absorption for {s:combo-absorption-duration}"
-      - ""
-      - "§8Taking a hit resets your combo. Sweeps build no combo."
     abilities:
       backstab-damage-multiplier: 1.35
       sweep-damage-multiplier: 1.25
       combo-hits-required: 5
       combo-absorption-duration: 200    # 10s
       combo-absorption-amplifier: 0     # 0 = Absorption I = 2 hearts
-    enchantments:
-      - "SHARPNESS:5"
-      - "LOOTING:3"
-    recipe:
-      - NETHERITE_SWORD
-      - BEACON
-      - TOTEM_OF_UNDYING
-      - FRAGMENT_T3:2
+    enchantments: [SHARPNESS:5, LOOTING:3]
+    recipe: [NETHERITE_SWORD, BEACON, TOTEM_OF_UNDYING, FRAGMENT_T3:2]
 
-  # --------------------------------------------------------------------------
-  # Ender Glaive -- netherite sword = 8 base damage
-  # --------------------------------------------------------------------------
+  # ---- Ender Glaive -- netherite sword = 8 base damage
   ender-glaive:
     display-name: "§5§lEnder Glaive"
     material: NETHERITE_SWORD
     custom-model-data: 2
     power-tier: 1
-    lore:
-      - "§8Folded from the space between worlds."
-      - ""
-      - "§7Ability  §f»  §7throw the glaive, §d{h:spear-damage} hearts"
-      - "§8  It finds its way back to you."
-      - "§7Sneak + hold ability  §f»  §7charge a Spear Pearl"
-      - ""
-      - "§7Pearl cooldown  §f»  §f{s:pearl-cooldown}"
     abilities:
       spear-damage: 5.0
       melee-damage: 0.0                 # 0 = normal sword damage (with Sharpness, crits, Strength)
       max-charge-time: 3000             # MILLISECONDS of hold for a full charge
       max-throw-strength: 2.0
       pearl-cooldown: 200               # 10s
-    enchantments:
-      - "UNBREAKING:3"
-    recipe:
-      - DIAMOND_SWORD
-      - ENDER_PEARL:16
-      - GHAST_TEAR:4
-      - FRAGMENT_T1:2
+    enchantments: [UNBREAKING:3]
+    recipe: [DIAMOND_SWORD, ENDER_PEARL:16, GHAST_TEAR:4, FRAGMENT_T1:2]
 
-  # --------------------------------------------------------------------------
-  # Axe Of Zeus -- netherite axe + Sharpness V = 13 base damage
-  # --------------------------------------------------------------------------
+  # ---- Axe Of Zeus -- netherite axe + Sharpness V = 13 base damage
   axe-of-zeus:
     display-name: "§b§lAxe Of Zeus"
     material: NETHERITE_AXE
     custom-model-data: 3
     power-tier: 3
-    lore:
-      - "§8The storm answers when it is thrown."
-      - ""
-      - "§7Ability  §f»  §7hurl the axe, §b{h:throw-damage} hearts"
-      - "§7On hit  §f»  §7stunned {s:throw-stun-duration}, then Weakness {s:throw-weakness-duration}"
-      - "§7Returns on its own, hit or miss"
-      - "§7Charged melee  §f»  §7{pct:melee-lightning-chance} to strike lightning"
-      - "§7Against a shield  §f»  §7disabled {s:shield-break-duration}"
-      - ""
-      - "§7Cooldown  §f»  §f{s:throw-cooldown}"
     abilities:
       throw-damage: 8.0
       throw-armour-pierce: 0.25         # share of the throw that ignores armour and Protection
@@ -235,14 +196,8 @@ weapons:
       max-travel-distance: 40.0
       spin-degrees-per-tick: 50.0
       projectile-lifetime: 200
-    enchantments:
-      - "SHARPNESS:5"
-      - "LOYALTY:3"
-    recipe:
-      - NETHERITE_AXE
-      - LIGHTNING_ROD
-      - COPPER_BLOCK:4
-      - FRAGMENT_T3:2
+    enchantments: [SHARPNESS:5, LOYALTY:3]
+    recipe: [NETHERITE_AXE, LIGHTNING_ROD, COPPER_BLOCK:4, FRAGMENT_T3:2]
 
   # --------------------------------------------------------------------------
   # Sword Of Eclipse -- netherite sword + Sharpness IV = 10.5, plus stage bonus
@@ -254,16 +209,6 @@ weapons:
     material: NETHERITE_SWORD
     custom-model-data: 4
     power-tier: 4
-    lore:
-      - "§8Light and dark held in one edge."
-      - ""
-      - "§7Grows every {n:kills-per-stage} player kills  §f»  §7up to §d+{n:stage-4-damage-bonus} §7damage"
-      - "§7Charged hits  §f»  §7{pct:blindness-chance} chance to blind for §f{s:blindness-duration}"
-      - "§7Ability (after {n:kills-per-stage}x3 kills)  §f»  §7split in two for {s:dual-wield-duration}"
-      - "§7Kills while split  §f»  §d+1 heart §7(max 3)"
-      - ""
-      - "§7Split cooldown  §f»  §f{s:dual-wield-cooldown}"
-      - "§8Main hand only. Dying resets your progress."
     abilities:
       kills-per-stage: 3
       blindness-chance: 0.25
@@ -278,14 +223,8 @@ weapons:
       dual-wield-cooldown: 1200         # 60s
       max-health-bonus: 2.0             # 1 heart per kill
       max-health-bonus-cap: 6.0         # 3 hearts maximum
-    enchantments:
-      - "SHARPNESS:4"
-      - "FIRE_ASPECT:2"
-    recipe:
-      - DRAGON_EGG
-      - DIAMOND_SWORD
-      - NETHER_STAR
-      - FRAGMENT_T4:2
+    enchantments: [SHARPNESS:4, FIRE_ASPECT:2]
+    recipe: [DRAGON_EGG, DIAMOND_SWORD, NETHER_STAR, FRAGMENT_T4:2]
 
   # --------------------------------------------------------------------------
   # Hellstorm -- a volley weapon on a long cooldown. The heavy arrow can break blocks
@@ -296,15 +235,6 @@ weapons:
     material: CROSSBOW
     custom-model-data: 5
     power-tier: 3
-    lore:
-      - "§8Five shots, one breath."
-      - ""
-      - "§7Shoot  §f»  §7volley of §e{n:arrow-count} §7burning arrows"
-      - "§7Final arrow  §f»  §7explodes on impact"
-      - ""
-      - "§7Cooldown  §f»  §f{s:cooldown}"
-      - "§8Arrows fly flat and never drop."
-      - "§8Shoots normal bolts while the volley recharges."
     abilities:
       arrow-count: 5
       normal-arrow-damage: 4.0
@@ -314,18 +244,10 @@ weapons:
       volley-interval: 3                # ticks between volley arrows (was 5)
       arrow-speed: 3.2                  # vanilla crossbow is 3.15
       cooldown: 600                     # 30s; between volleys it shoots normal bolts
-    enchantments:
-      - "QUICK_CHARGE:3"
-      - "MULTISHOT:1"
-    recipe:
-      - CROSSBOW
-      - FIRE_CHARGE:64
-      - TNT:16
-      - FRAGMENT_T3:2
+    enchantments: [QUICK_CHARGE:3, MULTISHOT:1]
+    recipe: [CROSSBOW, FIRE_CHARGE:64, TNT:16, FRAGMENT_T3:2]
 
-  # --------------------------------------------------------------------------
-  # Lost Trident Of Atlantis -- trident = 9 base damage
-  # --------------------------------------------------------------------------
+  # ---- Lost Trident Of Atlantis -- trident = 9 base damage
   lost-trident-of-atlantis:
     display-name: "§3§lLost Trident Of Atlantis"
     material: TRIDENT
@@ -334,17 +256,6 @@ weapons:
     melee:                              # swings like a sword, hits like a netherite sword
       attack-damage: 8.0
       attack-speed: 1.6
-    lore:
-      - "§8Dredged from a city that drowned."
-      - ""
-      - "§7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts"
-      - "§8  Once every {s:throw-cooldown}."
-      - "§7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}"
-      - "§8  Stops enemy arrows and pearls, slows anyone wading"
-      - "§8  through, then crashes forward for §3{h:water-wall-crash-damage} hearts§8."
-      - ""
-      - "§7Wall cooldown  §f»  §f{s:water-wall-cooldown}"
-      - "§8The water boils away in the Nether."
     abilities:
       throw-cooldown: 80                # 4s between throws (the trident greys out until then)
       pulse-radius: 4.0
@@ -359,33 +270,15 @@ weapons:
       water-wall-slowness: 30           # ticks of Slowness II on enemies inside the wall
       water-wall-crash-damage: 4.0      # the wave when the wall ends
       water-wall-crash-range: 5.0
-    enchantments:
-      - "LOYALTY:3"
-      - "IMPALING:5"
-    recipe:
-      - TRIDENT
-      - HEART_OF_THE_SEA
-      - PRISMARINE_CRYSTALS:32
-      - FRAGMENT_T2:2
+    enchantments: [LOYALTY:3, IMPALING:5]
+    recipe: [TRIDENT, HEART_OF_THE_SEA, PRISMARINE_CRYSTALS:32, FRAGMENT_T2:2]
 
-  # --------------------------------------------------------------------------
-  # Hermes's Blade -- netherite sword = 8 base damage
-  # --------------------------------------------------------------------------
+  # ---- Hermes's Blade -- netherite sword = 8 base damage
   hermes-blade:
     display-name: "§f§lHermes's Blade"
     material: NETHERITE_SWORD
     custom-model-data: 7
     power-tier: 1
-    lore:
-      - "§8Nothing that runs gets away."
-      - ""
-      - "§7First kill  §f»  §7Speed I"
-      - "§7Second kill  §f»  §7Speed II"
-      - "§7Ability  §f»  §7dash forward, through players"
-      - "§8  Anyone you pass is slowed for {s:dash-slowness-duration}."
-      - ""
-      - "§7Dash cooldown  §f»  §f{s:dash-cooldown}"
-      - "§8Dying resets your kills."
     abilities:
       kills-for-speed-1: 1
       kills-for-speed-2: 2
@@ -397,13 +290,8 @@ weapons:
       dash-hit-radius: 1.6
       dash-slowness-duration: 60        # 3s
       dash-slowness-amplifier: 1
-    enchantments:
-      - "SHARPNESS:4"
-    recipe:
-      - NETHERITE_SWORD
-      - FEATHER:64
-      - SUGAR:64
-      - FRAGMENT_T1:2
+    enchantments: [SHARPNESS:4]
+    recipe: [NETHERITE_SWORD, FEATHER:64, SUGAR:64, FRAGMENT_T1:2]
 
   # --------------------------------------------------------------------------
   # Chione's Blade -- netherite sword = 8 base damage
@@ -415,17 +303,6 @@ weapons:
     material: NETHERITE_SWORD
     custom-model-data: 8
     power-tier: 2
-    lore:
-      - "§8Her breath stops the blood."
-      - ""
-      - "§7{n:combo-hits-required} hits on a player  §f»  §7frozen for {s:freeze-duration}"
-      - "§8  Then immune to freezing for {s:freeze-immunity}."
-      - "§7Ability  §f»  §7Ice Wave, {n:ice-wave-range} blocks"
-      - "§8  Slowness II for {s:ice-wave-slowness-duration}, leaves frost for {s:frost-duration}"
-      - "§7On frost, ice or snow  §f»  §7Speed II"
-      - ""
-      - "§7Wave cooldown  §f»  §f{s:ice-wave-cooldown}"
-      - "§8Taking a hit resets your combo."
     abilities:
       combo-hits-required: 5
       combo-window-millis: 3000         # MILLISECONDS between hits before the streak resets
@@ -441,13 +318,8 @@ weapons:
       ice-wave-slowness-duration: 80    # 4s
       ice-wave-slowness-amplifier: 1    # Slowness II
       frost-duration: 120               # 6s of frost left on the ground
-    enchantments:
-      - "SHARPNESS:3"
-    recipe:
-      - NETHERITE_SWORD
-      - POWDER_SNOW_BUCKET
-      - BLUE_ICE:16
-      - FRAGMENT_T2:2
+    enchantments: [SHARPNESS:3]
+    recipe: [NETHERITE_SWORD, POWDER_SNOW_BUCKET, BLUE_ICE:16, FRAGMENT_T2:2]
 
   # --------------------------------------------------------------------------
   # Titan's Axe -- netherite axe = 10 base damage
@@ -459,18 +331,6 @@ weapons:
     material: NETHERITE_AXE
     custom-model-data: 9
     power-tier: 3
-    lore:
-      - "§8It does not cut. It ruins."
-      - ""
-      - "§7{n:crit-streak-required} charged hits  §f»  §7-{n:crit-streak-armour-damage} durability on each armour piece"
-      - "§7Against a shield  §f»  §7disabled {s:shield-break-duration}"
-      - "§7Each charged hit on a player  §f»  §6+{n:slam-charge-per-hit}% §7Slam"
-      - "§7Ability at 100%  §f»  §7Slam: {n:slam-radius} block radius"
-      - "§8  Up to {h:slam-damage} hearts, {pct:slam-armour-pierce} of it through armour"
-      - "§8  Knockback {n:slam-knockback}, up to -{n:slam-armour-damage} armour durability"
-      - ""
-      - "§7Slam cooldown  §f»  §f{s:slam-cooldown}"
-      - "§8The meter drains out of combat."
     abilities:
       crit-streak-required: 3
       crit-streak-window-millis: 4000
@@ -491,14 +351,8 @@ weapons:
       slam-armour-pierce: 0.4           # share of the hit that ignores armour and Protection
       slam-knockback: 1.6
       slam-armour-damage: 40            # at the epicentre, falling to 0 at the rim
-    enchantments:
-      - "SHARPNESS:4"
-      - "UNBREAKING:3"
-    recipe:
-      - NETHERITE_AXE
-      - ANCIENT_DEBRIS:8
-      - ANVIL
-      - FRAGMENT_T3:2
+    enchantments: [SHARPNESS:4, UNBREAKING:3]
+    recipe: [NETHERITE_AXE, ANCIENT_DEBRIS:8, ANVIL, FRAGMENT_T3:2]
 
   # --------------------------------------------------------------------------
   # Blade of Diminution -- netherite sword = 8 base damage
@@ -510,16 +364,6 @@ weapons:
     material: NETHERITE_SWORD
     custom-model-data: 10
     power-tier: 2
-    lore:
-      - "§8Size is only a suggestion."
-      - ""
-      - "§7Held  §f»  §7Speed I"
-      - "§7Ability  §f»  §7shrink yourself to {x:diminish-scale} for {s:diminish-duration}"
-      - "§8  A smaller target - but your reach shrinks too."
-      - "§7On hit  §f»  §7{pct:enlarge-chance} chance to enlarge them ({x:enlarge-scale})"
-      - "§8  A bigger target is an easier one."
-      - ""
-      - "§7Cooldown  §f»  §f{s:diminish-cooldown}"
     abilities:
       hold-speed-amplifier: 0           # Speed I
       diminish-scale: 0.6               # 0.2 - 3.0
@@ -532,13 +376,8 @@ weapons:
       enlarge-duration: 100             # 5s
       enlarge-target-cooldown: 200      # the same target cannot be enlarged again for 10s after
       fix-legacy-scale: true            # reset sizes stuck by 1.1 on join
-    enchantments:
-      - "SHARPNESS:3"
-    recipe:
-      - NETHERITE_SWORD
-      - ECHO_SHARD:8
-      - AMETHYST_BLOCK:4
-      - FRAGMENT_T2:2
+    enchantments: [SHARPNESS:3]
+    recipe: [NETHERITE_SWORD, ECHO_SHARD:8, AMETHYST_BLOCK:4, FRAGMENT_T2:2]
 
   # --------------------------------------------------------------------------
   # Luminosity -- the mace. Keeps vanilla's fall-damage smash on top of this.
@@ -550,18 +389,6 @@ weapons:
     material: MACE
     custom-model-data: 11
     power-tier: 4
-    lore:
-      - "§8The last light a thing ever sees."
-      - ""
-      - "§7Sneak + ability  §f»  §7dash"
-      - "§8  {n:dash-charges} dash charges. Each charge takes {s:dash-recharge} to come back."
-      - "§8  Using both puts a {s:dash-lockout} lockout on dashing."
-      - "§7Each hit on a player  §f»  §e+{n:ultimate-charge-per-hit}% §7SuperNova"
-      - "§7Ability  §f»  §7SuperNova: leap and slam the ground"
-      - "§8  Up to {h:supernova-damage} hearts, never more than {pct:supernova-max-health-fraction} of a target's health."
-      - "§8  Everyone it hits glows for {s:supernova-glow-duration}."
-      - ""
-      - "§8Usable from {n:supernova-min-charge}%. The meter drains out of combat."
     abilities:
       dash-charges: 2
       dash-recharge: 160                # 8s per charge
@@ -588,15 +415,8 @@ weapons:
       supernova-glow-duration: 60      # ticks targets hit by SuperNova glow (0 = off)
       supernova-break-blocks: false     # only where the user may build, even when on
       supernova-block-power: 2.0
-    enchantments:
-      - "DENSITY:5"
-      - "UNBREAKING:3"
-    recipe:
-      - MACE
-      - NETHER_STAR
-      - END_CRYSTAL:4
-      - FRAGMENT_T4:2
-      - LUMINOSITY_FRAGMENT:3
+    enchantments: [DENSITY:5, UNBREAKING:3]
+    recipe: [MACE, NETHER_STAR, END_CRYSTAL:4, FRAGMENT_T4:2, LUMINOSITY_FRAGMENT:3]
 
   # --------------------------------------------------------------------------
   # Veil of Mimicry -- a book. Deals no damage at all.
@@ -609,18 +429,6 @@ weapons:
     material: BOOK
     custom-model-data: 12
     power-tier: 3
-    lore:
-      - "§8Wear a face that is not yours."
-      - ""
-      - "§7Ability  §f»  §7become any player who has joined"
-      - "§8  Their name, their skin, their chat."
-      - ""
-      - "§7Fails if anyone within {n:witness-range} blocks can see you"
-      - "§7Anyone within {n:sound-mask-range} blocks hears it happen"
-      - "§7Breaks when you attack, take {h:break-damage-threshold}+ hearts,"
-      - "§7or use the book again"
-      - ""
-      - "§7Cooldown  §f»  §f{s:morph-cooldown}"
     abilities:
       morph-cooldown: 4800              # 4 minutes, after a successful morph
       failed-morph-cooldown: 200        # 10s when someone saw you
@@ -635,11 +443,7 @@ weapons:
       custom-nametag: true              # Most Wanted: float the alias as a tag (Veil disguises always do, their real name stays on the server)
       reveal-on-commands: [ban, tempban, ban-ip, ipban, kick, mute, tempmute, warn, jail, op, deop, pardon, unban, whitelist]   # staff commands naming a disguise strip it first, so they hit the real owner
     enchantments: []
-    recipe:
-      - BOOK
-      - ECHO_SHARD:16
-      - NAME_TAG
-      - FRAGMENT_T3:2
+    recipe: [BOOK, ECHO_SHARD:16, NAME_TAG, FRAGMENT_T3:2]
 
   # --------------------------------------------------------------------------
   # Tether Chain -- a lead-style weapon. Hooks a target and drags them to you. A target caught
@@ -650,14 +454,6 @@ weapons:
     material: LEAD
     custom-model-data: 13
     power-tier: 2
-    lore:
-      - "§8Nobody outruns the chain."
-      - ""
-      - "§7Ability  §f»  §7throw a hook up to {n:hook-range} blocks"
-      - "§8  Drags whoever it catches to you."
-      - "§7Catch someone mid-dash  §f»  §7no dashing for {s:dash-lock-duration}"
-      - ""
-      - "§7Cooldown  §f»  §f{s:hook-cooldown}"
     abilities:
       hook-cooldown: 240                # 12s
       hook-range: 18.0
@@ -665,14 +461,8 @@ weapons:
       pull-lift: 0.35
       hook-slowness-duration: 20        # 1s of Slowness I after the pull
       dash-lock-duration: 60            # 3s
-    enchantments:
-      - "UNBREAKING:3"
-    recipe:
-      - LEAD:4
-      - IRON_BLOCK:4
-      - TRIPWIRE_HOOK:2
-      - FRAGMENT_T2:2
-
+    enchantments: [UNBREAKING:3]
+    recipe: [LEAD:4, IRON_BLOCK:4, TRIPWIRE_HOOK:2, FRAGMENT_T2:2]
 
 # ============================================================================
 #  Rituals

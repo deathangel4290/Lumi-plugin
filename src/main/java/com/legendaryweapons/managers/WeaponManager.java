@@ -23,16 +23,19 @@ public class WeaponManager {
    private final Map<String, ItemStack> legendaryWeapons = new LinkedHashMap<>();
    private final NamespacedKey revisionKey;
    private final NamespacedKey splitKey;
+   private final com.legendaryweapons.items.WeaponLore lore;
 
    public WeaponManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
       this.configManager = plugin.getConfigManager();
+      this.lore = new com.legendaryweapons.items.WeaponLore(plugin);
       this.revisionKey = new NamespacedKey(plugin, "lore-revision");
       this.splitKey = new NamespacedKey(plugin, "eclipse-split-sword");
       this.loadWeapons();
    }
 
    public void reload() {
+      this.lore.reload();
       this.legendaryWeapons.clear();
       this.loadWeapons();
    }
@@ -43,32 +46,15 @@ public class WeaponManager {
       }
    }
 
-   private static String tierLine(int tier) {
-      String colour = switch (tier) {
-         case 1 -> "§7";
-         case 2 -> "§a";
-         case 3 -> "§b";
-         default -> "§6";
-      };
-      return "§8Power  " + colour + "◆".repeat(tier) + "§8" + "◇".repeat(Math.max(0, 4 - tier));
-   }
-
    public ItemStack createWeapon(String weaponKey) {
       Material material = this.configManager.getWeaponMaterial(weaponKey);
       ItemStack weapon = new ItemStack(material);
       ItemMeta meta = weapon.getItemMeta();
       if (meta != null) {
          String displayName = this.configManager.getWeaponDisplayName(weaponKey);
-         List<String> lore = new ArrayList<>(this.configManager.getWeaponLore(weaponKey));
-         int tier = this.configManager.getWeaponPowerTier(weaponKey);
-         if (tier > 0) {
-            lore.add("");
-            lore.add(tierLine(tier));
-         }
-
          Map<Enchantment, Integer> enchantments = this.configManager.getWeaponEnchantments(weaponKey);
          meta.setDisplayName(displayName);
-         meta.setLore(lore);
+         meta.lore(this.lore.build(weaponKey));
          meta.setUnbreakable(true);
          int customModelData = this.configManager.getWeaponCustomModelData(weaponKey);
          if (customModelData > 0) {
@@ -116,12 +102,21 @@ public class WeaponManager {
       meta.setUseCooldown(cooldown);
    }
 
+   private String lorePlain(String weaponKey) {
+      StringBuilder text = new StringBuilder();
+      for (net.kyori.adventure.text.Component line : this.lore.build(weaponKey)) {
+         text.append(net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(line)).append('\n');
+      }
+
+      return text.toString();
+   }
+
    /** A fingerprint of the configured name, lore, model and melee stats; items carrying an older one get refreshed. */
    private int revision(String weaponKey) {
       double[] melee = this.configManager.getWeaponMelee(weaponKey);
       return (this.configManager.getWeaponDisplayName(weaponKey)
             + (melee == null ? "" : melee[0] + "/" + melee[1])
-            + this.configManager.getWeaponLore(weaponKey)
+            + this.lorePlain(weaponKey)
             + this.configManager.getWeaponCustomModelData(weaponKey)
             + this.configManager.getWeaponPowerTier(weaponKey)
             + "|cooldown-group")
@@ -152,7 +147,7 @@ public class WeaponManager {
                } else {
                   ItemMeta fresh = this.legendaryWeapons.get(weaponKey).getItemMeta();
                   meta.setDisplayName(fresh.getDisplayName());
-                  meta.setLore(fresh.getLore());
+                  meta.lore(fresh.lore());
                   meta.setCustomModelDataComponent(fresh.getCustomModelDataComponent());
                   this.applyMelee(meta, weaponKey);
                   applyCooldownGroup(meta, weaponKey);

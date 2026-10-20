@@ -1,0 +1,295 @@
+# Lore lists that shipped as defaults in older versions. A server whose config.yml still has
+# one of these untouched gets it removed, so the weapon uses the new lore from lore.yml.
+# Bundled in the jar only; not copied to the server.
+scythe-of-diablo:
+- - §8Reaps what it kills.
+  - ''
+  - §7Kill a player  §f»  §7heal to full
+  - §7Strike from behind  §f»  §c{x:backstab-damage-multiplier} §7damage
+  - §7Sweep attacks  §f»  §c{x:sweep-damage-multiplier} §7damage
+  - §7{n:combo-hits-required} hits on a player  §f»  §7Absorption for {s:combo-absorption-duration}
+  - ''
+  - §8Taking a hit resets your combo. Sweeps build no combo.
+- - §8Reaps what it kills.
+  - ''
+  - §7Kill a player  §f»  §7heal to full
+  - §7Strike from behind  §f»  §c1.35x §7damage
+  - §7Sweep attacks  §f»  §c1.25x §7damage
+  - §75 hits on a player  §f»  §7Absorption, 2 hearts
+  - ''
+  - §8Taking a hit resets your combo.
+  - §8Sweeps build no combo.
+ender-glaive:
+- - §8Folded from the space between worlds.
+  - ''
+  - §7Ability  §f»  §7throw the glaive, §d{h:spear-damage} hearts
+  - §8  It finds its way back to you.
+  - §7Sneak + hold ability  §f»  §7charge a Spear Pearl
+  - ''
+  - §7Pearl cooldown  §f»  §f{s:pearl-cooldown}
+- - §8Folded from the space between worlds.
+  - ''
+  - §7Ability  §f»  §7throw the glaive, §d5 §7damage
+  - §8  It finds its way back to you.
+  - §7Sneak + hold ability  §f»  §7charge a Spear Pearl
+  - §8  Tells you when it hits 100%.
+  - ''
+  - §7Pearl cooldown  §f»  §710s
+axe-of-zeus:
+- - §8The storm answers when it is thrown.
+  - ''
+  - §7Ability  §f»  §7hurl the axe, §b{h:throw-damage} hearts
+  - §7On hit  §f»  §7stunned {s:throw-stun-duration}, then Weakness {s:throw-weakness-duration}
+  - §7Returns on its own, hit or miss
+  - §7Charged melee  §f»  §7{pct:melee-lightning-chance} to strike lightning
+  - §7Against a shield  §f»  §7disabled {s:shield-break-duration}
+  - ''
+  - §7Cooldown  §f»  §f{s:throw-cooldown}
+- - §8The storm answers when it is thrown.
+  - ''
+  - §7Ability  §f»  §7hurl the axe, §b8 §7damage
+  - §8  Calls lightning where it lands.
+  - §7On hit  §f»  §7stunned 2s, then Weakness 5s
+  - §7Returns on its own, hit or miss
+  - §7Charged melee  §f»  §710% to strike lightning
+  - §7Against a shield  §f»  §7disabled 8s
+  - ''
+  - §7Cooldown  §f»  §710s
+sword-of-eclipse:
+- - §8Light and dark held in one edge.
+  - ''
+  - §7Grows every {n:kills-per-stage} player kills  §f»  §7up to §d+{n:stage-4-damage-bonus} §7damage
+  - §7Charged hits  §f»  §7{pct:blindness-chance} chance to blind for §f{s:blindness-duration}
+  - §7Ability (after {n:kills-per-stage}x3 kills)  §f»  §7split in two for {s:dual-wield-duration}
+  - §7Kills while split  §f»  §d+1 heart §7(max 3)
+  - ''
+  - §7Split cooldown  §f»  §f{s:dual-wield-cooldown}
+  - §8Main hand only. Dying resets your progress.
+- - §8Light and dark held in one edge.
+  - ''
+  - §7Grows every {n:kills-per-stage} player kills  §f»  §7up to §d+{n:stage-4-damage-bonus} §7damage
+  - §7Charged hits  §f»  §7{pct:blindness-chance} chance to blind
+  - §7Ability (after {n:kills-per-stage}x3 kills)  §f»  §7split in two for {s:dual-wield-duration}
+  - §7Kills while split  §f»  §d+1 heart §7(max 3)
+  - ''
+  - §7Split cooldown  §f»  §f{s:dual-wield-cooldown}
+  - §8Main hand only. Dying resets your progress.
+- - §8Light and dark held in one edge.
+  - ''
+  - §7Grows with every player you kill
+  - §74 stages  §f»  §7up to §d+3 §7damage
+  - §7Charged hits  §f»  §725% chance to blind
+  - §79 kills  §f»  §7ability splits it in two, 10s
+  - §7Kills while split  §f»  §d+1 heart §7(max 3)
+  - ''
+  - §7Split cooldown  §f»  §760s
+  - §8Dying resets your progress and hearts.
+hellstorm:
+- - §8Five shots, one breath.
+  - ''
+  - §7Shoot  §f»  §7volley of §e{n:arrow-count} §7burning arrows
+  - §7Final arrow  §f»  §7explodes on impact
+  - ''
+  - §7Cooldown  §f»  §f{s:cooldown}
+  - §8Arrows fly flat and never drop.
+  - §8Shoots normal bolts while the volley recharges.
+- - §8Five shots, one breath.
+  - ''
+  - §7Shoot  §f»  §7volley of §e{n:arrow-count} §7burning arrows
+  - §7Final arrow  §f»  §7explodes on impact
+  - ''
+  - §7Cooldown  §f»  §f{s:cooldown}
+  - §8Arrows fly flat and never drop.
+- - §8Five shots, one breath.
+  - ''
+  - §7Shoot  §f»  §7volley of §e5 §7burning arrows
+  - §7Final arrow  §f»  §7explodes on impact
+  - §8  It will break blocks.
+  - ''
+  - §7Cooldown  §f»  §730s
+  - §8Arrows fly flat and never drop.
+lost-trident-of-atlantis:
+- - §8Dredged from a city that drowned.
+  - ''
+  - §7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts
+  - §8  Once every {s:throw-cooldown}.
+  - §7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}
+  - §8  Stops enemy arrows and pearls, slows anyone wading
+  - §8  through, then crashes forward for §3{h:water-wall-crash-damage} hearts§8.
+  - ''
+  - §7Wall cooldown  §f»  §f{s:water-wall-cooldown}
+  - §8The water boils away in the Nether.
+- - §8Dredged from a city that drowned.
+  - ''
+  - §7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts
+  - §7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}
+  - §8  Stops enemy arrows and pearls, slows anyone wading
+  - §8  through, then crashes forward for §3{h:water-wall-crash-damage} hearts§8.
+  - ''
+  - §7Wall cooldown  §f»  §f{s:water-wall-cooldown}
+  - §8The water boils away in the Nether.
+- - §8Dredged from a city that drowned.
+  - ''
+  - §7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts
+  - §7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}
+  - §8  Shoves anyone near it clear.
+  - ''
+  - §7Wall cooldown  §f»  §f{s:water-wall-cooldown}
+  - §8The water boils away in the Nether.
+- - §8Dredged from a city that drowned.
+  - ''
+  - §7Throw  §f»  §7water pulse on impact, §36 §7damage
+  - §8  Returns to your hand.
+  - §7Sneak + ability  §f»  §7raise a water wall
+  - §8  Shoves anyone near it clear.
+  - ''
+  - §7Wall cooldown  §f»  §78s
+  - §8The water boils away in the Nether.
+hermes-blade:
+- - §8Nothing that runs gets away.
+  - ''
+  - §7First kill  §f»  §7Speed I
+  - §7Second kill  §f»  §7Speed II
+  - §7Ability  §f»  §7dash forward, through players
+  - §8  Anyone you pass is slowed for {s:dash-slowness-duration}.
+  - ''
+  - §7Dash cooldown  §f»  §f{s:dash-cooldown}
+  - §8Dying resets your kills.
+- - §8Nothing that runs gets away.
+  - ''
+  - §7First kill  §f»  §7Speed I
+  - §7Second kill  §f»  §7Speed II
+  - §7Ability  §f»  §7dash forward, through players
+  - §8  Anyone you pass is slowed.
+  - ''
+  - §7Dash cooldown  §f»  §75s
+  - §8Dying resets your kills.
+chiones-blade:
+- - §8Her breath stops the blood.
+  - ''
+  - §7{n:combo-hits-required} hits on a player  §f»  §7frozen for {s:freeze-duration}
+  - §8  Then immune to freezing for {s:freeze-immunity}.
+  - §7Ability  §f»  §7Ice Wave, {n:ice-wave-range} blocks
+  - §8  Slowness II for {s:ice-wave-slowness-duration}, leaves frost for {s:frost-duration}
+  - §7On frost, ice or snow  §f»  §7Speed II
+  - ''
+  - §7Wave cooldown  §f»  §f{s:ice-wave-cooldown}
+  - §8Taking a hit resets your combo.
+- - §8Her breath stops the blood.
+  - ''
+  - §75 hits on a player  §f»  §7frozen in place
+  - §7Ability  §f»  §7Ice Wave, slows all it passes
+  - §7On ice or snow  §f»  §7Speed II
+  - ''
+  - §7Wave cooldown  §f»  §710s
+  - §8Taking a hit resets your combo.
+  - §8Sweeps build no combo.
+titans-axe:
+- - §8It does not cut. It ruins.
+  - ''
+  - §7{n:crit-streak-required} charged hits  §f»  §7-{n:crit-streak-armour-damage} durability on each armour piece
+  - §7Against a shield  §f»  §7disabled {s:shield-break-duration}
+  - §7Each charged hit on a player  §f»  §6+{n:slam-charge-per-hit}% §7Slam
+  - '§7Ability at 100%  §f»  §7Slam: {n:slam-radius} block radius'
+  - §8  Up to {h:slam-damage} hearts, {pct:slam-armour-pierce} of it through armour
+  - §8  Knockback {n:slam-knockback}, up to -{n:slam-armour-damage} armour durability
+  - ''
+  - §7Slam cooldown  §f»  §f{s:slam-cooldown}
+  - §8The meter drains out of combat.
+- - §8It does not cut. It ruins.
+  - ''
+  - §7{n:crit-streak-required} charged hits  §f»  §7-{n:crit-streak-armour-damage} durability on each armour piece
+  - §7Against a shield  §f»  §7disabled {s:shield-break-duration}
+  - §7Each charged hit on a player  §f»  §6+{n:slam-charge-per-hit}% §7Slam
+  - '§7Ability at 100%  §f»  §7Slam: {n:slam-radius} block radius'
+  - §8  Knockback {n:slam-knockback}, up to -{n:slam-armour-damage} armour durability
+  - ''
+  - §7Slam cooldown  §f»  §f{s:slam-cooldown}
+  - §8The meter drains out of combat.
+- - §8It does not cut. It ruins.
+  - ''
+  - §73 charged crits  §f»  §7cracks their armour
+  - §7Against a shield  §f»  §7disabled 10s
+  - §7Every hit banks Slam charge
+  - §7Ability at 100%  §f»  §7slam the ground
+  - §8  The closer they are, the more armour breaks.
+blade-of-diminution:
+- - §8Size is only a suggestion.
+  - ''
+  - §7Held  §f»  §7Speed I
+  - §7Ability  §f»  §7shrink yourself to {x:diminish-scale} for {s:diminish-duration}
+  - §8  A smaller target - but your reach shrinks too.
+  - §7On hit  §f»  §7{pct:enlarge-chance} chance to enlarge them ({x:enlarge-scale})
+  - §8  A bigger target is an easier one.
+  - ''
+  - §7Cooldown  §f»  §f{s:diminish-cooldown}
+- - §8Size is only a suggestion.
+  - ''
+  - §7Held  §f»  §7Speed I
+  - §7Ability  §f»  §7shrink who you are aiming at
+  - §8  Reach shrinks with them.
+  - §7On hit  §f»  §715% chance to enlarge them
+  - §8  A bigger target is an easier one.
+  - ''
+  - §7Cooldown  §f»  §712s
+luminosity:
+- - §8The last light a thing ever sees.
+  - ''
+  - §7Sneak + ability  §f»  §7dash
+  - §8  {n:dash-charges} dash charges. Each charge takes {s:dash-recharge} to come back.
+  - §8  Using both puts a {s:dash-lockout} lockout on dashing.
+  - §7Each hit on a player  §f»  §e+{n:ultimate-charge-per-hit}% §7SuperNova
+  - '§7Ability  §f»  §7SuperNova: leap and slam the ground'
+  - §8  Up to {h:supernova-damage} hearts, never more than {pct:supernova-max-health-fraction} of a target's health.
+  - §8  Everyone it hits glows for {s:supernova-glow-duration}.
+  - ''
+  - §8Usable from {n:supernova-min-charge}%. The meter drains out of combat.
+- - §8The last light a thing ever sees.
+  - ''
+  - §7Sneak + ability  §f»  §7dash
+  - §8  {n:dash-charges} dash charges. Each charge takes {s:dash-recharge} to come back.
+  - §8  Using both puts a {s:dash-lockout} lockout on dashing.
+  - §7Each hit on a player  §f»  §e+{n:ultimate-charge-per-hit}% §7SuperNova
+  - '§7Ability  §f»  §7SuperNova: leap and slam the ground'
+  - §8  Up to {h:supernova-damage} hearts, never more than {pct:supernova-max-health-fraction} of a target's health.
+  - ''
+  - §8Usable from {n:supernova-min-charge}%. The meter drains out of combat.
+- - §8The last light a thing ever sees.
+  - ''
+  - §7Sneak + ability  §f»  §7dash §e(2 charges)§7
+  - §8  Spacing them keeps one in reserve.
+  - §7Each hit on a player  §f»  §e+20% §7SuperNova
+  - §7Ability  §f»  §7SuperNova, slam the ground
+  - §8  Directly beneath you is the worst place to stand.
+  - ''
+  - §8Usable from 20%, but weaker the emptier it is.
+veil-of-mimicry:
+- - §8Wear a face that is not yours.
+  - ''
+  - §7Ability  §f»  §7become any player who has joined
+  - §8  Their name, their skin, their chat.
+  - ''
+  - §7Fails if anyone within {n:witness-range} blocks can see you
+  - §7Anyone within {n:sound-mask-range} blocks hears it happen
+  - §7Breaks when you attack, take {h:break-damage-threshold}+ hearts,
+  - §7or use the book again
+  - ''
+  - §7Cooldown  §f»  §f{s:morph-cooldown}
+- - §8Wear a face that is not yours.
+  - ''
+  - §7Ability  §f»  §7choose any player who has joined
+  - §8  Their name, their skin, their chat.
+  - §8  A fake join line announces them.
+  - ''
+  - §7The morph fails if anyone sees you do it
+  - §7Breaks when you  §f»  §7attack, take a real hit,
+  - §7or use the book again
+  - §8Light hits may show ??? instead of breaking it.
+tether-chain:
+- - §8Nobody outruns the chain.
+  - ''
+  - §7Ability  §f»  §7throw a hook up to {n:hook-range} blocks
+  - §8  Drags whoever it catches to you.
+  - §7Catch someone mid-dash  §f»  §7no dashing for {s:dash-lock-duration}
+  - ''
+  - §7Cooldown  §f»  §f{s:hook-cooldown}

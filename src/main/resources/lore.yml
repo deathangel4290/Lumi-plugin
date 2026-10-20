@@ -1,0 +1,164 @@
+# ============================================================================
+#  Legendary weapon lore. Edit it freely; /lw reload (or any change in the
+#  settings menu) applies it, and weapons players already own update too.
+#
+#  Each line is "what | result". The numbers come from the weapon's abilities
+#  in config.yml, so lore and balance never drift apart:
+#    {s:key} seconds    {h:key} hearts    {n:key} number
+#    {pct:key} percent  {x:key} multiplier
+#  A line starting with "~" is a small note under the line above it.
+#
+#  Sections: flavour (one line), passives, ability, cooldowns, notes.
+#  "Passives" also work from the off-hand when passives.off-hand is on.
+#  A weapon with its own "lore:" list in config.yml uses that instead.
+# ============================================================================
+
+scythe-of-diablo:
+  flavour: "Reaps what it kills."
+  passives:
+    - "Kill a player | heal to full"
+    - "Strike from behind | {x:backstab-damage-multiplier} damage"
+    - "Sweep attacks | {x:sweep-damage-multiplier} damage"
+    - "{n:combo-hits-required} hits on a player | Absorption for {s:combo-absorption-duration}"
+    - "~Taking a hit resets the combo. Sweeps don't build it."
+
+ender-glaive:
+  flavour: "Folded from the space between worlds."
+  ability:
+    - "Throw the glaive | {h:spear-damage}❤ damage"
+    - "~It finds its way back to you."
+    - "Sneak + hold ability | charge a Spear Pearl"
+    - "~Hold longer to throw it further."
+  cooldowns:
+    - "Pearl | {s:pearl-cooldown}"
+
+axe-of-zeus:
+  flavour: "The storm answers when it is thrown."
+  passives:
+    - "Charged hits | {pct:melee-lightning-chance} chance of lightning"
+    - "Against a shield | disabled for {s:shield-break-duration}"
+  ability:
+    - "Hurl the axe | {h:throw-damage}❤ damage"
+    - "~Stuns for {s:throw-stun-duration}, then Weakness for {s:throw-weakness-duration}."
+    - "~Comes back on its own, hit or miss."
+  cooldowns:
+    - "Throw | {s:throw-cooldown}"
+
+sword-of-eclipse:
+  flavour: "Light and dark held in one edge."
+  passives:
+    - "Every {n:kills-per-stage} player kills | grows a stage, up to +{n:stage-4-damage-bonus} damage"
+    - "Charged hits | {pct:blindness-chance} chance to blind for {s:blindness-duration}"
+  ability:
+    - "At stage 4 | split in two for {s:dual-wield-duration}"
+    - "Kills while split | +1❤ max health (up to 3❤)"
+  cooldowns:
+    - "Split | {s:dual-wield-cooldown}"
+  notes:
+    - "Main hand only. Dying resets its growth."
+
+hellstorm:
+  flavour: "Five shots, one breath."
+  ability:
+    - "Shoot | a volley of {n:arrow-count} burning arrows"
+    - "Last arrow | explodes on impact for {h:explosive-arrow-damage}❤"
+    - "~Arrows fly flat and never drop."
+  cooldowns:
+    - "Volley | {s:cooldown}"
+  notes:
+    - "Shoots normal bolts while the volley recharges."
+
+lost-trident-of-atlantis:
+  flavour: "Dredged from a city that drowned."
+  ability:
+    - "Throw | water pulse on impact, {h:pulse-damage}❤"
+    - "Sneak + ability | a water wall for {s:water-wall-duration}"
+    - "~Stops enemy arrows and pearls and slows anyone wading in,"
+    - "~then crashes forward for {h:water-wall-crash-damage}❤."
+  cooldowns:
+    - "Throw | {s:throw-cooldown}"
+    - "Wall | {s:water-wall-cooldown}"
+  notes:
+    - "The water boils away in the Nether."
+
+hermes-blade:
+  flavour: "Nothing that runs gets away."
+  passives:
+    - "First kill | Speed I"
+    - "Second kill | Speed II"
+    - "~Dying resets your kills."
+  ability:
+    - "Dash | forward, straight through players"
+    - "~Anyone you pass is slowed for {s:dash-slowness-duration}."
+  cooldowns:
+    - "Dash | {s:dash-cooldown}"
+
+chiones-blade:
+  flavour: "Her breath stops the blood."
+  passives:
+    - "{n:combo-hits-required} hits on a player | frozen for {s:freeze-duration}"
+    - "~Then they can't be frozen again for {s:freeze-immunity}."
+    - "On ice, snow or frost | Speed II"
+  ability:
+    - "Ice Wave | {n:ice-wave-range} blocks long"
+    - "~Slowness for {s:ice-wave-slowness-duration}, and frost on the ground for {s:frost-duration}."
+  cooldowns:
+    - "Ice Wave | {s:ice-wave-cooldown}"
+
+titans-axe:
+  flavour: "It does not cut. It ruins."
+  passives:
+    - "{n:crit-streak-required} charged hits in a row | -{n:crit-streak-armour-damage} durability on all armour"
+    - "Against a shield | disabled for {s:shield-break-duration}"
+  ability:
+    - "Charged hits on players | +{n:slam-charge-per-hit}% Slam"
+    - "Slam at 100% | {n:slam-radius} blocks around you"
+    - "~Up to {h:slam-damage}❤, {pct:slam-armour-pierce} of it through armour."
+    - "~The meter drains when you're out of combat."
+  cooldowns:
+    - "Slam | {s:slam-cooldown}"
+
+blade-of-diminution:
+  flavour: "Size is only a suggestion."
+  passives:
+    - "Held | Speed I"
+    - "On hit | {pct:enlarge-chance} chance to enlarge them ({x:enlarge-scale})"
+    - "~A bigger target is an easier one."
+  ability:
+    - "Shrink | to {x:diminish-scale} for {s:diminish-duration}"
+    - "~A smaller target, but your reach shrinks too."
+  cooldowns:
+    - "Diminish | {s:diminish-cooldown}"
+
+luminosity:
+  flavour: "The last light a thing ever sees."
+  ability:
+    - "Sneak + ability | dash ({n:dash-charges} charges)"
+    - "~Each charge comes back after {s:dash-recharge}. Using both locks dashing for {s:dash-lockout}."
+    - "Hits on players | +{n:ultimate-charge-per-hit}% SuperNova"
+    - "SuperNova from {n:supernova-min-charge}% | leap and slam down"
+    - "~Up to {h:supernova-damage}❤, never more than {pct:supernova-max-health-fraction} of their health."
+    - "~Everyone it hits glows for {s:supernova-glow-duration}."
+  notes:
+    - "The meter drains when you're out of combat."
+
+veil-of-mimicry:
+  flavour: "Wear a face that is not yours."
+  ability:
+    - "Morph | into any player who has joined"
+    - "~Their name, their skin, their chat."
+    - "Fails if | anyone within {n:witness-range} blocks can see you"
+    - "Breaks when | you attack, take {h:break-damage-threshold}❤+, or use the book again"
+  cooldowns:
+    - "Morph | {s:morph-cooldown}"
+  notes:
+    - "Anyone within {n:sound-mask-range} blocks hears it happen."
+
+tether-chain:
+  flavour: "Nobody outruns the chain."
+  ability:
+    - "Hook | up to {n:hook-range} blocks"
+    - "~Drags whoever it catches to you."
+    - "Catch someone mid-dash | no dashing for {s:dash-lock-duration}"
+  cooldowns:
+    - "Hook | {s:hook-cooldown}"
