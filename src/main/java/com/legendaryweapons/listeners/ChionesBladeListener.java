@@ -97,7 +97,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
    public Component hud(Player player) {
       int required = this.abilityInt("combo-hits-required", 5);
       int combo = this.plugin.getComboTracker().get(player, COMBO_KEY);
-      return HudManager.cooldown("Ice Wave", this.cooldownLeft(player, WAVE_COOLDOWN_KEY))
+      return HudManager.cooldown(player, "Ice Wave", WAVE_COOLDOWN_KEY)
          .append(Component.text("  Frost ", NamedTextColor.GRAY))
          .append(Component.text(Math.min(combo, required) + "/" + required, NamedTextColor.AQUA));
    }

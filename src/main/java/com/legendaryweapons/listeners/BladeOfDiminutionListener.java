@@ -81,7 +81,7 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
 
    @Override
    public Component hud(Player player) {
-      Component line = HudManager.cooldown("Diminish", this.cooldownLeft(player, COOLDOWN_KEY));
+      Component line = HudManager.cooldown(player, "Diminish", COOLDOWN_KEY);
       Long until = this.shrinkUntil.get(player.getUniqueId());
       if (until != null) {
          long left = until - System.currentTimeMillis();

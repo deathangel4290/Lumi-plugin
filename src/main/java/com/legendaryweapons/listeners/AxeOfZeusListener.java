@@ -59,7 +59,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
 
    @Override
    public net.kyori.adventure.text.Component hud(Player player) {
-      return com.legendaryweapons.managers.HudManager.cooldown("Throw", this.plugin.getCooldownManager().getRemainingSeconds(player, COOLDOWN_KEY));
+      return com.legendaryweapons.managers.HudManager.cooldown(player, "Throw", COOLDOWN_KEY);
    }
 
    @Override

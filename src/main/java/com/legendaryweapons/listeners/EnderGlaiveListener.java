@@ -52,7 +52,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
 
    @Override
    public net.kyori.adventure.text.Component hud(Player player) {
-      return com.legendaryweapons.managers.HudManager.cooldown("Pearl", this.plugin.getCooldownManager().getRemainingSeconds(player, PEARL_COOLDOWN_KEY));
+      return com.legendaryweapons.managers.HudManager.cooldown(player, "Pearl", PEARL_COOLDOWN_KEY);
    }
 
    @Override

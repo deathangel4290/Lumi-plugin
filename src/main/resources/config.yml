@@ -325,6 +325,7 @@ weapons:
       - "§8Dredged from a city that drowned."
       - ""
       - "§7Throw  §f»  §7water pulse on impact, §3{h:pulse-damage} hearts"
+      - "§8  Once every {s:throw-cooldown}."
       - "§7Sneak + ability  §f»  §7raise a water wall for {s:water-wall-duration}"
       - "§8  Stops enemy arrows and pearls, slows anyone wading"
       - "§8  through, then crashes forward for §3{h:water-wall-crash-damage} hearts§8."
@@ -332,6 +333,7 @@ weapons:
       - "§7Wall cooldown  §f»  §f{s:water-wall-cooldown}"
       - "§8The water boils away in the Nether."
     abilities:
+      throw-cooldown: 80                # 4s between throws (the trident greys out until then)
       pulse-radius: 4.0
       pulse-damage: 6.0
       water-pulse-knockback: 1.5

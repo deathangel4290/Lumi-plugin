@@ -281,8 +281,14 @@ public class LegendaryWeapons extends JavaPlugin {
       target.setCooldown(Material.SHIELD, 0);
       // Anything else still showing the white sweep (a weapon on a material the config no longer lists).
       for (org.bukkit.inventory.ItemStack item : target.getInventory().getContents()) {
-         if (item != null && !item.getType().isAir() && target.getCooldown(item.getType()) > 0) {
-            target.setCooldown(item.getType(), 0);
+         if (item != null && !item.getType().isAir()) {
+            if (target.getCooldown(item.getType()) > 0) {
+               target.setCooldown(item.getType(), 0);
+            }
+
+            if (this.getWeaponManager().isLegendaryWeapon(item)) {
+               target.setCooldown(item, 0);                // the weapon's own cooldown group
+            }
          }
       }
    }

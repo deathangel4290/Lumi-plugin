@@ -118,11 +118,32 @@ public class HudManager implements Listener {
       return seconds >= 10.0 ? String.valueOf((int)Math.ceil(seconds)) + "s" : String.format("%.1fs", seconds);
    }
 
-   /** "Label 3.2s" in grey while cooling down, "Label" + tick in green when ready. */
+   private static final net.kyori.adventure.text.format.TextColor READY = net.kyori.adventure.text.format.TextColor.color(0x6BE07A);
+   private static final net.kyori.adventure.text.format.TextColor FILL = net.kyori.adventure.text.format.TextColor.color(0xB98CFF);
+
+   /** "Label 3.2s" while cooling down, "✔ Label" when ready (no progress bar: the total is unknown). */
    public static Component cooldown(String label, double secondsLeft) {
       return secondsLeft > 0.0
-         ? Component.text(label + " ", NamedTextColor.GRAY).append(Component.text(seconds(secondsLeft), NamedTextColor.RED))
-         : Component.text(label + " ", NamedTextColor.GRAY).append(Component.text("✔", NamedTextColor.GREEN));
+         ? Component.text(label + " ", NamedTextColor.GRAY).append(Component.text(seconds(secondsLeft), secondsLeft <= 3.0 ? NamedTextColor.YELLOW : NamedTextColor.RED))
+         : Component.text("✔ ", READY).append(Component.text(label, NamedTextColor.WHITE));
+   }
+
+   /**
+    * A cooldown with its progress: "Label ▮▮▮▮▮▯▯▯ 3.2s" while it recharges, "✔ Label" when it's
+    * ready. The bar fills as the cooldown runs out.
+    */
+   public static Component cooldown(Player player, String label, String cooldownKey) {
+      CooldownManager cooldowns = instance == null ? null : instance.plugin.getCooldownManager();
+      double left = cooldowns == null ? 0.0 : cooldowns.getRemainingSeconds(player, cooldownKey);
+      if (left <= 0.0) {
+         return Component.text("✔ ", READY).append(Component.text(label, NamedTextColor.WHITE));
+      }
+
+      int filled = (int)Math.round((1.0 - cooldowns.fractionLeft(player, cooldownKey)) * 8.0);
+      return Component.text(label + " ", NamedTextColor.GRAY)
+         .append(Component.text("▮".repeat(filled), FILL))
+         .append(Component.text("▯".repeat(8 - filled), NamedTextColor.DARK_GRAY))
+         .append(Component.text(" " + seconds(left), left <= 3.0 ? NamedTextColor.YELLOW : NamedTextColor.WHITE));
    }
 
    /** A 10-segment meter: "Label ▮▮▮▮▯▯▯▯▯▯ 40%". */

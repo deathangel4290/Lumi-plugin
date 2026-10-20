@@ -196,7 +196,7 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
             );
          } else {
             double spent = this.plugin.getChargeMeter().consume(player, CHARGE_KEY);
-            this.plugin.getCooldownManager().setWithItemFeedback(player, SLAM_COOLDOWN_KEY, this.abilityLong("slam-cooldown", 600L), this.weaponMaterial());
+            this.plugin.getCooldownManager().setWithHeldItemFeedback(player, SLAM_COOLDOWN_KEY, this.abilityLong("slam-cooldown", 600L));
             this.windUp(player, spent);
          }
 

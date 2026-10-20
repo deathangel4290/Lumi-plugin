@@ -42,7 +42,7 @@ public class TetherChainListener extends AbstractWeaponListener {
 
    @Override
    public Component hud(Player player) {
-      return HudManager.cooldown("Hook", this.cooldownLeft(player, COOLDOWN_KEY));
+      return HudManager.cooldown(player, "Hook", COOLDOWN_KEY);
    }
 
    /** It is a lead underneath; do not let it leash mobs. */

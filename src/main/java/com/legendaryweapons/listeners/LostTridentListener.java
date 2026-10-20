@@ -47,6 +47,7 @@ import org.bukkit.util.Vector;
 public class LostTridentListener implements Listener, WeaponAbility {
    private static final String WEAPON_KEY = "lost-trident-of-atlantis";
    private static final String WALL_COOLDOWN_KEY = "atlantis-water-wall";
+   private static final String THROW_COOLDOWN_KEY = "atlantis-throw";
    private final LegendaryWeapons plugin;
    private final WeaponManager weaponManager;
    /** Water placed by live walls. It must never flow: flowing water next to two sources makes new sources
@@ -61,7 +62,9 @@ public class LostTridentListener implements Listener, WeaponAbility {
 
    @Override
    public net.kyori.adventure.text.Component hud(Player player) {
-      return com.legendaryweapons.managers.HudManager.cooldown("Water Wall", this.plugin.getCooldownManager().getRemainingSeconds(player, WALL_COOLDOWN_KEY));
+      return com.legendaryweapons.managers.HudManager.cooldown(player, "Throw", THROW_COOLDOWN_KEY)
+         .append(net.kyori.adventure.text.Component.text("   "))
+         .append(com.legendaryweapons.managers.HudManager.cooldown(player, "Water Wall", WALL_COOLDOWN_KEY));
    }
 
    @Override
@@ -94,6 +97,18 @@ public class LostTridentListener implements Listener, WeaponAbility {
          Player player = (Player)event.getEntity().getShooter();
          ItemStack item = player.getInventory().getItemInMainHand();
          if (this.weaponManager.isLegendaryWeapon(item) && "lost-trident-of-atlantis".equals(this.weaponManager.getWeaponKey(item))) {
+            var cooldowns = this.plugin.getCooldownManager();
+            if (cooldowns.isOnCooldown(player, THROW_COOLDOWN_KEY)) {
+               // the item cooldown normally stops the throw before it starts; this catches the rest
+               event.setCancelled(true);
+               cooldowns.notifyOnCooldown(player, THROW_COOLDOWN_KEY);
+               return;
+            }
+
+            ConfigurationSection settings = this.plugin.getConfigManager().getWeaponAbilities(WEAPON_KEY);
+            long throwCooldown = settings == null ? 80L : settings.getLong("throw-cooldown", 80L);
+            // greys the trident out until it can be thrown again (it comes back on its own)
+            cooldowns.setWithItemFeedback(player, THROW_COOLDOWN_KEY, throwCooldown, item);
             Trident trident = (Trident)event.getEntity();
             // Keep the player's own trident (their enchantments, their durability); only make sure it
             // comes back. It used to be swapped for a fresh template, wiping anything added to it.
@@ -266,7 +281,8 @@ public class LostTridentListener implements Listener, WeaponAbility {
          final int slowTicks = abilities.getInt("water-wall-slowness", 30);
          final double crashDamage = abilities.getDouble("water-wall-crash-damage", 4.0);
          final double crashRange = abilities.getDouble("water-wall-crash-range", 5.0);
-         if (this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "atlantis-water-wall", cooldown)) {
+         // no item cooldown here: greying the trident out would stop it being thrown during the wall
+         if (this.plugin.getCooldownManager().tryUse(player, "atlantis-water-wall", cooldown)) {
             Vector flat = player.getLocation().getDirection().setY(0.0);
             if (flat.lengthSquared() < 1.0E-4) {
                double yaw = Math.toRadians(player.getLocation().getYaw());       // looking straight down

@@ -9,10 +9,12 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 public class CooldownManager {
    private final LegendaryWeapons plugin;
    private final Map<UUID, Map<String, Long>> expiries = new HashMap<>();
+   private final Map<UUID, Map<String, Long>> lengths = new HashMap<>();
 
    public CooldownManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
@@ -55,6 +57,23 @@ public class CooldownManager {
          this.clear(player, abilityKey);
       } else {
          this.expiries.computeIfAbsent(player.getUniqueId(), uuid -> new HashMap<>()).put(abilityKey, System.currentTimeMillis() + ticksToMillis(ticks));
+         this.lengths.computeIfAbsent(player.getUniqueId(), uuid -> new HashMap<>()).put(abilityKey, ticksToMillis(ticks));
+      }
+   }
+
+   /** How much of the cooldown is still to go, 1 (just started) to 0 (ready). */
+   public double fractionLeft(Player player, String abilityKey) {
+      long left = this.getRemainingMillis(player, abilityKey);
+      Map<String, Long> forPlayer = this.lengths.get(player.getUniqueId());
+      Long length = forPlayer == null ? null : forPlayer.get(abilityKey);
+      return left <= 0L || length == null || length <= 0L ? 0.0 : Math.min(1.0, left / (double)length);
+   }
+
+   /** The cooldown overlay on one item: a legendary greys out alone (its own cooldown group). */
+   public void setWithItemFeedback(Player player, String abilityKey, long ticks, ItemStack item) {
+      this.set(player, abilityKey, ticks);
+      if (ticks > 0L && item != null && !item.getType().isAir()) {
+         player.setCooldown(item, (int)Math.min(2147483647L, ticks));
       }
    }
 
@@ -66,7 +85,7 @@ public class CooldownManager {
    }
 
    public void setWithHeldItemFeedback(Player player, String abilityKey, long ticks) {
-      this.setWithItemFeedback(player, abilityKey, ticks, player.getInventory().getItemInMainHand().getType());
+      this.setWithItemFeedback(player, abilityKey, ticks, player.getInventory().getItemInMainHand());
    }
 
    public boolean tryUseWithItemFeedback(Player player, String abilityKey, long ticks) {
@@ -98,6 +117,7 @@ public class CooldownManager {
 
    public void clearAll(Player player) {
       this.expiries.remove(player.getUniqueId());
+      this.lengths.remove(player.getUniqueId());
    }
 
    public boolean tryUse(Player player, String abilityKey, long ticks) {

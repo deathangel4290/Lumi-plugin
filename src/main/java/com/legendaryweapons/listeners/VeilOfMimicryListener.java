@@ -71,7 +71,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
 
    @Override
    public Component hud(Player player) {
-      return this.plugin.getDisguiseManager().isDisguised(player) ? null : HudManager.cooldown("Morph", this.cooldownLeft(player, COOLDOWN_KEY));
+      return this.plugin.getDisguiseManager().isDisguised(player) ? null : HudManager.cooldown(player, "Morph", COOLDOWN_KEY);
    }
 
    @EventHandler(priority = EventPriority.LOWEST)

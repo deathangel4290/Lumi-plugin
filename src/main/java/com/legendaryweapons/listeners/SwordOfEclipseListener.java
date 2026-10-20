@@ -121,7 +121,7 @@ public class SwordOfEclipseListener implements Listener, KillTrackedWeapon {
       } else if (kills < perStage * 3) {
          return line.append(Component.text("  Split at " + perStage * 3, NamedTextColor.DARK_GRAY));
       } else {
-         return line.append(Component.text("  ")).append(HudManager.cooldown("Split", this.plugin.getCooldownManager().getRemainingSeconds(player, "eclipse-dual-wield")));
+         return line.append(Component.text("  ")).append(HudManager.cooldown(player, "Split", "eclipse-dual-wield"));
       }
    }
 

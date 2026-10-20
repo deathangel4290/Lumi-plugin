@@ -79,6 +79,7 @@ public class WeaponManager {
 
          enchantments.forEach((enchant, level) -> meta.addEnchant(enchant, level, true));
          this.applyMelee(meta, weaponKey);
+         applyCooldownGroup(meta, weaponKey);
          NamespacedKey key = new NamespacedKey(this.plugin, "legendary-weapon");
          meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, weaponKey);
          meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, this.revision(weaponKey));
@@ -103,6 +104,18 @@ public class WeaponManager {
       }
    }
 
+   /**
+    * Gives the weapon its own cooldown group (luminara:<weapon>), so an ability cooldown greys out
+    * this legendary only, not every netherite sword in the hotbar. The component's own cooldown is
+    * one tick: it is only there for the group.
+    */
+   static void applyCooldownGroup(ItemMeta meta, String weaponKey) {
+      org.bukkit.inventory.meta.components.UseCooldownComponent cooldown = meta.getUseCooldown();
+      cooldown.setCooldownSeconds(0.05F);
+      cooldown.setCooldownGroup(new NamespacedKey("luminara", weaponKey.toLowerCase(java.util.Locale.ROOT)));
+      meta.setUseCooldown(cooldown);
+   }
+
    /** A fingerprint of the configured name, lore, model and melee stats; items carrying an older one get refreshed. */
    private int revision(String weaponKey) {
       double[] melee = this.configManager.getWeaponMelee(weaponKey);
@@ -110,7 +123,8 @@ public class WeaponManager {
             + (melee == null ? "" : melee[0] + "/" + melee[1])
             + this.configManager.getWeaponLore(weaponKey)
             + this.configManager.getWeaponCustomModelData(weaponKey)
-            + this.configManager.getWeaponPowerTier(weaponKey))
+            + this.configManager.getWeaponPowerTier(weaponKey)
+            + "|cooldown-group")
          .hashCode();
    }
 
@@ -141,6 +155,7 @@ public class WeaponManager {
                   meta.setLore(fresh.getLore());
                   meta.setCustomModelDataComponent(fresh.getCustomModelDataComponent());
                   this.applyMelee(meta, weaponKey);
+                  applyCooldownGroup(meta, weaponKey);
                   meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, current);
                   item.setItemMeta(meta);
                   return true;

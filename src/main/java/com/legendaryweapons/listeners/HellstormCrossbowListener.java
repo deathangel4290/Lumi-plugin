@@ -42,7 +42,7 @@ public class HellstormCrossbowListener implements Listener {
       plugin.getHudManager().register(player -> {
          ItemStack held = player.getInventory().getItemInMainHand();
          return this.weaponManager.isLegendaryWeapon(held) && WEAPON_KEY.equals(this.weaponManager.getWeaponKey(held))
-            ? com.legendaryweapons.managers.HudManager.cooldown("Volley", plugin.getCooldownManager().getRemainingSeconds(player, WEAPON_KEY))
+            ? com.legendaryweapons.managers.HudManager.cooldown(player, "Volley", WEAPON_KEY)
             : null;
       });
    }

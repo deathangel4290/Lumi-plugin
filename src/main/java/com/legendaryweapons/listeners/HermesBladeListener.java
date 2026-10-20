@@ -42,7 +42,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
 
    @Override
    public net.kyori.adventure.text.Component hud(Player player) {
-      return com.legendaryweapons.managers.HudManager.cooldown("Dash", this.cooldownLeft(player, DASH_COOLDOWN_KEY)).append(net.kyori.adventure.text.Component.text("  Kills " + this.getKillCount(player), net.kyori.adventure.text.format.NamedTextColor.GRAY));
+      return com.legendaryweapons.managers.HudManager.cooldown(player, "Dash", DASH_COOLDOWN_KEY).append(net.kyori.adventure.text.Component.text("  Kills " + this.getKillCount(player), net.kyori.adventure.text.format.NamedTextColor.GRAY));
    }
 
    @Override
