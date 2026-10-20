@@ -134,8 +134,9 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
          int amplifier = this.abilityInt("hold-speed-amplifier", 0);
 
          for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-            if (this.isHolding(player)) {
-               player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, amplifier, true, false, true));
+            double strength = this.passive(player);
+            if (strength > 0.0) {
+               player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 40, com.legendaryweapons.abilities.Passives.amplifier(amplifier, strength), true, false, true));
             }
          }
       }
@@ -232,10 +233,11 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
       }
 
       // Players only: a mob whose chunk unloaded mid-enlarge kept the giant size saved on it for good.
-      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker) && event.getEntity() instanceof Player victim) {
+      double strength = event.getDamager() instanceof Player hitter ? this.passive(hitter) : 0.0;
+      if (event.getDamager() instanceof Player attacker && strength > 0.0 && event.getEntity() instanceof Player victim) {
          long now = System.currentTimeMillis();
          Long immune = this.enlargeImmuneUntil.get(victim.getUniqueId());
-         if ((immune == null || immune <= now) && !(Math.random() >= this.ability("enlarge-chance", 0.12)) && this.canAffect(attacker, victim)) {
+         if ((immune == null || immune <= now) && !(Math.random() >= this.ability("enlarge-chance", 0.12) * strength) && this.canAffect(attacker, victim)) {
             long duration = this.abilityLong("enlarge-duration", 100L) * 50L;
             this.enlargeImmuneUntil.put(victim.getUniqueId(), now + duration + this.abilityLong("enlarge-target-cooldown", 200L) * 50L);
             set(victim, Attribute.SCALE, this.enlargeKey, clampScale(this.ability("enlarge-scale", 1.3)));

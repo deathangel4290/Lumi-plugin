@@ -98,10 +98,9 @@ acquisition:
 
 
 # ============================================================================
-#  Weapon fragments -- Tier I..IV, plus the Luminosity Fragment (events only)
+#  Amethyst tools -- DonutSMP-style 3x3 pickaxe/shovel and tree-felling axe.
+#  Give with /lwtest give AMETHYST_PICKAXE (or _SHOVEL/_AXE) or the give menu.
 # ============================================================================
-# DonutSMP-style amethyst tools. Give with /lwtest give AMETHYST_PICKAXE (or _SHOVEL/_AXE), the /gui
-# menu, or use the tokens in loot/reward lists (they are in the late supply drop by default).
 tools:
   sneak-to-disable: true      # sneaking mines a single block
   durability-per-block: 1     # per extra block broken (Unbreaking applies)
@@ -112,6 +111,9 @@ tools:
     break-leaves: true        # also clear the tree's natural leaves (drops saplings/apples)
     require-leaves: true      # only fell real trees, so log builds are safe
 
+# ============================================================================
+#  Weapon fragments -- Tier I..IV, plus the Luminosity Fragment (events only)
+# ============================================================================
 fragments:
   fusion-cost: 4
   # Kills by a player only. ENTITY_TYPE: "tier:chance"
@@ -124,6 +126,17 @@ fragments:
     EVOKER: "1:0.2"
     PIGLIN_BRUTE: "1:0.1"
     BREEZE: "1:0.05"
+
+# ============================================================================
+#  Off-hand passives -- a legendary in your off-hand gives its PASSIVES (not
+#  its abilities), so you can combine two: your main weapon's and this one's.
+#  Weapons with passives: Scythe of Diablo, Axe of Zeus, Hermes's Blade,
+#  Chione's Blade, Titan's Axe, Blade of Diminution.
+# ============================================================================
+passives:
+  off-hand: true                # false = passives only work from the main hand
+  off-hand-strength: FULL       # FULL, or REDUCED: multipliers, chances and durations x reduced-multiplier
+  reduced-multiplier: 0.5
 
 
 weapons:

@@ -289,7 +289,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
          hitEntity.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, weaknessDuration, 1, true, false));
          hitEntity.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 0, true, false));
          if (hitEntity instanceof Player victim && victim.isBlocking()) {
-            this.disableShield(victim);
+            this.disableShield(victim, 1.0);
          }
       }
 
@@ -388,8 +388,8 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       }
    }
 
-   private void disableShield(Player victim) {
-      final int duration = this.abilityInt("shield-break-duration", 160);
+   private void disableShield(Player victim, double strength) {
+      final int duration = com.legendaryweapons.abilities.Passives.ticks(this.abilityInt("shield-break-duration", 160), strength);
       victim.setCooldown(Material.SHIELD, duration);
       // and again a tick later: vanilla's own 5s axe disable lands after this event and would overwrite it
       this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
@@ -408,28 +408,28 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       }
 
       if (event.getDamager() instanceof Player damager) {
-         ItemStack weapon = damager.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(weapon) && "axe-of-zeus".equals(this.weaponManager.getWeaponKey(weapon))) {
-            this.handleMeleeAttack(damager, event);
+         double strength = com.legendaryweapons.abilities.Passives.strength(this.plugin, damager, "axe-of-zeus");
+         if (strength > 0.0) {
+            this.handleMeleeAttack(damager, event, strength);
          }
       }
    }
 
-   private void handleMeleeAttack(Player damager, EntityDamageByEntityEvent event) {
+   private void handleMeleeAttack(Player damager, EntityDamageByEntityEvent event, double strength) {
       if (!(damager.getAttackCooldown() <= 0.9F) && !event.isCancelled() && this.plugin.getProtectionManager().canAffect(damager, event.getEntity())) {
-         if (event.getEntity() instanceof LivingEntity victim && Math.random() < this.ability("melee-lightning-chance", 0.1)) {
+         if (event.getEntity() instanceof LivingEntity victim && Math.random() < this.ability("melee-lightning-chance", 0.1) * strength) {
             Location loc = victim.getLocation();
             loc.getWorld().strikeLightningEffect(loc);
             this.plugin.getSoundManager().world(loc, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5F, 1.5F);
             ParticleManager.spawn(Particle.ELECTRIC_SPARK, loc, 20, 1.0, 1.0, 1.0, 0.1);
             com.legendaryweapons.managers.SpriteFx.burst(victim, 0.55, org.bukkit.Color.fromRGB(120, 220, 255), 2.2, 1, 1, 5);
             com.legendaryweapons.managers.SpriteFx.wave(loc, org.bukkit.Color.fromRGB(120, 220, 255), 2.5, 5);
-            victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, this.abilityInt("melee-stun-duration", 20), 2, true, false));
+            victim.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, com.legendaryweapons.abilities.Passives.ticks(this.abilityInt("melee-stun-duration", 20), strength), 2, true, false));
             victim.setVelocity(new Vector(0.0, 0.3, 0.0));
          }
 
          if (event.getEntity() instanceof Player victim && victim.isBlocking()) {
-            this.disableShield(victim);
+            this.disableShield(victim, strength);
          }
       }
    }

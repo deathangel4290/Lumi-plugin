@@ -38,8 +38,7 @@ public class ScytheOfDiabloListener implements Listener {
       this.plugin = plugin;
       this.weaponManager = plugin.getWeaponManager();
       plugin.getHudManager().register(player -> {
-         ItemStack held = player.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(held) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(held))) {
+         if (com.legendaryweapons.abilities.Passives.strength(plugin, player, "scythe-of-diablo") > 0.0) {
             int required = plugin.getConfig().getInt("weapons.scythe-of-diablo.abilities.combo-hits-required", 5);
             return net.kyori.adventure.text.Component.text("Combo ", net.kyori.adventure.text.format.NamedTextColor.GRAY)
                .append(net.kyori.adventure.text.Component.text(Math.min(this.comboMap.getOrDefault(player.getUniqueId(), 0), required) + "/" + required, net.kyori.adventure.text.format.NamedTextColor.RED));
@@ -54,10 +53,12 @@ public class ScytheOfDiabloListener implements Listener {
       Player killed = event.getEntity();
       Player killer = killed.getKiller();
       if (killer != null) {
-         ItemStack weapon = killer.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(weapon) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(weapon))) {
+         double strength = com.legendaryweapons.abilities.Passives.strength(this.plugin, killer, "scythe-of-diablo");
+         if (strength > 0.0) {
+            // heal to full (in the off-hand at reduced strength: that share of the missing health)
             AttributeInstance maxHealth = killer.getAttribute(Attribute.MAX_HEALTH);
-            killer.setHealth(maxHealth != null ? maxHealth.getValue() : 20.0);
+            double max = maxHealth != null ? maxHealth.getValue() : 20.0;
+            killer.setHealth(Math.min(max, killer.getHealth() + (max - killer.getHealth()) * strength));
             this.createSoulAbsorptionEffect(killed.getLocation(), killer);
             com.legendaryweapons.managers.SpriteFx.burst(killed.getLocation().add(0.0, 1.0, 0.0), org.bukkit.Color.fromRGB(150, 0, 20), 2.2, 2, 2, 8);
             com.legendaryweapons.managers.SpriteFx.wave(killer.getLocation(), org.bukkit.Color.fromRGB(220, 30, 50), 3.0, 6);
@@ -74,8 +75,8 @@ public class ScytheOfDiabloListener implements Listener {
       if (event.getDamager() instanceof Player && event.getEntity() instanceof LivingEntity) {
          Player damager = (Player)event.getDamager();
          LivingEntity victim = (LivingEntity)event.getEntity();
-         ItemStack weapon = damager.getInventory().getItemInMainHand();
-         if (this.weaponManager.isLegendaryWeapon(weapon) && "scythe-of-diablo".equals(this.weaponManager.getWeaponKey(weapon))) {
+         double strength = com.legendaryweapons.abilities.Passives.strength(this.plugin, damager, "scythe-of-diablo");
+         if (strength > 0.0) {
             ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("scythe-of-diablo");
             if (abilities == null) {
                abilities = new org.bukkit.configuration.file.YamlConfiguration();   // defaults below
@@ -99,7 +100,7 @@ public class ScytheOfDiabloListener implements Listener {
                Vector facing = victim.getLocation().getDirection().setY(0.0);
                Vector toAttacker = damager.getLocation().toVector().subtract(victim.getLocation().toVector()).setY(0.0);
                if (facing.lengthSquared() > 1.0E-4 && toAttacker.lengthSquared() > 1.0E-4 && facing.normalize().dot(toAttacker.normalize()) < -0.34) {
-                  double backstabMultiplier = abilities.getDouble("backstab-damage-multiplier", 1.5);
+                  double backstabMultiplier = com.legendaryweapons.abilities.Passives.multiplier(abilities.getDouble("backstab-damage-multiplier", 1.5), strength);
                   event.setDamage(event.getDamage() * backstabMultiplier);
                   isBackstab = true;
                   this.createBackstabEffects(victim.getLocation());
@@ -108,7 +109,7 @@ public class ScytheOfDiabloListener implements Listener {
             }
 
             if (event.getCause() == DamageCause.ENTITY_SWEEP_ATTACK) {
-               double sweepMultiplier = abilities.getDouble("sweep-damage-multiplier", 1.25);
+               double sweepMultiplier = com.legendaryweapons.abilities.Passives.multiplier(abilities.getDouble("sweep-damage-multiplier", 1.25), strength);
                event.setDamage(event.getDamage() * sweepMultiplier);
                isSweep = true;
                // a sweep fires once per target hit: draw it once per swing
@@ -122,7 +123,7 @@ public class ScytheOfDiabloListener implements Listener {
                this.comboMap.put(damager.getUniqueId(), ++combo);
                this.createComboEffects(damager, victim.getLocation(), combo);
                if (combo >= abilities.getInt("combo-hits-required", 5)) {
-                  int duration = abilities.getInt("combo-absorption-duration", 200);
+                  int duration = com.legendaryweapons.abilities.Passives.ticks(abilities.getInt("combo-absorption-duration", 200), strength);
                   int amplifier = abilities.getInt("combo-absorption-amplifier", 0);
                   damager.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION, duration, amplifier));
                   this.createComboCompletionEffects(damager, victim.getLocation());

@@ -63,11 +63,12 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
             int forTwo = HermesBladeListener.this.abilityInt("kills-for-speed-2", 2);
 
             for (Player player : HermesBladeListener.this.plugin.getServer().getOnlinePlayers()) {
-               if (HermesBladeListener.this.isHolding(player)) {
+               double strength = HermesBladeListener.this.passive(player);
+               if (strength > 0.0) {
                   int count = HermesBladeListener.this.kills.getOrDefault(player.getUniqueId(), 0);
                   int amplifier = count >= forTwo ? 1 : (count >= forOne ? 0 : -1);
                   if (amplifier >= 0) {
-                     player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, refresh, amplifier, true, false, true));
+                     player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, refresh, com.legendaryweapons.abilities.Passives.amplifier(amplifier, strength), true, false, true));
                   }
                }
             }
@@ -78,7 +79,7 @@ public class HermesBladeListener extends AbstractWeaponListener implements KillT
    @EventHandler
    public void onPlayerDeath(PlayerDeathEvent event) {
       Player killer = event.getEntity().getKiller();
-      if (killer != null && this.isHolding(killer)) {
+      if (killer != null && this.passive(killer) > 0.0) {       // kills count from the off-hand too
          int count = this.kills.merge(killer.getUniqueId(), 1, Integer::sum);
          int forOne = this.abilityInt("kills-for-speed-1", 1);
          int forTwo = this.abilityInt("kills-for-speed-2", 2);

@@ -27,6 +27,21 @@ public class AbilityDispatcher {
          WeaponAbility ability = this.get(this.heldWeaponKey(player));
          return ability == null ? null : ability.hud(player);
       });
+      // a legendary in the off-hand: say whose passives are combined in
+      plugin.getHudManager().register(player -> {
+         ItemStack off = player.getInventory().getItemInOffHand();
+         String key = this.weaponManager.isLegendaryWeapon(off) ? this.weaponManager.getWeaponKey(off) : null;
+         if (key == null || !Passives.WITH_PASSIVES.contains(key) || !Passives.offHandEnabled(plugin)) {
+            return null;
+         }
+
+         String name = off.getItemMeta().hasDisplayName()
+            ? net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(off.getItemMeta().displayName())
+            : key;
+         double strength = Passives.offHandStrength(plugin);
+         return net.kyori.adventure.text.Component.text("◐ ", net.kyori.adventure.text.format.TextColor.color(0xB98CFF))
+            .append(net.kyori.adventure.text.Component.text(name + (strength < 1.0 ? " " + Math.round(strength * 100.0) + "%" : ""), net.kyori.adventure.text.format.NamedTextColor.GRAY));
+      });
    }
 
    public void register(WeaponAbility ability) {

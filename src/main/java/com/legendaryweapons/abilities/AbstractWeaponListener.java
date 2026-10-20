@@ -26,6 +26,11 @@ public abstract class AbstractWeaponListener implements Listener, WeaponAbility 
       return this.isThisWeapon(player.getInventory().getItemInMainHand());
    }
 
+   /** How strongly this weapon's passives apply: 1 in the main hand, less (or 0) in the off-hand. */
+   protected double passive(Player player) {
+      return Passives.strength(this.plugin, player, this.weaponKey());
+   }
+
    protected ConfigurationSection abilities() {
       return this.plugin.getConfigManager().getWeaponAbilities(this.weaponKey());
    }

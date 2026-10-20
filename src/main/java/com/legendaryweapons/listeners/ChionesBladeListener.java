@@ -2,6 +2,7 @@ package com.legendaryweapons.listeners;
 
 import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.abilities.AbstractWeaponListener;
+import com.legendaryweapons.abilities.Passives;
 import com.legendaryweapons.managers.HudManager;
 import com.legendaryweapons.managers.ParticleManager;
 import java.util.ArrayList;
@@ -118,8 +119,9 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       int amplifier = this.abilityInt("cold-ground-speed-amplifier", 1);
 
       for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-         if (this.isHolding(player) && (this.isOnCold(player) || this.onFrost(player))) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, amplifier, true, false, true));
+         double strength = this.passive(player);
+         if (strength > 0.0 && (this.isOnCold(player) || this.onFrost(player))) {
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, Passives.amplifier(amplifier, strength), true, false, true));
          }
       }
    }
@@ -151,7 +153,8 @@ public class ChionesBladeListener extends AbstractWeaponListener {
          return;                                      // an ability's own damage, not a swing
       }
 
-      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker)) {
+      double strength = event.getDamager() instanceof Player hitter ? this.passive(hitter) : 0.0;
+      if (event.getDamager() instanceof Player attacker && strength > 0.0) {
          if (event.getEntity() instanceof Player victim && event.getCause() != DamageCause.ENTITY_SWEEP_ATTACK && this.isFullSwing(attacker)) {
             int required = this.abilityInt("combo-hits-required", 5);
             long window = this.abilityLong("combo-window-millis", 3000L);
@@ -161,7 +164,7 @@ public class ChionesBladeListener extends AbstractWeaponListener {
                if (this.isImmune(victim)) {
                   HudManager.message(attacker, Component.text(this.plugin.getEventManager().publicName(victim) + " is still thawing - immune", NamedTextColor.GRAY));
                } else if (this.canAffect(attacker, victim)) {
-                  this.freeze(victim, attacker);
+                  this.freeze(victim, attacker, strength);
                }
             }
          }
@@ -173,8 +176,8 @@ public class ChionesBladeListener extends AbstractWeaponListener {
       return until != null && until > System.currentTimeMillis();
    }
 
-   private void freeze(final LivingEntity target, Player source) {
-      final int duration = Math.max(1, this.abilityInt("freeze-duration", 30));
+   private void freeze(final LivingEntity target, Player source, double strength) {
+      final int duration = Passives.ticks(Math.max(1, this.abilityInt("freeze-duration", 30)), strength);
       final UUID id = target.getUniqueId();
       this.unfreeze(target);
       this.immuneUntil.put(id, System.currentTimeMillis() + (duration + this.abilityLong("freeze-immunity", 100L)) * 50L);

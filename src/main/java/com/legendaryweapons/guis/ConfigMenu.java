@@ -33,7 +33,7 @@ public final class ConfigMenu extends Menu {
    };
    private static final String[] QUICK_VALUES = {
       "effects.default-player-level", "ritual.timer", "fragments.fusion-cost", "audio.volume",
-      "effects.density", "outposts.capture-seconds", "director.min-players"
+      "effects.density", "outposts.capture-seconds", "passives.off-hand-strength"
    };
    private static final String[][] SHORTCUTS = {
       {"weapons", "Weapons"}, {"bosses", "Bosses"}, {"events", "Events"}, {"effects", "Effects"},
@@ -42,7 +42,8 @@ public final class ConfigMenu extends Menu {
    /** Settings with a fixed set of values: a click cycles through them. */
    private static final Map<String, List<String>> CHOICES = Map.of(
       "effects.default-player-level", List.of("FULL", "REDUCED", "MINIMAL", "OFF"),
-      "director.supply-tier", List.of("early", "mid", "late")
+      "director.supply-tier", List.of("early", "mid", "late"),
+      "passives.off-hand-strength", List.of("FULL", "REDUCED")
    );
    /** Bookkeeping the plugin manages itself. */
    private static final List<String> HIDDEN = List.of("config-version", "balance-revision");

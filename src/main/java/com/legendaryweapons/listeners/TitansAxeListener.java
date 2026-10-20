@@ -97,10 +97,12 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
          return;                                      // an ability's own damage, not a swing
       }
 
-      if (event.getDamager() instanceof Player attacker && this.isHolding(attacker)) {
+      double strength = event.getDamager() instanceof Player hitter ? this.passive(hitter) : 0.0;
+      if (event.getDamager() instanceof Player attacker && strength > 0.0) {
+         boolean mainHand = this.isHolding(attacker);
          if (event.getEntity() instanceof LivingEntity victim && this.isFullSwing(attacker)) {
             boolean mobsCount = this.abilities() != null && this.abilities().getBoolean("charge-from-mobs", false);
-            if (victim instanceof Player || mobsCount) {
+            if (mainHand && (victim instanceof Player || mobsCount)) {          // Slam charge: the ability, main hand only
                long now = System.currentTimeMillis();
                Long last = this.lastChargeFromVictim.get(victim.getUniqueId());
                if (last == null || now - last >= this.abilityLong("charge-victim-cooldown", 10L) * 50L) {
@@ -119,12 +121,12 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                int streak = this.plugin.getComboTracker().hit(attacker, CRIT_COMBO_KEY, this.abilityLong("crit-streak-window-millis", 4000L));
                if (streak >= needed) {
                   this.plugin.getComboTracker().reset(attacker, CRIT_COMBO_KEY);
-                  this.damageArmour(victim, this.abilityInt("crit-streak-armour-damage", 15), attacker);
+                  this.damageArmour(victim, (int)Math.round(this.abilityInt("crit-streak-armour-damage", 15) * strength), attacker);
                }
             }
 
             if (victim instanceof Player blocking && blocking.isBlocking() && this.canAffect(attacker, blocking)) {
-               final int disable = this.abilityInt("shield-break-duration", 160);
+               final int disable = com.legendaryweapons.abilities.Passives.ticks(this.abilityInt("shield-break-duration", 160), strength);
                // One tick later so vanilla's own 5s axe disable cannot overwrite the longer one.
                this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
                   if (blocking.isOnline()) {
