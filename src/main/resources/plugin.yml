@@ -1,6 +1,6 @@
-name: LegendaryWeapons
+name: LumiWeapons
 version: ${project.version}
-main: com.legendaryweapons.LegendaryWeapons
+main: com.lumiweapons.LumiWeapons
 api-version: 1.21
 description: Luminara legendary weapons, rituals, fragments, events, outposts and teams.
 softdepend: [WorldGuard, Towny, BetterModel]
@@ -26,37 +26,37 @@ commands:
     description: Sets how many legendary weapon particles you see (no argument opens your settings).
     usage: /lwfx [full|reduced|minimal|off]
   lw:
-    description: Admin commands for LegendaryWeapons (no argument opens the admin panel).
+    description: Admin commands for LumiWeapons (no argument opens the admin panel).
     usage: /lw [give|giveritualblock|reload|setkills|resetcooldowns]
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   giveritualblock:
     description: Gives the player a ritual block.
     usage: /giveritualblock
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   gui:
     description: Opens the give menu with every legendary and custom item (testing).
     usage: /gui
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   resetcd:
     description: Resets all legendary cooldowns, dash charges and locks (testing).
     usage: /resetcd [player]
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   setkills:
     description: Sets the kill count on a kill-based weapon (testing).
     usage: /setkills <amount> [player] [weapon]
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   charge:
     description: Fills the ultimate meter of a charged weapon (testing).
     usage: /charge [percent] [player] [weapon]
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   lwtest:
     description: More testing tools (reset effects, finish rituals, fragments).
     usage: /lwtest <reset|finishrituals|fragments|give>
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   lwevent:
     description: Starts and stops events, and runs the Event Director, outposts, the Team Draft and teams.
     usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|draft|team|boss|trader|status|stopall>
-    permission: legendaryweapons.admin
+    permission: lumiweapons.admin
   team:
     description: Your team (menu), /team chat to talk to your team by default, /team list for every team.
     usage: /team [chat|list]
@@ -88,9 +88,20 @@ commands:
     description: Opens your trusted players.
     usage: /trustlist
 permissions:
-  legendaryweapons.admin:
+  lumiweapons.admin:
     description: Grants access to admin, testing and event commands.
     default: op
-  legendaryweapons.veil.spy:
+  lumiweapons.veil.spy:
     description: See who is really speaking when a disguised player chats.
     default: op
+  # the old names from LegendaryWeapons still work: they grant the new ones
+  legendaryweapons.admin:
+    description: Old name of lumiweapons.admin.
+    default: false
+    children:
+      lumiweapons.admin: true
+  legendaryweapons.veil.spy:
+    description: Old name of lumiweapons.veil.spy.
+    default: false
+    children:
+      lumiweapons.veil.spy: true

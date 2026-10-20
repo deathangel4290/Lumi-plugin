@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.legendaryweapons</groupId>
-    <artifactId>legendaryweapons</artifactId>
-    <version>1.2.0</version>
+    <groupId>com.lumiweapons</groupId>
+    <artifactId>lumiweapons</artifactId>
+    <version>1.3.0</version>
     <packaging>jar</packaging>
 
-    <name>LegendaryWeapons</name>
+    <name>LumiWeapons</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -18,7 +18,7 @@
 
     <build>
         <defaultGoal>clean package</defaultGoal>
-        <finalName>LegendaryWeapons-${project.version}</finalName>
+        <finalName>LumiWeapons-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

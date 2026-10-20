@@ -1,6 +1,7 @@
-# Luminara / LegendaryWeapons
+# Luminara / LumiWeapons
 
-A Paper 1.21.11 plugin (`src/`), its resource pack (`resourcepack/`), and the animated BetterModel
+LumiWeapons (formerly LegendaryWeapons; Java package `com.lumiweapons`) is a Paper 1.21.11 plugin
+(`src/`), with its resource pack (`resourcepack/`), and the animated BetterModel
 models for the bosses and the Token Trader (`bettermodel/models/`).
 
 ## Two Claude sessions work on this repo
@@ -73,9 +74,16 @@ the shared look: frame, colours, sounds, controls in fixed places on the bottom 
 `/lumi` is the hub. A menu icon can use a custom item model with `Icon.model("luminara:...")`, so
 the art session can give menus their own icons later.
 
+## The old name
+
+The plugin was called LegendaryWeapons. Item, entity and block tags keep the `legendaryweapons`
+namespace, so things made before the rename still work. Always make tag keys with
+`LumiWeapons.key("...")`, never `new NamespacedKey(plugin, ...)`. The resource pack namespace stays
+`luminara`.
+
 ## Building
 
-- `mvn -B package` produces `target/LegendaryWeapons-1.2.0.jar`. It needs paper-api 1.21.11 and
+- `mvn -B package` produces `target/LumiWeapons-1.3.0.jar`. It needs paper-api 1.21.11 and
   BetterModel's `bettermodel-api` and `bettermodel-bukkit-api` 2.2.0 (provided; not shaded).
 - The pack zip holds `pack.mcmeta` and `assets/` from `resourcepack/`.
 - **1.21.11 renames:** `CHAIN` is `IRON_CHAIN`. When a material differs between versions, look it up
