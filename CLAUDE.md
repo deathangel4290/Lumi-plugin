@@ -39,6 +39,9 @@ Renaming either side breaks the other, so change both in the same commit or leav
   - `slash_tint` and `flash_tint` are tinted by the code: `tints: [{type: custom_model_data, index: 0}]`.
 - **Ritual:** `luminara:ritual_altar` and `luminara:ritual_crystal`. The crystal is tinted the same
   way, and the rune circles are `vfx/ritual_circle_outer` and `vfx/ritual_circle_inner`.
+- **Ancient Altars:** they use the item model named in `ritual.ancient-altars.model`, which is
+  `luminara:ritual_altar` for now. To make them look different, add a `luminara:ancient_altar` model
+  and change that config value in the same commit.
 - **Boss and trader animations:** the code plays these by name. A missing one is skipped, but then
   that moment has no animation.
 
@@ -56,6 +59,12 @@ Renaming either side breaks the other, so change both in the same commit or leav
     `ConfigManager.RETUNED`.
 - **Weapon models:** item model ids and custom_model_data numbers are set in `config.yml`; the pack's
   `assets/minecraft/items/*.json` must match them.
+
+## Lore
+
+Weapon tooltips are built from `src/main/resources/lore.yml`. The plugin session owns it: it
+describes what the code does. Lines are `what | result`, and `{s:key}` and the other placeholders
+read the weapon's numbers from `config.yml`.
 
 ## Menus
 

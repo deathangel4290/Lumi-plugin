@@ -278,15 +278,25 @@ public final class TeamManager implements Listener {
       return this.config() == null || this.config().getBoolean("coloured-names", true);
    }
 
+   /** What each board's colour team was last set to, so unchanged teams send no update packets. */
+   private final Map<String, String> applied = new java.util.HashMap<>();
+
    private org.bukkit.scoreboard.Team boardTeam(Scoreboard board, Team team) {
       String name = BOARD_PREFIX + team.id;
       org.bukkit.scoreboard.Team entry = board.getTeam(name);
+      String slot = System.identityHashCode(board) + ":" + name;
       if (entry == null) {
          entry = board.registerNewTeam(name);
+         this.applied.remove(slot);
       }
 
-      entry.color(team.colour);
-      entry.prefix(Component.text("[" + team.name + "] ", team.colour));
+      String look = team.name + "|" + NamedTextColor.NAMES.key(team.colour);
+      if (!look.equals(this.applied.get(slot))) {
+         entry.color(team.colour);
+         entry.prefix(Component.text("[" + team.name + "] ", team.colour));
+         this.applied.put(slot, look);
+      }
+
       return entry;
    }
 

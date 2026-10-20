@@ -24,6 +24,8 @@ public class WeaponManager {
    private final NamespacedKey revisionKey;
    private final NamespacedKey splitKey;
    private final com.legendaryweapons.items.WeaponLore lore;
+   /** Weapon fingerprints, worked out once per reload (refresh() runs on every hotbar scroll). */
+   private final Map<String, Integer> revisions = new java.util.HashMap<>();
 
    public WeaponManager(LegendaryWeapons plugin) {
       this.plugin = plugin;
@@ -36,6 +38,7 @@ public class WeaponManager {
 
    public void reload() {
       this.lore.reload();
+      this.revisions.clear();
       this.legendaryWeapons.clear();
       this.loadWeapons();
    }
@@ -113,6 +116,10 @@ public class WeaponManager {
 
    /** A fingerprint of the configured name, lore, model and melee stats; items carrying an older one get refreshed. */
    private int revision(String weaponKey) {
+      return this.revisions.computeIfAbsent(weaponKey, this::computeRevision);
+   }
+
+   private int computeRevision(String weaponKey) {
       double[] melee = this.configManager.getWeaponMelee(weaponKey);
       return (this.configManager.getWeaponDisplayName(weaponKey)
             + (melee == null ? "" : melee[0] + "/" + melee[1])
