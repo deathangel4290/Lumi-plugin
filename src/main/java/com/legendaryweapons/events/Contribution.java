@@ -21,8 +21,8 @@ import org.bukkit.entity.Player;
  * A category nobody touched hands its weight to the others.
  *
  * Paying out: everyone at or above min-share gets the participant table; the top three get the
- * top3 table on top; the best gets the top1 table on top of that. Renown is a flat amount for
- * qualifying plus a pool split by score. Everything goes into the reward chest (/rewards).
+ * top3 table on top; the best gets the top1 table on top of that. Everything goes into the
+ * reward chest (/rewards).
  */
 public final class Contribution {
    public enum Kind { DAMAGE, MECHANIC, SUPPORT }
@@ -91,10 +91,10 @@ public final class Contribution {
    }
 
    /**
-    * Pay everyone out of {@code rewards} (participant / top3 / top1 loot tables plus renown keys)
+    * Pay everyone out of {@code rewards} (participant / top3 / top1 loot tables)
     * and announce the top contributors. Returns the qualifying shares, best first.
     */
-   public List<Share> payOut(LegendaryWeapons plugin, String eventName, ConfigurationSection rewards, String renownPrefix) {
+   public List<Share> payOut(LegendaryWeapons plugin, String eventName, ConfigurationSection rewards) {
       EventManager manager = plugin.getEventManager();
       List<Share> all = this.results(plugin.getConfig().getConfigurationSection("events.contribution"));
       double minShare = plugin.getConfig().getDouble("events.contribution.min-share", 0.03);
@@ -105,8 +105,6 @@ public final class Contribution {
          }
       }
 
-      double flat = manager.season().renownFor(renownPrefix + "-participation");
-      double pool = manager.season().renownFor(renownPrefix + "-pool");
       for (int i = 0; i < qualified.size(); i++) {
          Share share = qualified.get(i);
          List<org.bukkit.inventory.ItemStack> items = new ArrayList<>();
@@ -122,12 +120,6 @@ public final class Contribution {
          }
 
          manager.vault().deposit(share.id(), items, eventName + " - #" + (i + 1) + ", " + Math.round(share.score() * 100.0) + "% contribution");
-         manager.season().give(share.id(), share.name(), flat + pool * share.score());
-         Player online = Bukkit.getPlayer(share.id());
-         if (online != null) {
-            online.sendMessage(Component.text("+" + SeasonManager.format(flat + pool * share.score()) + " Renown ", NamedTextColor.GOLD)
-               .append(Component.text("(" + eventName + ")", NamedTextColor.GRAY)));
-         }
       }
 
       if (!qualified.isEmpty()) {

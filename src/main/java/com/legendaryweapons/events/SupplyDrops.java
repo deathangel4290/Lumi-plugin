@@ -195,7 +195,6 @@ public class SupplyDrops {
          for (Drop drop : this.drops) {
             if (!drop.opened && drop.location.equals(block)) {
                drop.opened = true;
-               this.manager.season().renown(player, "supply-drop-claimed", 1.0, "for claiming a supply drop");
                Bukkit.broadcast(Component.text("📦 " + this.manager.publicName(player) + " claimed the supply drop at " + block.getBlockX() + ", " + block.getBlockZ() + ".", NamedTextColor.AQUA));
                return;
             }

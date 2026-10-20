@@ -42,11 +42,17 @@ public class CommandManager {
       com.legendaryweapons.commands.LumiCommand lumiCommand = new com.legendaryweapons.commands.LumiCommand(this.plugin);
       this.plugin.getCommand("lumi").setExecutor(lumiCommand);
       this.plugin.getCommand("lumi").setTabCompleter(lumiCommand);
+      com.legendaryweapons.commands.TeamCommand teamCommand = new com.legendaryweapons.commands.TeamCommand(this.plugin);
+      for (String name : new String[]{"team", "tc", "draft"}) {
+         this.plugin.getCommand(name).setExecutor(teamCommand);
+         this.plugin.getCommand(name).setTabCompleter(teamCommand);
+      }
+
       EventCommand eventCommand = new EventCommand(this.plugin);
       this.plugin.getCommand("lwevent").setExecutor(eventCommand);
       this.plugin.getCommand("lwevent").setTabCompleter(eventCommand);
       com.legendaryweapons.commands.PlayerEventCommand playerEvents = new com.legendaryweapons.commands.PlayerEventCommand(this.plugin);
-      for (String name : new String[]{"renown", "rewards", "tokenshop", "outposts"}) {
+      for (String name : new String[]{"rewards", "tokenshop", "outposts"}) {
          this.plugin.getCommand(name).setExecutor(playerEvents);
          this.plugin.getCommand(name).setTabCompleter(playerEvents);
       }

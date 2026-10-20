@@ -32,7 +32,8 @@ import org.jetbrains.annotations.NotNull;
  *   bloodmoon start [world] | stop | status
  *   director on | off | status | skip | run <event>
  *   outpost create <name> <type> [radius] | remove <name> | reset <name> | list
- *   season status | reset confirm | give <player> <amount>
+ *   draft start [captain...] | cancel | status   (no captains: opens the set-up menu)
+ *   team add <player> <team> | remove <player> | create <name> <colour> | disband <team|all> | list
  *   boss arena <id> [radius] | start [id] | stop | status
  *   status | stopall
  */
@@ -237,36 +238,96 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                   default -> this.events().outposts().list().forEach(sender::sendMessage);
                }
                break;
-            case "season":
+            case "draft":
                switch (action) {
-                  case "reset" -> {
-                     if (args.length < 3 || !args[2].equalsIgnoreCase("confirm")) {
-                        reply(sender, "This ends the season, pays the top three and wipes the boards. Run /lwevent season reset confirm", null);
+                  case "start" -> {
+                     List<Player> captains = new ArrayList<>();
+                     for (int i = 2; i < args.length; i++) {
+                        Player captain = Bukkit.getPlayerExact(args[i]);
+                        if (captain == null) {
+                           reply(sender, "'" + args[i] + "' is not online.", null);
+                           return true;
+                        }
+
+                        captains.add(captain);
+                     }
+
+                     if (captains.isEmpty() && sender instanceof Player player) {
+                        new com.legendaryweapons.guis.DraftMenu.Setup(this.plugin, player, null).open();
                      } else {
-                        this.events().season().reset();
+                        reply(sender, com.legendaryweapons.teams.Draft.start(this.plugin, this.plugin.getTeamManager(), captains, new ArrayList<>(Bukkit.getOnlinePlayers())), null);
                      }
                   }
-                  case "give" -> {
+                  case "cancel", "stop" -> {
+                     var draft = this.plugin.getTeamManager().draft();
+                     if (draft == null) {
+                        reply(sender, "No draft is running.", null);
+                     } else {
+                        draft.cancel(null);
+                     }
+                  }
+                  default -> {
+                     var draft = this.plugin.getTeamManager().draft();
+                     reply(sender, null, draft == null ? "No draft is running. /lwevent draft start [captains...]" : "Draft running: " + draft.current().name + " is picking, " + draft.pool().size() + " left in the pool.");
+                  }
+               }
+               break;
+            case "team":
+            case "teams": {
+               var teams = this.plugin.getTeamManager();
+               switch (action) {
+                  case "add" -> {
                      if (args.length < 4) {
-                        reply(sender, "Usage: /lwevent season give <player> <amount>", null);
+                        reply(sender, "Usage: /lwevent team add <player> <team>", null);
                      } else {
                         java.util.UUID id = this.plugin.getPlayerRosterManager().idOf(args[2]);
-                        try {
-                           double amount = Double.parseDouble(args[3]);
-                           if (id == null) {
-                              reply(sender, "Unknown player '" + args[2] + "'.", null);
-                           } else {
-                              this.events().season().give(id, args[2], amount);
-                              reply(sender, null, "Gave " + args[3] + " Renown to " + args[2] + ".");
-                           }
-                        } catch (NumberFormatException var11) {
-                           reply(sender, "'" + args[3] + "' is not a number.", null);
+                        var team = teams.byName(String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)));
+                        if (id == null) {
+                           reply(sender, "Nobody called '" + args[2] + "' has played here.", null);
+                        } else if (team == null) {
+                           reply(sender, "No team called '" + args[3] + "'.", null);
+                        } else {
+                           teams.add(team, id, args[2]);
+                           reply(sender, null, args[2] + " is now on " + team.name + ".");
                         }
                      }
                   }
-                  default -> sender.sendMessage(Component.text(this.events().season().status(), NamedTextColor.GRAY));
+                  case "remove", "kick" -> {
+                     java.util.UUID id = args.length < 3 ? null : this.plugin.getPlayerRosterManager().idOf(args[2]);
+                     if (id == null || teams.teamOf(id) == null) {
+                        reply(sender, "Usage: /lwevent team remove <player on a team>", null);
+                     } else {
+                        teams.remove(id);
+                        reply(sender, null, args[2] + " is no longer on a team.");
+                     }
+                  }
+                  case "create" -> {
+                     NamedTextColor colour = args.length < 4 ? null : NamedTextColor.NAMES.value(args[3].toLowerCase(Locale.ROOT));
+                     if (args.length < 4 || colour == null) {
+                        reply(sender, "Usage: /lwevent team create <name> <red|blue|green|yellow|aqua|light_purple|gold|white>", null);
+                     } else {
+                        teams.create(args[2], colour, null, null);
+                        reply(sender, null, "Team " + args[2] + " made. Add players with /lwevent team add <player> " + args[2]);
+                     }
+                  }
+                  case "disband" -> {
+                     if (args.length > 2 && args[2].equalsIgnoreCase("all")) {
+                        teams.disbandAll();
+                        reply(sender, null, "Every team is disbanded.");
+                     } else {
+                        var team = args.length < 3 ? null : teams.byName(String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)));
+                        if (team == null) {
+                           reply(sender, "Usage: /lwevent team disband <team|all>", null);
+                        } else {
+                           teams.disband(team);
+                           reply(sender, null, team.name + " is disbanded.");
+                        }
+                     }
+                  }
+                  default -> TeamCommand.list(sender, teams);
                }
                break;
+            }
             case "boss":
             case "bosses":
                switch (action) {
@@ -342,7 +403,6 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                sender.sendMessage(Component.text(this.events().bloodMoon().status(), NamedTextColor.GRAY));
                this.events().relics().status().forEach(line -> sender.sendMessage(Component.text(line, NamedTextColor.GRAY)));
                this.events().director().status().forEach(line -> sender.sendMessage(Component.text(line, NamedTextColor.GRAY)));
-               sender.sendMessage(Component.text(this.events().season().status(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text(this.plugin.getBossManager().status(), NamedTextColor.GRAY));
                break;
             default:
@@ -363,9 +423,10 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          "/lwevent bloodmoon start [world] | stop | status",
          "/lwevent director on | off | status | skip | run <event>",
          "/lwevent outpost create <name> <type> [radius] | remove <name> | reset <name> | list",
-         "/lwevent season status | reset confirm | give <player> <amount>",
          "/lwevent boss arena <boss> [radius] | start [boss] | stop | status",
          "/lwevent trader spawn | remove | list",
+         "/lwevent draft start [captains...] | cancel | status",
+         "/lwevent team add <player> <team> | remove <player> | create <name> <colour> | disband <team|all> | list",
          "/lwevent status | stopall"
       }) {
          sender.sendMessage(Component.text(line, NamedTextColor.GOLD));
@@ -374,7 +435,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       List<String> options = switch (args.length) {
-         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "season", "boss", "trader", "status", "stopall");
+         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "draft", "team", "boss", "trader", "status", "stopall");
          case 2 -> switch (args[0].toLowerCase(Locale.ROOT)) {
             case "bounty" -> List.of("start", "stop", "status");
             case "koth" -> List.of("marker", "setcenter", "start", "stop", "status");
@@ -383,19 +444,19 @@ public class EventCommand implements CommandExecutor, TabCompleter {
             case "fallenstar", "star", "bloodmoon" -> List.of("start", "stop", "status");
             case "director" -> List.of("on", "off", "status", "skip", "run");
             case "outpost", "outposts" -> List.of("create", "remove", "reset", "list");
-            case "season" -> List.of("status", "reset", "give");
             case "boss", "bosses" -> List.of("arena", "start", "stop", "status");
             case "trader", "traders" -> List.of("spawn", "remove", "list");
+            case "draft" -> List.of("start", "cancel", "status");
+            case "team", "teams" -> List.of("add", "remove", "create", "disband", "list");
             default -> List.of();
          };
-         case 3 -> args[0].equalsIgnoreCase("mostwanted") && args[1].equalsIgnoreCase("set") || args[0].equalsIgnoreCase("season") && args[1].equalsIgnoreCase("give")
+         case 3 -> args[0].equalsIgnoreCase("mostwanted") && args[1].equalsIgnoreCase("set")
             ? this.plugin.getPlayerRosterManager().entries().stream().map(java.util.Map.Entry::getValue).toList()
             : (args[0].toLowerCase(Locale.ROOT).startsWith("boss") && (args[1].equalsIgnoreCase("arena") || args[1].equalsIgnoreCase("start")) ? com.legendaryweapons.bosses.BossManager.IDS
             : (args[0].equalsIgnoreCase("director") && args[1].equalsIgnoreCase("run") ? List.of("supplydrop:early", "supplydrop:mid", "supplydrop:late", "bounty", "koth", "fallenstar", "bloodmoon", "boss", "boss:hollow_warden", "boss:wither_king", "boss:leviathan", "boss:ender_colossus")
             : (args[0].toLowerCase(Locale.ROOT).startsWith("outpost") && !args[1].equalsIgnoreCase("create") ? this.events().outposts().names()
-            : (args[0].equalsIgnoreCase("season") && args[1].equalsIgnoreCase("reset") ? List.of("confirm")
             : ((args[0].equalsIgnoreCase("fallenstar") || args[0].equalsIgnoreCase("bloodmoon")) && args[1].equalsIgnoreCase("start") ? Bukkit.getWorlds().stream().map(World::getName).toList()
-            : (args[1].equalsIgnoreCase("start") ? List.of("5", "10", "15", "30") : List.of()))))));
+            : (args[1].equalsIgnoreCase("start") ? List.of("5", "10", "15", "30") : List.of())))));
          case 4 -> args[0].toLowerCase(Locale.ROOT).startsWith("supply") ? Bukkit.getWorlds().stream().map(World::getName).toList()
             : (args[0].toLowerCase(Locale.ROOT).startsWith("outpost") && args[1].equalsIgnoreCase("create") ? this.events().outposts().types() : List.of());
          default -> List.of();

@@ -62,7 +62,17 @@ public class TrustManager {
       this.saveTrustData();
    }
 
+   /** Teammates count as trusting each other both ways. */
+   private boolean teammates(java.util.UUID a, java.util.UUID b) {
+      var teams = this.plugin.getTeamManager();
+      return teams != null && this.plugin.getConfig().getBoolean("teams.allies", true) && teams.sameTeam(a, b);
+   }
+
    public boolean isTrusted(Player player, Player targetPlayer) {
+      if (this.teammates(player.getUniqueId(), targetPlayer.getUniqueId())) {
+         return true;
+      }
+
       List<String> trustedList = this.getTrustedPlayers(player);
       return trustedList != null && trustedList.contains(targetPlayer.getUniqueId().toString());
    }
@@ -73,7 +83,7 @@ public class TrustManager {
 
    /** Same as above for players who may be offline (outpost owners). */
    public boolean isMutuallyTrusted(java.util.UUID a, java.util.UUID b) {
-      return this.trustDataConfig.getStringList("trusted." + a).contains(b.toString())
+      return this.teammates(a, b) || this.trustDataConfig.getStringList("trusted." + a).contains(b.toString())
          && this.trustDataConfig.getStringList("trusted." + b).contains(a.toString());
    }
 }

@@ -49,7 +49,7 @@ public final class AdminMenu extends Menu {
       var bosses = this.plugin.getBossManager();
       this.show(4, Icon.of(Material.COMMAND_BLOCK).name("Admin Panel", BAD)
          .text("Only players with " + PERMISSION + " see this.", DIM)
-         .blank().text(this.plugin.getEventManager().season().status(), NamedTextColor.WHITE)
+         .blank().text(this.plugin.getTeamManager().teams().size() + " teams" + (this.plugin.getTeamManager().draft() != null ? ", a draft is running" : "") + ".", NamedTextColor.WHITE)
          .text(bosses == null ? "Bosses are off." : bosses.status(), NamedTextColor.WHITE).build());
 
       this.button(11, Icon.of(Material.REPEATER).name("Server Settings", ACCENT)

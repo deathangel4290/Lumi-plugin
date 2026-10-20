@@ -70,6 +70,7 @@ public class LegendaryWeapons extends JavaPlugin {
    private DashTracker dashTracker;
    private PlayerRosterManager playerRosterManager;
    private DisguiseManager disguiseManager;
+   private com.legendaryweapons.teams.TeamManager teamManager;
    private CustomItems customItems;
    private EventManager eventManager;
    private com.legendaryweapons.bosses.BossManager bossManager;
@@ -102,6 +103,7 @@ public class LegendaryWeapons extends JavaPlugin {
       this.keybindManager = new KeybindManager(this);
       this.tutorialManager = new TutorialManager(this);
       this.guiManager = new GUIManager(this);
+      this.teamManager = new com.legendaryweapons.teams.TeamManager(this);
       this.eventManager = new EventManager(this);
       this.bossManager = new com.legendaryweapons.bosses.BossManager(this);
       this.swordOfEclipseListener = new SwordOfEclipseListener(this);
@@ -166,6 +168,10 @@ public class LegendaryWeapons extends JavaPlugin {
    }
 
    public void onDisable() {
+      if (this.teamManager != null) {
+         this.teamManager.shutdown();
+      }
+
       com.legendaryweapons.managers.SpriteFx.shutdown();
       if (this.bossManager != null) {
          this.bossManager.shutdown();
@@ -331,6 +337,10 @@ public class LegendaryWeapons extends JavaPlugin {
 
    public com.legendaryweapons.bosses.BossManager getBossManager() {
       return this.bossManager;
+   }
+
+   public com.legendaryweapons.teams.TeamManager getTeamManager() {
+      return this.teamManager;
    }
 
    public EventManager getEventManager() {

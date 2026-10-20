@@ -63,8 +63,8 @@ import org.joml.Vector3f;
  */
 public final class RelicManager implements Listener {
    public enum Type {
-      BOSS_HEART("boss-heart", "Boss Heart", "💜", TextColor.color(190, 90, 255), BossBar.Color.PURPLE, CustomItems.BOSS_HEART, SeasonManager.Stat.HEARTS, Color.fromRGB(190, 90, 255)),
-      STAR_CORE("star-core", "Star Core", "☄", TextColor.color(255, 215, 80), BossBar.Color.YELLOW, CustomItems.STAR_CORE, SeasonManager.Stat.STARS, Color.fromRGB(255, 215, 80));
+      BOSS_HEART("boss-heart", "Boss Heart", "💜", TextColor.color(190, 90, 255), BossBar.Color.PURPLE, CustomItems.BOSS_HEART, Color.fromRGB(190, 90, 255)),
+      STAR_CORE("star-core", "Star Core", "☄", TextColor.color(255, 215, 80), BossBar.Color.YELLOW, CustomItems.STAR_CORE, Color.fromRGB(255, 215, 80));
 
       public final String key;
       public final String label;
@@ -72,17 +72,15 @@ public final class RelicManager implements Listener {
       public final TextColor colour;
       final BossBar.Color barColour;
       final String itemId;
-      final SeasonManager.Stat stat;
       final Color dust;
 
-      Type(String key, String label, String icon, TextColor colour, BossBar.Color barColour, String itemId, SeasonManager.Stat stat, Color dust) {
+      Type(String key, String label, String icon, TextColor colour, BossBar.Color barColour, String itemId, Color dust) {
          this.key = key;
          this.label = label;
          this.icon = icon;
          this.colour = colour;
          this.barColour = barColour;
          this.itemId = itemId;
-         this.stat = stat;
          this.dust = dust;
       }
    }
@@ -279,7 +277,6 @@ public final class RelicManager implements Listener {
       this.plugin.getSoundManager().self(player, Sound.BLOCK_BEACON_POWER_SELECT, 1.0F, 0.7F);
       if (from != null) {
          Bukkit.broadcast(Component.text(relic.type.icon + " " + relic.carrierName + " ripped the " + relic.type.label + " from " + this.manager.publicName(from) + "!", relic.type.colour));
-         this.manager.season().renown(player, "relic-steal", 1.0, "for stealing the " + relic.type.label);
       } else {
          Bukkit.broadcast(Component.text(relic.type.icon + " " + relic.carrierName + " has taken the " + relic.type.label + "! " + hold + " seconds to claim it.", relic.type.colour));
       }
@@ -303,8 +300,6 @@ public final class RelicManager implements Listener {
       this.plugin.getSoundManager().world(at, Sound.ENTITY_FIREWORK_ROCKET_TWINKLE, 1.0F, 1.0F);
       ConfigurationSection settings = this.settings(relic.type);
       this.manager.vault().deposit(player.getUniqueId(), this.manager.loot().roll(settings == null ? null : settings.getConfigurationSection("rewards")), relic.type.label + " claimed");
-      this.manager.season().add(player, relic.type.stat, 1.0);
-      this.manager.season().renown(player, relic.type.key + "-claimed", 1.0, "for claiming the " + relic.type.label);
       if (relic.onClaim != null) {
          try {
             relic.onClaim.accept(player);

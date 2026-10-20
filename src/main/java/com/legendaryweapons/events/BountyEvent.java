@@ -83,6 +83,13 @@ public class BountyEvent {
                this.names.put(pool.get(i).getUniqueId(), this.manager.publicName(pool.get(i)));
             }
 
+            for (Player hunter : pool) {
+               UUID target = this.targets.get(hunter.getUniqueId());
+               if (target != null && this.plugin.getTeamManager().sameTeam(hunter.getUniqueId(), target)) {
+                  this.assignNewTarget(hunter, null);          // never hunt a teammate
+               }
+            }
+
             this.endsAt = System.currentTimeMillis() + Math.max(1, minutes) * 60000L;
             this.board = Bukkit.getScoreboardManager().getNewScoreboard();
             this.objective = this.board.registerNewObjective("lwbounty", Criteria.DUMMY, Component.text("☠ Bounty Hunt", NamedTextColor.RED, TextDecoration.BOLD));
@@ -135,7 +142,8 @@ public class BountyEvent {
       List<Player> options = new ArrayList<>();
 
       for (Player player : Bukkit.getOnlinePlayers()) {
-         if (!player.equals(hunter) && eligible(player) && !player.getUniqueId().equals(avoid)) {
+         if (!player.equals(hunter) && eligible(player) && !player.getUniqueId().equals(avoid)
+            && !this.plugin.getTeamManager().sameTeam(hunter.getUniqueId(), player.getUniqueId())) {
             options.add(player);
          }
       }
@@ -178,8 +186,6 @@ public class BountyEvent {
                .append(Component.text(this.manager.publicName(victim), NamedTextColor.WHITE))
                .append(Component.text(" (" + score + ")", NamedTextColor.GRAY)));
             this.plugin.getSoundManager().self(killer, Sound.ENTITY_PLAYER_LEVELUP, 0.8F, 1.4F);
-            this.manager.season().add(killer, SeasonManager.Stat.BOUNTIES, 1.0);
-            this.manager.season().renown(killer, "bounty-claimed", 1.0, "for claiming a bounty");
             this.assignNewTarget(killer, victim.getUniqueId());
          }
       }
@@ -254,7 +260,6 @@ public class BountyEvent {
             for (Map.Entry<UUID, Integer> entry : this.scores.entrySet()) {
                if (entry.getValue() == best) {
                   Player winner = Bukkit.getPlayer(entry.getKey());
-                  this.manager.season().give(entry.getKey(), this.names.getOrDefault(entry.getKey(), "?"), this.manager.season().renownFor("bounty-win"));
                   if (winner != null) {
                      this.manager.loot().give(winner, rewards);
                      winner.showTitle(Title.title(Component.text("Top Hunter!", NamedTextColor.GOLD), Component.text("You won the Bounty Hunt", NamedTextColor.GRAY)));

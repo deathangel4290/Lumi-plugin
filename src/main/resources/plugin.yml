@@ -2,12 +2,12 @@ name: LegendaryWeapons
 version: ${project.version}
 main: com.legendaryweapons.LegendaryWeapons
 api-version: 1.21
-description: Luminara legendary weapons, rituals, fragments, events, outposts and seasons.
+description: Luminara legendary weapons, rituals, fragments, events, outposts and teams.
 softdepend: [WorldGuard, Towny, BetterModel]
 commands:
   lumi:
-    description: Opens the Luminara menu (settings, recipes, renown, trust, events; admin panel for admins).
-    usage: /lumi [settings|recipes|renown|trust|world|admin|config|events|give]
+    description: Opens the Luminara menu (settings, recipes, your team, trust, events; admin panel for admins).
+    usage: /lumi [settings|recipes|team|trust|world|admin|config|events|give]
     aliases: [luminara, lmenu]
   recipes:
     description: Shows the recipes for legendary weapons.
@@ -54,13 +54,19 @@ commands:
     usage: /lwtest <reset|finishrituals|fragments|give>
     permission: legendaryweapons.admin
   lwevent:
-    description: Starts and stops events, and runs the Event Director, outposts and seasons.
-    usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|season|status|stopall>
+    description: Starts and stops events, and runs the Event Director, outposts, the Team Draft and teams.
+    usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|draft|team|boss|trader|status|stopall>
     permission: legendaryweapons.admin
-  renown:
-    description: Season Renown, your stats and the leaderboards (no argument opens the menu).
-    usage: /renown [player] | /renown top [category]
-    aliases: [season, leaderboard, lb]
+  team:
+    description: Your team (menu), /team chat to talk to your team by default, /team list for every team.
+    usage: /team [chat|list]
+    aliases: [teams]
+  tc:
+    description: Says something to your team only.
+    usage: /tc <message>
+  draft:
+    description: Opens the Team Draft board. Captains pick there.
+    usage: /draft
   rewards:
     description: Opens your reward chest (event prizes, outpost income).
     usage: /rewards

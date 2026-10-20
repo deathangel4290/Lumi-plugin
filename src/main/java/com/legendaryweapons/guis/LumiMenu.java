@@ -1,7 +1,6 @@
 package com.legendaryweapons.guis;
 
 import com.legendaryweapons.LegendaryWeapons;
-import com.legendaryweapons.events.SeasonManager;
 import com.legendaryweapons.events.TokenShop;
 import com.legendaryweapons.items.CustomItems;
 import com.legendaryweapons.rituals.RitualBlock;
@@ -14,7 +13,7 @@ import org.bukkit.entity.Player;
 /**
  * /lumi -- everything a player can do with Luminara, one click away.
  *
- *   row 1   [Recipes]   [Season Renown]   [Reward Chest]
+ *   row 1   [Recipes]   [Your Team]       [Reward Chest]
  *   row 3   [Settings]  [Trusted Players] [World & Events]
  *   corner  [Admin Panel] (admins only)
  */
@@ -25,6 +24,19 @@ public final class LumiMenu extends Menu {
 
    public static void open(LegendaryWeapons plugin, Player player) {
       new LumiMenu(plugin, player).open();
+   }
+
+   static Material banner(net.kyori.adventure.text.format.NamedTextColor colour) {
+      return switch (net.kyori.adventure.text.format.NamedTextColor.NAMES.key(colour)) {
+         case "red" -> Material.RED_BANNER;
+         case "blue" -> Material.BLUE_BANNER;
+         case "green" -> Material.LIME_BANNER;
+         case "yellow" -> Material.YELLOW_BANNER;
+         case "aqua" -> Material.LIGHT_BLUE_BANNER;
+         case "light_purple" -> Material.MAGENTA_BANNER;
+         case "gold" -> Material.ORANGE_BANNER;
+         default -> Material.WHITE_BANNER;
+      };
    }
 
    @Override
@@ -40,13 +52,11 @@ public final class LumiMenu extends Menu {
    @Override
    protected void draw() {
       var events = this.plugin.getEventManager();
-      SeasonManager season = events.season();
-      double renown = season.get(this.viewer.getUniqueId(), SeasonManager.Stat.RENOWN);
-      int rank = season.rank(this.viewer.getUniqueId(), SeasonManager.Stat.RENOWN);
+      var team = this.plugin.getTeamManager().teamOf(this.viewer);
       int waiting = events.vault().count(this.viewer.getUniqueId());
 
       this.show(4, Icon.head(this.viewer.getUniqueId()).name(this.viewer.getName(), GOLD)
-         .stat("Season " + season.season() + " Renown", SeasonManager.format(renown) + (rank > 0 ? "  (#" + rank + ")" : ""), GOLD)
+         .stat("Team", team == null ? "none" : team.name, team == null ? TEXT : team.colour)
          .stat("Luminara Tokens", String.valueOf(TokenShop.count(this.viewer)), GOLD)
          .stat("Rewards waiting", String.valueOf(waiting), waiting > 0 ? GOOD : TEXT)
          .build());
@@ -59,12 +69,22 @@ public final class LumiMenu extends Menu {
          new RecipesMenu(this.plugin, click.player(), this).open();
       });
 
-      this.button(13, Icon.of(Material.GOLDEN_HELMET).name("Season Renown", GOLD)
-         .text("Your stats this season and the leaderboards.")
-         .blank().stat("Renown", SeasonManager.format(renown), GOLD).stat("Rank", rank > 0 ? "#" + rank : "unranked", NamedTextColor.WHITE)
-         .blank().click("view").build(), click -> {
+      boolean drafting = this.plugin.getTeamManager().draft() != null;
+      Icon teamIcon = Icon.of(team == null ? Material.WHITE_BANNER : banner(team.colour))
+         .name(team == null ? "Teams" : team.name, team == null ? GOLD : team.colour);
+      if (team != null) {
+         teamIcon.text("Your teammates, team chat and the draft board.").blank().stat("Players", String.valueOf(team.members.size()), NamedTextColor.WHITE);
+      } else {
+         teamIcon.text("You're not on a team yet. Teams are made in a Team Draft.");
+      }
+
+      if (drafting) {
+         teamIcon.blank().line(Icon.plain("● A draft is running now!", GOOD));
+      }
+
+      this.button(13, teamIcon.blank().click("open").glow(drafting).build(), click -> {
          this.clickSound(click.player());
-         new RenownMenu(this.plugin, click.player(), this).open();
+         new TeamMenu(this.plugin, click.player(), this).open();
       });
 
       this.button(15, Icon.of(Material.CHEST).name("Reward Chest", GOLD).amount(Math.max(1, waiting))

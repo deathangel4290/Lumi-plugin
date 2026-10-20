@@ -951,7 +951,8 @@ events:
 
   # --------------------------------------------------------------------------
   #  Blood Moon: /lwevent bloodmoon start, or the Director. Rises at the next
-  #  nightfall, sets at dawn. Killing a player puts a Renown bounty on you.
+  #  nightfall, sets at dawn. Killing a player puts a token bounty on you:
+  #  whoever kills you collects it, and if you live till dawn it's yours.
   # --------------------------------------------------------------------------
   blood-moon:
     spawn-multiplier: 1.8       # monster cap x this, spawn attempts every tick
@@ -964,6 +965,7 @@ events:
     elite-drops:
       - "LUMINARA_TOKEN 1"
       - "GOLDEN_APPLE 1-2"
+    bounty-tokens-per-kill: 2   # Luminara Tokens added to a killer's bounty per kill
     bounty-reward:              # extra prize for collecting a blood bounty
       - "LUMINARA_TOKEN 1"
 
@@ -1016,44 +1018,17 @@ director:
 
 
 # ============================================================================
-#  Season Renown -- one score every event feeds (/renown, /renown top <board>).
-#  /lwevent season reset confirm ends the season and pays the top three.
+#  Teams -- made by a captain draft (/lwevent draft start, or the admin panel).
+#  Teammates are allies: abilities skip them, no friendly fire, shared outposts.
 # ============================================================================
-season:
-  notify: true                  # "+10 Renown for ..." chat lines
-  kill-repeat-minutes: 10       # the same killer/victim pair only counts once per this long
-  renown:
-    pvp-kill: 10
-    bounty-claimed: 25
-    bounty-win: 100
-    koth-point: 0.2             # per King of the Hill point (300 points = 60)
-    koth-win: 100
-    supply-drop-claimed: 15
-    relic-steal: 25             # killing a relic carrier and taking it
-    boss-heart-claimed: 200
-    star-core-claimed: 150
-    fallen-star-guardian: 2
-    fallen-star-participation: 20
-    fallen-star-pool: 120       # split by contribution score
-    blood-moon-elite: 10
-    blood-bounty: 40            # added to a blood-moon killer's bounty per kill
-    blood-bounty-survived: 30   # surviving the night with a bounty on you
-    boss-participation: 40      # everyone who helped kill a boss
-    boss-pool: 300              # split by contribution score
-    outpost-capture: 30
-    outpost-hour: 15
-  rewards:                      # season end, top three by Renown (into /rewards)
-    first:
-      - "LUMINOSITY_FRAGMENT 2"
-      - "FRAGMENT_T4 1"
-      - "LUMINARA_TOKEN 40"
-    second:
-      - "LUMINOSITY_FRAGMENT 1"
-      - "FRAGMENT_T3 2"
-      - "LUMINARA_TOKEN 25"
-    third:
-      - "FRAGMENT_T3 1"
-      - "LUMINARA_TOKEN 15"
+teams:
+  enabled: true
+  allies: true                  # teammates count as trusting each other (no friendly fire, shared outposts)
+  coloured-names: true          # team colour and [Team] tag on name tags and in the tab list
+  draft:
+    pick-seconds: 45            # each captain's time to pick; then a random player is picked
+    auto-pick: true             # false = running out of time skips the pick instead
+    max-team-size: 0            # 0 = no limit (the pool is shared out evenly anyway)
 
 
 # ============================================================================
@@ -1152,7 +1127,7 @@ token-shop:
 #    max-minutes       the fight ends unrewarded after this long
 #    phases            pool fractions where phases begin (highest first)
 #    rewards           contribution payout (participant / top3 / top1 tables)
-#                      before the Boss Heart drops; Renown: season.renown.boss-*
+#                      before the Boss Heart drops
 #
 #  MODELS (optional): give a boss a model section and the vanilla mob turns
 #  invisible with the model riding it. Each state is an item model id

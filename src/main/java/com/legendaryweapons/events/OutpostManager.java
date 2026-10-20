@@ -43,7 +43,7 @@ import org.joml.Vector3f;
  *
  * Income is deliberately small so the first owner cannot snowball: every outposts.income-minutes
  * that the owner is online (outposts.income-requires-online), the outpost's type pays its income
- * table into their reward chest, plus Renown and Outpost Time on the season board. A player can
+ * table into their reward chest. A player can
  * hold at most outposts.max-per-player.
  */
 public final class OutpostManager {
@@ -356,7 +356,6 @@ public final class OutpostManager {
       this.save();
       Bukkit.broadcast(Component.text("🏰 " + outpost.ownerName + " has captured the " + this.displayName(outpost) + "!", NamedTextColor.GOLD, TextDecoration.BOLD));
       this.plugin.getSoundManager().world(outpost.centre, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.8F, 1.2F);
-      this.manager.season().renown(player, "outpost-capture", 1.0, "for capturing the " + this.displayName(outpost));
    }
 
    private void warnOwner(Outpost outpost, Player attacker) {
@@ -376,7 +375,6 @@ public final class OutpostManager {
       }
 
       Player owner = Bukkit.getPlayer(outpost.owner);
-      this.manager.season().add(outpost.owner, outpost.ownerName, SeasonManager.Stat.OUTPOST_MINUTES, 1.0);
       if (owner == null && this.config() != null && this.config().getBoolean("income-requires-online", true)) {
          return;
       }
@@ -386,7 +384,6 @@ public final class OutpostManager {
       if (outpost.onlineMinutes % every == 0) {
          List<String> income = this.config() == null ? List.of() : this.config().getStringList("types." + outpost.type + ".income");
          this.manager.vault().depositSpecs(outpost.owner, outpost.ownerName, income, this.displayName(outpost) + " income");
-         this.manager.season().give(outpost.owner, outpost.ownerName, this.manager.season().renownFor("outpost-hour"));
       }
    }
 

@@ -7,7 +7,6 @@ import com.legendaryweapons.guis.ConfigMenu;
 import com.legendaryweapons.guis.GiveMenu;
 import com.legendaryweapons.guis.LumiMenu;
 import com.legendaryweapons.guis.RecipesMenu;
-import com.legendaryweapons.guis.RenownMenu;
 import com.legendaryweapons.guis.SettingsMenu;
 import com.legendaryweapons.guis.TrustMenu;
 import com.legendaryweapons.guis.WorldMenu;
@@ -24,11 +23,11 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * /lumi [page] -- the Luminara menu. Pages: settings, recipes, renown, trust, world; and for
+ * /lumi [page] -- the Luminara menu. Pages: settings, recipes, team, draft, trust, world; and for
  * admins: admin, config [path], events, give.
  */
 public class LumiCommand implements CommandExecutor, TabCompleter {
-   private static final List<String> PAGES = List.of("settings", "recipes", "renown", "trust", "world");
+   private static final List<String> PAGES = List.of("settings", "recipes", "team", "draft", "trust", "world");
    private static final List<String> ADMIN_PAGES = List.of("admin", "config", "events", "give");
    private final LegendaryWeapons plugin;
 
@@ -54,7 +53,8 @@ public class LumiCommand implements CommandExecutor, TabCompleter {
          case "" -> hub.open();
          case "settings", "binds", "fx" -> new SettingsMenu(this.plugin, player, hub).open();
          case "recipes" -> new RecipesMenu(this.plugin, player, hub).open();
-         case "renown", "season" -> new RenownMenu(this.plugin, player, hub).open();
+         case "team", "teams" -> new com.legendaryweapons.guis.TeamMenu(this.plugin, player, hub).open();
+         case "draft" -> new com.legendaryweapons.guis.DraftMenu(this.plugin, player, hub).open();
          case "trust" -> new TrustMenu(this.plugin, player, hub).open();
          case "world", "events" -> {
             if (page.equals("events") && admin) {

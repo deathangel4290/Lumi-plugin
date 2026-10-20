@@ -96,6 +96,9 @@ public class ConfigManager {
       {6, "token-shop.trader.model.bettermodel", "", "token_trader"},
    };
 
+   /** Settings of removed features, dropped from existing configs on start. */
+   private static final String[] OBSOLETE = {"season"};
+
    private void retune() {
       File file = new File(this.plugin.getDataFolder(), "config.yml");
       if (!file.exists()) {
@@ -133,6 +136,13 @@ public class ConfigManager {
 
       if (latest > found) {
          this.config.set("balance-revision", latest);
+      }
+
+      for (String path : OBSOLETE) {
+         if (this.config.isSet(path)) {
+            this.config.set(path, null);
+            this.plugin.getLogger().info("Removed " + path + " from config.yml (no longer used)");
+         }
       }
    }
 

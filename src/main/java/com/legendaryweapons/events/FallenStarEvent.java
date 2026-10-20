@@ -601,7 +601,7 @@ public final class FallenStarEvent implements Listener {
       }
 
       if (!this.contribution.isEmpty()) {
-         this.contribution.payOut(this.plugin, "Fallen Star", this.config() == null ? null : this.config().getConfigurationSection("rewards"), "fallen-star");
+         this.contribution.payOut(this.plugin, "Fallen Star", this.config() == null ? null : this.config().getConfigurationSection("rewards"));
       }
 
       this.manager.relics().spawn(RelicManager.Type.STAR_CORE, at, "Fallen Star", claimer -> {
@@ -811,7 +811,6 @@ public final class FallenStarEvent implements Listener {
          Player killer = event.getEntity().getKiller();
          if (killer != null && this.contribution != null) {
             this.contribution.add(killer, Contribution.Kind.MECHANIC, 1.0, this.manager.publicName(killer));
-            this.manager.season().add(killer, SeasonManager.Stat.RENOWN, this.manager.season().renownFor("fallen-star-guardian"));
          }
 
          ParticleManager.spawn(Particle.END_ROD, event.getEntity().getLocation().add(0.0, 1.0, 0.0), 10, 0.3, 0.5, 0.3, 0.05);

@@ -28,7 +28,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 /**
  * Events: Bounty Hunt, King of the Hill, Supply Drops, Most Wanted, Fallen Star, Blood Moon and
- * Outposts, tied together by Season Renown, the reward chest (/rewards) and carry objectives
+ * Outposts, tied together by the reward chest (/rewards), player teams and carry objectives
  * (Boss Heart / Star Core). The Event Director (director.*) starts events on a schedule; admins
  * can still run any of them with /lwevent. State that has to survive a restart (the hill centre,
  * a pending/active Most Wanted, the Director's plan, a crater to heal, rewards owed to offline
@@ -42,7 +42,6 @@ public class EventManager implements Listener {
    private final SupplyDrops supplyDrops;
    private final MostWantedEvent mostWanted;
    private final RewardVault vault;
-   private final SeasonManager season;
    private final RelicManager relics;
    private final FallenStarEvent fallenStar;
    private final BloodMoonEvent bloodMoon;
@@ -60,7 +59,6 @@ public class EventManager implements Listener {
       this.supplyDrops = new SupplyDrops(plugin, this);
       this.mostWanted = new MostWantedEvent(plugin, this);
       this.vault = new RewardVault(plugin);
-      this.season = new SeasonManager(plugin, this);
       this.relics = new RelicManager(plugin, this);
       this.fallenStar = new FallenStarEvent(plugin, this);
       this.bloodMoon = new BloodMoonEvent(plugin, this);
@@ -107,10 +105,6 @@ public class EventManager implements Listener {
 
    public RewardVault vault() {
       return this.vault;
-   }
-
-   public SeasonManager season() {
-      return this.season;
    }
 
    public RelicManager relics() {
@@ -186,7 +180,6 @@ public class EventManager implements Listener {
       this.fallenStar.shutdown();
       this.bloodMoon.stop();
       this.outposts.shutdown();
-      this.season.save();
       this.save();
    }
 
@@ -236,7 +229,6 @@ public class EventManager implements Listener {
       this.bounty.onKill(victim, killer);
       this.mostWanted.onDeath(victim, killer);
       this.koth.onKill(victim, killer);
-      this.season.onDeath(victim, killer);
       this.bloodMoon.onPlayerDeath(victim, killer);
    }
 

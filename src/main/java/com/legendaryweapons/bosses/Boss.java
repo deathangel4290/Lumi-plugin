@@ -4,7 +4,6 @@ import com.legendaryweapons.LegendaryWeapons;
 import com.legendaryweapons.events.Contribution;
 import com.legendaryweapons.events.EventManager;
 import com.legendaryweapons.events.RelicManager;
-import com.legendaryweapons.events.SeasonManager;
 import com.legendaryweapons.managers.ParticleManager;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -427,7 +426,6 @@ public abstract class Boss {
       this.pool -= amount;
       if (attacker != null) {
          this.contribution.add(attacker, Contribution.Kind.DAMAGE, amount, this.events().publicName(attacker));
-         this.events().season().add(attacker, SeasonManager.Stat.BOSS_DAMAGE, amount);
       }
 
       if (this.pool <= 0.0) {
@@ -466,7 +464,7 @@ public abstract class Boss {
       ParticleManager.showcase(Particle.SOUL, at.clone().add(0.0, 1.0, 0.0), 60, 1.5, 1.5, 1.5, 0.08, null);
       this.plugin.getSoundManager().world(at, Sound.ENTITY_WITHER_DEATH, 1.0F, 0.8F);
       Location heart = this.heartDrop();
-      this.contribution.payOut(this.plugin, this.displayName(), this.cfg() == null ? null : this.cfg().getConfigurationSection("rewards"), "boss");
+      this.contribution.payOut(this.plugin, this.displayName(), this.cfg() == null ? null : this.cfg().getConfigurationSection("rewards"));
       this.cleanup();
       this.events().relics().spawn(RelicManager.Type.BOSS_HEART, heart, this.displayName(), claimer -> {
       });

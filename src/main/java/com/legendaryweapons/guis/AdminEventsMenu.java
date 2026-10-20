@@ -117,9 +117,30 @@ public final class AdminEventsMenu extends Menu {
       this.button(32, Icon.of(Material.WITHER_SKELETON_SKULL).name("Bosses", GOLD)
          .text(bosses == null ? "Off." : bosses.status(), NamedTextColor.WHITE).blank().click("open").build(),
          AdminMenu.opens(this, p -> new AdminBossMenu(this.plugin, p, this)));
-      this.button(33, Icon.of(Material.HONEYCOMB).name("Season", GOLD)
-         .text(events.season().status(), NamedTextColor.WHITE).blank()
-         .text("End it with /lwevent season reset confirm (pays the top three).", DIM).build(), null);
+      var teams = this.plugin.getTeamManager();
+      var draft = teams.draft();
+      Icon draftIcon = Icon.of(draft != null ? Material.LIME_BANNER : Material.WHITE_BANNER).name("Team Draft", draft != null ? GOOD : GOLD)
+         .line(Icon.plain(draft != null ? "● Running" : "○ Not running", draft != null ? GOOD : DIM)).blank()
+         .stat("Teams", String.valueOf(teams.teams().size()), NamedTextColor.WHITE);
+      if (draft != null) {
+         draftIcon.stat("Picking", draft.current().name, draft.current().colour).stat("Pool", String.valueOf(draft.pool().size()), NamedTextColor.WHITE)
+            .blank().hint("Left-click", "watch the board").hint("Shift-right-click", "cancel the draft");
+      } else {
+         draftIcon.blank().hint("Left-click", "set up a draft").hint("Shift-right-click", "disband every team");
+      }
+
+      this.button(33, draftIcon.glow(draft != null).build(), click -> {
+         if (click.shift() && click.right()) {
+            this.toggleSound(click.player(), false);
+            AdminMenu.run(this, click.player(), draft != null ? "lwevent draft cancel" : "lwevent team disband all");
+         } else if (draft != null) {
+            this.clickSound(click.player());
+            new DraftMenu(this.plugin, click.player(), this).open();
+         } else {
+            this.clickSound(click.player());
+            new DraftMenu.Setup(this.plugin, click.player(), this).open();
+         }
+      });
       this.button(34, Icon.of(Material.BEACON).name("Outposts", GOLD)
          .lines(events.outposts().list().subList(Math.min(1, events.outposts().list().size()), events.outposts().list().size()))
          .blank().text("Make one with /lwevent outpost create <name> <type> where it should be.", DIM).build(), null);

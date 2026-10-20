@@ -51,7 +51,8 @@ import org.bukkit.scheduler.BukkitRunnable;
  *   - monster drops and XP are doubled;
  *   - the screen edges carry a red tint (a per-player virtual world border warning, intensity
  *     events.blood-moon.red-tint, 0 = off) - the only way to "redden" the night server-side;
- *   - killing a player puts a Renown bounty on your head until dawn. Each further kill raises it.
+ *   - killing a player puts a token bounty on your head until dawn (blood-moon.bounty-tokens-per-kill
+ *     a kill). Whoever kills you collects it; survive to dawn and it's yours.
  *     Whoever brings you down collects it.
  */
 public final class BloodMoonEvent implements Listener {
@@ -161,11 +162,9 @@ public final class BloodMoonEvent implements Listener {
          }
       }
 
+      // surviving the night with a bounty on your head pays you that bounty
       for (Map.Entry<UUID, Double> entry : this.bounties.entrySet()) {
-         Player survivor = Bukkit.getPlayer(entry.getKey());
-         if (survivor != null) {
-            this.manager.season().renown(survivor, "blood-bounty-survived", 1.0, "for surviving the night with a bounty on your head");
-         }
+         this.payTokens(entry.getKey(), (int)Math.round(entry.getValue()), "Survived the Blood Moon with a bounty on your head");
       }
 
       this.bounties.clear();
@@ -296,12 +295,11 @@ public final class BloodMoonEvent implements Listener {
       if (tag == 2) {
          List<String> eliteDrops = this.config() == null ? List.of() : this.config().getStringList("elite-drops");
          event.getDrops().addAll(this.manager.loot().build(eliteDrops));
-         this.manager.season().renown(killer, "blood-moon-elite", 1.0, "for slaying a Blood-Touched elite");
          ParticleManager.spawn(Particle.DUST, event.getEntity().getLocation().add(0.0, 1.0, 0.0), 20, 0.4, 0.6, 0.4, 0.0, new Particle.DustOptions(Color.fromRGB(180, 0, 0), 1.5F));
       }
    }
 
-   /** Blood bounties. Runs after EventManager's season bookkeeping for the same death. */
+   /** Blood bounties, paid in Luminara Tokens. */
    public void onPlayerDeath(Player victim, Player killer) {
       if (!this.active || !victim.getWorld().equals(this.world)) {
          return;
@@ -318,18 +316,24 @@ public final class BloodMoonEvent implements Listener {
       }
 
       if (onVictim != null) {
-         this.manager.season().give(killer, onVictim, "for collecting the blood bounty on " + this.manager.publicName(victim));
-         this.manager.season().add(killer, SeasonManager.Stat.BOUNTIES, 1.0);
+         this.payTokens(killer.getUniqueId(), (int)Math.round(onVictim), "Blood bounty on " + this.manager.publicName(victim));
          this.manager.vault().depositSpecs(killer.getUniqueId(), this.manager.publicName(killer),
             this.config() == null ? List.of() : this.config().getStringList("bounty-reward"), "Blood bounty");
-         Bukkit.broadcast(Component.text("🩸 " + this.manager.publicName(killer) + " collected the " + SeasonManager.format(onVictim) + " Renown bounty on " + this.manager.publicName(victim) + ".", BLOOD));
+         Bukkit.broadcast(Component.text("🩸 " + this.manager.publicName(killer) + " collected the " + Math.round(onVictim) + "-token bounty on " + this.manager.publicName(victim) + ".", BLOOD));
       }
 
-      double step = this.manager.season().renownFor("blood-bounty");
+      double step = this.config() == null ? 2.0 : this.config().getDouble("bounty-tokens-per-kill", 2.0);
       double total = this.bounties.merge(killer.getUniqueId(), step, Double::sum);
       this.bountyNames.put(killer.getUniqueId(), this.manager.publicName(killer));
-      Bukkit.broadcast(Component.text("🩸 " + this.manager.publicName(killer) + " has spilled blood - a " + SeasonManager.format(total) + " Renown bounty is on their head!", BLOOD, TextDecoration.BOLD));
+      Bukkit.broadcast(Component.text("🩸 " + this.manager.publicName(killer) + " has spilled blood - a " + Math.round(total) + "-token bounty is on their head!", BLOOD, TextDecoration.BOLD));
       this.plugin.getSoundManager().self(killer, Sound.ENTITY_WITHER_AMBIENT, 0.6F, 1.4F);
+   }
+
+   /** Luminara Tokens into someone's reward chest. */
+   private void payTokens(UUID id, int tokens, String reason) {
+      if (tokens > 0) {
+         this.manager.vault().deposit(id, List.of(com.legendaryweapons.items.CustomItems.get().create(com.legendaryweapons.items.CustomItems.LUMINARA_TOKEN, tokens)), reason);
+      }
    }
 
    private Component hud(Player player) {
@@ -339,7 +343,7 @@ public final class BloodMoonEvent implements Listener {
 
       Double mine = this.bounties.get(player.getUniqueId());
       return mine != null
-         ? Component.text("🩸 Bounty on you: " + SeasonManager.format(mine), BLOOD, TextDecoration.BOLD)
+         ? Component.text("🩸 Bounty on you: " + Math.round(mine) + " tokens", BLOOD, TextDecoration.BOLD)
          : (player.getWorld().equals(this.world) ? Component.text("🩸 Blood Moon", BLOOD) : null);
    }
 
