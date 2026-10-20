@@ -71,7 +71,8 @@ public class Ritual {
       this.duration = Math.max(1, plugin.getConfig().getInt("weapons." + weaponKey + ".ritual-time", plugin.getConfigManager().getRitualTimer()));
       this.world = this.location.getWorld();
       this.secondsRemaining = this.duration - (int)((System.currentTimeMillis() - startTime) / 1000L);
-      this.scene = new RitualScene(plugin, this.location, this.theme()[0]);
+      Color[] colours = this.theme();
+      this.scene = new RitualScene(plugin, this.location, colours[0], colours[1]);
       this.createFloatingItem();
       this.particleTask = (new BukkitRunnable() {
          double time = 0.0;
@@ -239,17 +240,50 @@ public class Ritual {
       });
    }
 
+   /**
+    * The weapon's ritual colours: { main, accent }. Read from weapons.<key>.ritual-colors in the
+    * config ("#RRGGBB" strings), falling back to each weapon's built-in pair, matched to its look.
+    */
    private Color[] theme() {
-      return switch (this.weaponKey) {
-         case "scythe-of-diablo" -> new Color[]{Color.fromRGB(220, 20, 60), Color.fromRGB(90, 0, 12)};
-         case "ender-glaive" -> new Color[]{Color.fromRGB(150, 60, 235), Color.fromRGB(60, 0, 95)};
-         case "axe-of-zeus" -> new Color[]{Color.fromRGB(120, 230, 255), Color.fromRGB(255, 255, 255)};
-         case "sword-of-eclipse" -> new Color[]{Color.fromRGB(255, 120, 230), Color.fromRGB(28, 28, 40)};
-         case "hellstorm" -> new Color[]{Color.fromRGB(255, 165, 40), Color.fromRGB(190, 45, 10)};
-         case "lost-trident-of-atlantis" -> new Color[]{Color.fromRGB(60, 220, 220), Color.fromRGB(20, 90, 145)};
-         case "chiones-blade" -> new Color[]{Color.fromRGB(170, 230, 255), Color.fromRGB(60, 130, 220)};
-         case "luminosity" -> new Color[]{Color.fromRGB(255, 220, 90), Color.fromRGB(255, 255, 220)};
-         case "titans-axe" -> new Color[]{Color.fromRGB(200, 170, 110), Color.fromRGB(90, 70, 40)};
+      Color[] fallback = defaultTheme(this.weaponKey);
+      List<String> configured = this.plugin.getConfig().getStringList("weapons." + this.weaponKey + ".ritual-colors");
+      if (configured.isEmpty()) {
+         return fallback;
+      }
+
+      Color main = parseColor(configured.get(0), fallback[0]);
+      Color accent = configured.size() > 1 ? parseColor(configured.get(1), fallback[1]) : fallback[1];
+      return new Color[]{main, accent};
+   }
+
+   private static Color parseColor(String text, Color fallback) {
+      try {
+         String hex = text.trim();
+         if (hex.startsWith("#")) {
+            hex = hex.substring(1);
+         }
+
+         return Color.fromRGB(Integer.parseInt(hex, 16) & 0xFFFFFF);
+      } catch (RuntimeException ignored) {
+         return fallback;
+      }
+   }
+
+   private static Color[] defaultTheme(String weaponKey) {
+      return switch (weaponKey) {
+         case "scythe-of-diablo" -> new Color[]{Color.fromRGB(0xD4142C), Color.fromRGB(0xE8B040)};          // crimson, gold
+         case "titans-axe" -> new Color[]{Color.fromRGB(0xFF4A14), Color.fromRGB(0xC88A40)};                 // magma, bronze
+         case "hellstorm" -> new Color[]{Color.fromRGB(0xFF8A00), Color.fromRGB(0xFFE070)};                  // blaze, flame gold
+         case "luminosity" -> new Color[]{Color.fromRGB(0xFFE08A), Color.fromRGB(0x86A6E6)};                 // sunlight, moonlight
+         case "axe-of-zeus" -> new Color[]{Color.fromRGB(0xFFF35A), Color.fromRGB(0x4FC3FF)};                // lightning, storm blue
+         case "blade-of-diminution" -> new Color[]{Color.fromRGB(0xC8B0FF), Color.fromRGB(0xE8A83A)};        // gravity lilac, sand
+         case "tether-chain" -> new Color[]{Color.fromRGB(0x28D27C), Color.fromRGB(0xF2C85A)};               // binding green, gold
+         case "ender-glaive" -> new Color[]{Color.fromRGB(0xB14CFF), Color.fromRGB(0x2FBF6F)};               // ender purple, ender eye
+         case "lost-trident-of-atlantis" -> new Color[]{Color.fromRGB(0x2FD8C8), Color.fromRGB(0xDDE4EA)};   // sea aqua, pearl
+         case "chiones-blade" -> new Color[]{Color.fromRGB(0xBDEFFF), Color.fromRGB(0x3F78B0)};              // ice, glacier blue
+         case "hermes-blade" -> new Color[]{Color.fromRGB(0x5AB4FF), Color.fromRGB(0xF2C45A)};               // sky, messenger gold
+         case "veil-of-mimicry" -> new Color[]{Color.fromRGB(0x2C4FD8), Color.fromRGB(0xE83A3A)};            // royal blue, ruby
+         case "sword-of-eclipse" -> new Color[]{Color.fromRGB(0x7A4CF0), Color.fromRGB(0xFFC45C)};           // eclipse violet, corona gold
          default -> new Color[]{Color.fromRGB(138, 43, 226), Color.fromRGB(75, 0, 130)};
       };
    }

@@ -68,12 +68,20 @@ public final class RitualScene {
    private boolean finale;
 
    RitualScene(LumiWeapons plugin, Location block, Color tint) {
+      this(plugin, block, tint, mix(tint, Color.WHITE, 0.35));
+   }
+
+   /**
+    * Each weapon crafts in its own two colours: `tint` (outer rune circle, crystal pylons, sky beam)
+    * and `accent` (inner circle, the beams into the weapon, the motes and the finale ring).
+    */
+   RitualScene(LumiWeapons plugin, Location block, Color tint, Color accent) {
       this.plugin = plugin;
       this.world = block.getWorld();
       this.centre = block.clone().add(0.5, 0.0, 0.5);
       this.weapon = this.centre.clone().add(0.0, WEAPON_HEIGHT, 0.0);
       this.tint = tint;
-      this.light = mix(tint, Color.WHITE, 0.35);
+      this.light = mix(accent, Color.WHITE, 0.15);
    }
 
    // ------------------------------------------------------------------ models
@@ -236,7 +244,7 @@ public final class RitualScene {
          // rebuilt after the chunks reloaded: beams already earned come back lit, without a fanfare
          int lit = Math.min(4, 1 + (int)Math.floor(progress * 4.0));
          for (int i = 0; i < lit; i++) {
-            this.beams[i] = this.spawn(this.beamStart(i).add(this.weapon).multiply(0.5), model("vfx/ritual_beam", this.tint), this.beamShape(i, BEAM_WIDTH), Display.Billboard.FIXED, 1.5F);
+            this.beams[i] = this.spawn(this.beamStart(i).add(this.weapon).multiply(0.5), model("vfx/ritual_beam", this.light), this.beamShape(i, BEAM_WIDTH), Display.Billboard.FIXED, 1.5F);
             this.beamShown[i] = true;
          }
 
@@ -271,7 +279,7 @@ public final class RitualScene {
          int lit = Math.min(4, 1 + (int)Math.floor(progress * 4.0));
          for (int i = 0; i < 4; i++) {
             if (i < lit && this.beams[i] == null) {
-               this.beams[i] = this.spawn(this.beamStart(i).add(this.weapon).multiply(0.5), model("vfx/ritual_beam", this.tint), this.beamShape(i, 0.0F), Display.Billboard.FIXED, 1.5F);
+               this.beams[i] = this.spawn(this.beamStart(i).add(this.weapon).multiply(0.5), model("vfx/ritual_beam", this.light), this.beamShape(i, 0.0F), Display.Billboard.FIXED, 1.5F);
                this.ignite(i);
             } else if (this.beams[i] != null && !this.beamShown[i]) {
                this.beamShown[i] = true;

@@ -149,6 +149,7 @@ weapons:
   # ---- Scythe Of Diablo -- netherite sword + Sharpness V = 11 base damage
   scythe-of-diablo:
     display-name: "§c§lScythe Of Diablo"
+    ritual-colors: ["#D4142C", "#E8B040"]   # ritual colours: main (outer circle, pylons, sky beam), accent (inner circle, beams)
     material: NETHERITE_SWORD
     custom-model-data: 1
     power-tier: 3
@@ -164,6 +165,7 @@ weapons:
   # ---- Ender Glaive -- netherite sword = 8 base damage
   ender-glaive:
     display-name: "§5§lEnder Glaive"
+    ritual-colors: ["#B14CFF", "#2FBF6F"]
     material: NETHERITE_SWORD
     custom-model-data: 2
     power-tier: 1
@@ -179,6 +181,7 @@ weapons:
   # ---- Axe Of Zeus -- netherite axe + Sharpness V = 13 base damage
   axe-of-zeus:
     display-name: "§b§lAxe Of Zeus"
+    ritual-colors: ["#FFF35A", "#4FC3FF"]
     material: NETHERITE_AXE
     custom-model-data: 3
     power-tier: 3
@@ -206,6 +209,7 @@ weapons:
   # --------------------------------------------------------------------------
   sword-of-eclipse:
     display-name: "§d§lSword Of Eclipse"
+    ritual-colors: ["#7A4CF0", "#FFC45C"]
     material: NETHERITE_SWORD
     custom-model-data: 4
     power-tier: 4
@@ -232,6 +236,7 @@ weapons:
   # --------------------------------------------------------------------------
   hellstorm:
     display-name: "§e§lHellstorm"
+    ritual-colors: ["#FF8A00", "#FFE070"]
     material: CROSSBOW
     custom-model-data: 5
     power-tier: 3
@@ -250,6 +255,7 @@ weapons:
   # ---- Lost Trident Of Atlantis -- trident = 9 base damage
   lost-trident-of-atlantis:
     display-name: "§3§lLost Trident Of Atlantis"
+    ritual-colors: ["#2FD8C8", "#DDE4EA"]
     material: TRIDENT
     custom-model-data: 6
     power-tier: 2
@@ -276,6 +282,7 @@ weapons:
   # ---- Hermes's Blade -- netherite sword = 8 base damage
   hermes-blade:
     display-name: "§f§lHermes's Blade"
+    ritual-colors: ["#5AB4FF", "#F2C45A"]
     material: NETHERITE_SWORD
     custom-model-data: 7
     power-tier: 1
@@ -300,6 +307,7 @@ weapons:
   # --------------------------------------------------------------------------
   chiones-blade:
     display-name: "§b§lChione's Blade"
+    ritual-colors: ["#BDEFFF", "#3F78B0"]
     material: NETHERITE_SWORD
     custom-model-data: 8
     power-tier: 2
@@ -328,6 +336,7 @@ weapons:
   # --------------------------------------------------------------------------
   titans-axe:
     display-name: "§6§lTitan's Axe"
+    ritual-colors: ["#FF4A14", "#C88A40"]
     material: NETHERITE_AXE
     custom-model-data: 9
     power-tier: 3
@@ -361,6 +370,7 @@ weapons:
   # --------------------------------------------------------------------------
   blade-of-diminution:
     display-name: "§d§lBlade of Diminution"
+    ritual-colors: ["#C8B0FF", "#E8A83A"]
     material: NETHERITE_SWORD
     custom-model-data: 10
     power-tier: 2
@@ -386,6 +396,7 @@ weapons:
   # --------------------------------------------------------------------------
   luminosity:
     display-name: "§e§lLuminosity"
+    ritual-colors: ["#FFE08A", "#86A6E6"]
     material: MACE
     custom-model-data: 11
     power-tier: 4
@@ -426,6 +437,7 @@ weapons:
   # --------------------------------------------------------------------------
   veil-of-mimicry:
     display-name: "§5§lVeil of Mimicry"
+    ritual-colors: ["#2C4FD8", "#E83A3A"]
     material: BOOK
     custom-model-data: 12
     power-tier: 3
@@ -451,6 +463,7 @@ weapons:
   # --------------------------------------------------------------------------
   tether-chain:
     display-name: "§7§lTether Chain"
+    ritual-colors: ["#28D27C", "#F2C85A"]
     material: LEAD
     custom-model-data: 13
     power-tier: 2
