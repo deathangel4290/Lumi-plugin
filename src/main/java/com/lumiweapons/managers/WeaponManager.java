@@ -68,7 +68,7 @@ public class WeaponManager {
 
          enchantments.forEach((enchant, level) -> meta.addEnchant(enchant, level, true));
          this.applyMelee(meta, weaponKey);
-         applyCooldownGroup(meta, weaponKey);
+         this.applyCooldownGroup(meta, weaponKey);
          NamespacedKey key = LumiWeapons.key("legendary-weapon");
          meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, weaponKey);
          meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, this.revision(weaponKey));
@@ -95,14 +95,27 @@ public class WeaponManager {
 
    /**
     * Gives the weapon its own cooldown group (luminara:<weapon>), so an ability cooldown greys out
-    * this legendary only, not every netherite sword in the hotbar. The component's own cooldown is
-    * one tick: it is only there for the group.
+    * this legendary only, not every netherite sword in the hotbar.
+    *
+    * The component's own cooldown matters for items the game "uses": after a use (a trident
+    * throw) vanilla puts the group on that cooldown itself, replacing any cooldown the plugin set.
+    * So the Lost Trident carries its throw cooldown here and the game enforces it on every throw;
+    * everything else gets one tick, which only exists for the group.
     */
-   static void applyCooldownGroup(ItemMeta meta, String weaponKey) {
+   private void applyCooldownGroup(ItemMeta meta, String weaponKey) {
       org.bukkit.inventory.meta.components.UseCooldownComponent cooldown = meta.getUseCooldown();
-      cooldown.setCooldownSeconds(0.05F);
+      cooldown.setCooldownSeconds((float)Math.max(0.05, this.componentCooldownTicks(weaponKey) / 20.0));
       cooldown.setCooldownGroup(new NamespacedKey("luminara", weaponKey.toLowerCase(java.util.Locale.ROOT)));
       meta.setUseCooldown(cooldown);
+   }
+
+   /** Ticks of the item's own use cooldown: the Lost Trident's throw cooldown, else 1. */
+   public long componentCooldownTicks(String weaponKey) {
+      if ("lost-trident-of-atlantis".equals(weaponKey)) {
+         return Math.max(1L, this.plugin.getConfig().getLong("weapons.lost-trident-of-atlantis.abilities.throw-cooldown", 80L));
+      }
+
+      return 1L;
    }
 
    private String lorePlain(String weaponKey) {
@@ -126,7 +139,7 @@ public class WeaponManager {
             + this.lorePlain(weaponKey)
             + this.configManager.getWeaponCustomModelData(weaponKey)
             + this.configManager.getWeaponPowerTier(weaponKey)
-            + "|cooldown-group")
+            + "|cooldown-group:" + this.componentCooldownTicks(weaponKey))
          .hashCode();
    }
 
@@ -157,7 +170,7 @@ public class WeaponManager {
                   meta.lore(fresh.lore());
                   meta.setCustomModelDataComponent(fresh.getCustomModelDataComponent());
                   this.applyMelee(meta, weaponKey);
-                  applyCooldownGroup(meta, weaponKey);
+                  this.applyCooldownGroup(meta, weaponKey);
                   meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, current);
                   item.setItemMeta(meta);
                   return true;

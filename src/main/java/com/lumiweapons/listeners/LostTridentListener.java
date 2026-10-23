@@ -105,10 +105,16 @@ public class LostTridentListener implements Listener, WeaponAbility {
                return;
             }
 
-            ConfigurationSection settings = this.plugin.getConfigManager().getWeaponAbilities(WEAPON_KEY);
-            long throwCooldown = settings == null ? 80L : settings.getLong("throw-cooldown", 80L);
-            // greys the trident out until it can be thrown again (it comes back on its own)
-            cooldowns.setWithItemFeedback(player, THROW_COOLDOWN_KEY, throwCooldown, item);
+            // The trident's own use cooldown is the throw cooldown (WeaponManager), so the game greys
+            // it out and blocks the next throw by itself. Track it here too for the HUD, and set the
+            // item cooldown a tick later in case this trident predates the component.
+            long throwCooldown = this.weaponManager.componentCooldownTicks(WEAPON_KEY);
+            cooldowns.set(player, THROW_COOLDOWN_KEY, throwCooldown);
+            this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {
+               if (player.isOnline() && player.getCooldown(item) < throwCooldown - 2) {
+                  player.setCooldown(item, (int)Math.max(1L, throwCooldown - 1L));
+               }
+            }, 1L);
             Trident trident = (Trident)event.getEntity();
             // Keep the player's own trident (their enchantments, their durability); only make sure it
             // comes back. It used to be swapped for a fresh template, wiping anything added to it.
