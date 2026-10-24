@@ -30,6 +30,7 @@ ender-glaive:
     - "Sneak + hold ability | charge a Spear Pearl"
     - "~Hold longer to throw it further."
   cooldowns:
+    - "Throw | {s:throw-cooldown}"
     - "Pearl | {s:pearl-cooldown}"
 
 axe-of-zeus:

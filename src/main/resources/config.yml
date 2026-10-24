@@ -174,6 +174,7 @@ weapons:
       melee-damage: 0.0                 # 0 = normal sword damage (with Sharpness, crits, Strength)
       max-charge-time: 3000             # MILLISECONDS of hold for a full charge
       max-throw-strength: 2.0
+      throw-cooldown: 80                # 4s, from the throw (the glaive still has to come back)
       pearl-cooldown: 200               # 10s
     enchantments: [UNBREAKING:3]
     recipe: [DIAMOND_SWORD, ENDER_PEARL:16, GHAST_TEAR:4, FRAGMENT_T1:2]

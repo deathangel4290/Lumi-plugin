@@ -32,6 +32,7 @@ import org.bukkit.util.Vector;
 
 public class EnderGlaiveListener implements Listener, WeaponAbility {
    private static final String PEARL_COOLDOWN_KEY = "ender-glaive-pearl";
+   private static final String THROW_COOLDOWN_KEY = "ender-glaive-throw";
    private final LumiWeapons plugin;
    private final WeaponManager weaponManager;
    private final HashMap<UUID, Long> chargingPlayers = new HashMap<>();
@@ -52,7 +53,9 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
 
    @Override
    public net.kyori.adventure.text.Component hud(Player player) {
-      return com.lumiweapons.managers.HudManager.cooldown(player, "Pearl", PEARL_COOLDOWN_KEY);
+      return com.lumiweapons.managers.HudManager.cooldown(player, "Throw", THROW_COOLDOWN_KEY)
+         .append(Component.text("   "))
+         .append(com.lumiweapons.managers.HudManager.cooldown(player, "Pearl", PEARL_COOLDOWN_KEY));
    }
 
    @Override
@@ -118,6 +121,12 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                this.startChargeEffects(player);
             }
          } else {
+            ConfigurationSection abilities = this.plugin.getConfigManager().getWeaponAbilities("ender-glaive");
+            long throwCooldown = abilities != null ? abilities.getLong("throw-cooldown", 80L) : 80L;
+            if (!this.plugin.getCooldownManager().tryUseWithItemFeedback(player, THROW_COOLDOWN_KEY, throwCooldown)) {
+               return;
+            }
+
             ItemStack glaiveItem = mainHand.clone();
             glaiveItem.setAmount(1);
             if (mainHand.getAmount() > 1) {
