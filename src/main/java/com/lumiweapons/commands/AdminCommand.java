@@ -36,7 +36,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          new com.lumiweapons.guis.AdminMenu(this.plugin, panel, new com.lumiweapons.guis.LumiMenu(this.plugin, panel)).open();
          return true;
       } else if (args.length == 0) {
-         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns>");
+         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns|crafted|uncraft>");
          return true;
       } else if (args[0].equalsIgnoreCase("give")) {
          if (sender instanceof Player player) {
@@ -87,6 +87,34 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("This command can only be used by a player.");
             return true;
          }
+      } else if (args[0].equalsIgnoreCase("crafted")) {
+         List<String> crafted = this.plugin.getRitualManager().craftedWeapons();
+         sender.sendMessage(crafted.isEmpty() ? "§7No legendary has been forged yet." : "§dForged: §f" + String.join("§7, §f", crafted));
+         return true;
+      } else if (args[0].equalsIgnoreCase("uncraft")) {
+         if (args.length < 2) {
+            sender.sendMessage("Usage: /lw uncraft <weapon|all>  (frees it to be forged again; copies players have are kept)");
+            return true;
+         }
+
+         var rituals = this.plugin.getRitualManager();
+         List<String> targets = args[1].equalsIgnoreCase("all") ? rituals.craftedWeapons() : List.of(args[1].toLowerCase());
+         List<String> freed = new ArrayList<>();
+         for (String key : targets) {
+            if (rituals.uncraft(key)) {
+               freed.add(key);
+            } else if (rituals.isCrafted(key)) {
+               sender.sendMessage("§c" + key + " is being forged right now. Break its altar to cancel the ritual.");
+            } else if (targets.size() == 1) {
+               sender.sendMessage("§c" + key + " isn't on the forged list. §7/lw crafted shows it.");
+            }
+         }
+
+         if (!freed.isEmpty()) {
+            sender.sendMessage("§aCan be forged again: §f" + String.join("§7, §f", freed) + "§7. Copies players already have were not touched.");
+         }
+
+         return true;
       } else if (args[0].equalsIgnoreCase("resetcooldowns")) {
          if (sender instanceof Player playerxx) {
             this.plugin.resetAllCooldowns(playerxx);
@@ -103,7 +131,11 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       if (args.length == 1) {
-         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns");
+         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns", "crafted", "uncraft");
+      } else if (args.length == 2 && args[0].equalsIgnoreCase("uncraft")) {
+         List<String> options = new ArrayList<>(this.plugin.getRitualManager().craftedWeapons());
+         options.add("all");
+         return options.stream().filter(key -> key.startsWith(args[1].toLowerCase())).collect(Collectors.toList());
       } else if (args.length == 2 && args[0].equalsIgnoreCase("give")) {
          Set<String> weaponKeys = this.weaponManager.getWeaponKeys();
          return weaponKeys.stream().filter(key -> key.startsWith(args[1].toLowerCase())).collect(Collectors.toList());

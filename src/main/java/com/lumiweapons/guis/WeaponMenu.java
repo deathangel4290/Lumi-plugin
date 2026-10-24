@@ -78,8 +78,29 @@ public final class WeaponMenu extends Menu {
 
       if (config.isSingleCraft()) {
          boolean forged = this.plugin.getRitualManager().isCrafted(this.weaponKey);
-         this.show(31, Icon.of(forged ? Material.RED_DYE : Material.LIME_DYE).name(forged ? "Already forged" : "Not forged yet", forged ? BAD : GOOD)
-            .text("Only one of each legendary exists on this server.").build());
+         Icon status = Icon.of(forged ? Material.RED_DYE : Material.LIME_DYE).name(forged ? "Already forged" : "Not forged yet", forged ? BAD : GOOD)
+            .text("Only one of each legendary exists on this server.");
+         boolean admin = forged && this.viewer.hasPermission("lumiweapons.admin");
+         if (admin) {
+            status.blank().text("Admins: lets it be forged again. Copies players already have are kept.", DIM).hint("Shift-right-click", "un-forge");
+         }
+
+         this.button(31, status.build(), !admin ? null : click -> {
+            if (!(click.shift() && click.right())) {
+               this.errorSound(click.player());
+               return;
+            }
+
+            if (this.plugin.getRitualManager().uncraft(this.weaponKey)) {
+               this.toggleSound(click.player(), true);
+               tell(click.player(), "It can be forged again.", GOOD);
+            } else {
+               this.errorSound(click.player());
+               tell(click.player(), "It's being forged right now. Break its altar to cancel the ritual.", BAD);
+            }
+
+            this.refresh();
+         });
       }
 
       boolean passives = Passives.WITH_PASSIVES.contains(this.weaponKey) && Passives.offHandEnabled(this.plugin);

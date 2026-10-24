@@ -692,6 +692,29 @@ public class RitualManager implements Listener {
       return this.craftedWeapons.contains(weaponKey);
    }
 
+   public List<String> craftedWeapons() {
+      return new ArrayList<>(this.craftedWeapons);
+   }
+
+   /**
+    * Frees a legendary to be forged again (one-per-server mode). Copies players already have are
+    * kept. A weapon whose ritual is still running stays taken: break that altar to cancel it.
+    */
+   public boolean uncraft(String weaponKey) {
+      for (Ritual ritual : this.activeRituals) {
+         if (ritual.getWeaponKey().equals(weaponKey)) {
+            return false;
+         }
+      }
+
+      boolean removed = this.craftedWeapons.remove(weaponKey);
+      if (removed) {
+         this.save();
+      }
+
+      return removed;
+   }
+
    public boolean startRitual(Player player, Location location, String weaponKey, List<ItemStack> consumed) {
       String closed = this.whyClosed(player, location);
       if (!this.configManager.isRitualCraftingEnabled()) {
