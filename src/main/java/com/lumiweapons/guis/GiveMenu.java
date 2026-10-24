@@ -65,6 +65,10 @@ public final class GiveMenu extends Menu {
             List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
             lore.add(Component.empty());
             lore.add(Icon.plain("▸ ", ACCENT).append(Component.text("Left-click", NamedTextColor.YELLOW)).append(Component.text(" to take", DIM)));
+            if (item.getMaxStackSize() > 1) {
+               lore.add(Icon.plain("▸ ", ACCENT).append(Component.text("Shift-click", NamedTextColor.YELLOW)).append(Component.text(" to take a stack", DIM)));
+            }
+
             lore.add(Icon.plain("▸ ", ACCENT).append(Component.text("Right-click", NamedTextColor.YELLOW)).append(Component.text(" to give to a player", DIM)));
             meta.lore(lore);
          });
@@ -78,7 +82,12 @@ public final class GiveMenu extends Menu {
                }).open();
             } else {
                this.toggleSound(click.player(), true);
-               give(click.player(), item);
+               ItemStack taken = item.clone();
+               if (click.shift() && item.getMaxStackSize() > 1) {
+                  taken.setAmount(item.getMaxStackSize());
+               }
+
+               give(click.player(), taken);
             }
          });
       }

@@ -193,36 +193,48 @@ template already wired into the pack and the config. Model over it, export, and 
   move, cannot be hurt, and nobody but ops can build, dig, pour or burn around them.
 * **Teams** — made in a **captain draft**:
   - An admin chooses the captains, and anyone who should sit out.
-  - Captains take turns picking from the pool in snake order on the draft board (`/draft`). A boss
-    bar shows each pick's timer (`teams.draft.pick-seconds`). When the time runs out, a random
-    player is picked.
-  - Teammates are allies: abilities skip them, they can't hurt each other, they share outposts, and
-    bounty hunts never target a teammate.
-  - Teams have coloured names in the tab list and over heads, and their own chat (`/tc <message>`,
-    or `/team chat` to make it the default).
-  - `/team` opens your team. Captains can rename it there.
+  - Captains take turns picking from the pool on the draft board (`/draft`), in snake or round
+    order. A boss bar shows each pick's timer. When the time runs out, a random player is picked
+    (or the pick passes, with auto-pick off).
+  - Everything about the draft is under `teams.draft` and can be set on the draft setup page:
+    pick time, warning, order, captain order, max team size, team names, colours, boss bar,
+    titles, sounds, whether old teams are replaced, and what a cancel does.
+  - Teammates are allies. `teams.allies` picks which parts apply: abilities skip them, friendly
+    fire, shared outposts, and bounty hunts never targeting a teammate.
+  - Names are in the team colour in the tab list and over heads, with ♛ for the captain and ✦ for
+    members (`teams.nametags`: symbols, their colours, an optional `[Team]`, or off entirely). A
+    Veil disguise copies its target's look and its name tag follows the player smoothly.
+  - Team chat: `/tc <message>`, or `/team chat` to make it the default (`teams.chat`).
+  - `/team` opens your team: members, distance, team chat. Captains can rename it, and kick when
+    `teams.captains.can-kick` is on. `/team leave` (when `teams.allow-leave` is on).
+  - Admins manage every team in **Admin Panel > Teams & Draft**: rename, recolour, add or remove
+    players, change the captain, disband.
 
 ## Commands
 
 **`/lumi`** (also `/luminara`) opens the Luminara menu:
-- recipes
+- recipes (click a weapon for its ingredients, ritual and off-hand passives)
 - your team and the draft board
 - the reward chest
 - your settings (ability key, effect level)
 - trusted players
-- what's on in the world Admins also get the **Admin Panel** (`/lw` or `/lumi admin`), with:
+- what's on in the world, and how many Ancient Altars have been found
+
+The hub shows the legendaries in your hands and lights up while an event is running. Admins also get the **Admin Panel** (`/lw` or `/lumi admin`), with:
 - **Server Settings:** every config.yml setting in game, with the comments from the file as descriptions.
   - Booleans toggle on click. Numbers go up and down with left and right click (shift for ten
     steps, Q to type a value). Text is typed in chat.
+  - A ✎ marks a setting changed from the default; Ctrl+Q on it puts the default back.
   - Changes save to config.yml and apply straight away, like `/lw reload`. A few, such as crafting
     recipes, need a restart. Saving keeps the file's comments but normalises its spacing.
 - **Events and Bosses:** start or stop each event, run the Event Director, summon bosses and set their arenas.
-- **Give Items and Testing Tools.**
+- **Teams & Draft:** every team, the draft setup, and making teams by hand.
+- **Give Items** (shift-click for a stack) **and Testing Tools.**
 
 | Command | Who | |
 |---|---|---|
 | `/lumi [settings\|recipes\|team\|draft\|trust\|world]` | everyone | the Luminara menu, or one page of it |
-| `/team [chat\|list]`, `/tc <message>`, `/draft` | everyone | your team, team chat, the draft board |
+| `/team [chat\|list\|leave]`, `/tc <message>`, `/draft` | everyone | your team, team chat, the draft board |
 | `/recipes`, `/binds`, `/wpspark` | everyone | recipe book, ability key (opens settings), fire ability from a client keybind |
 | `/rewards`, `/tokenshop`, `/outposts` | everyone | reward chest, where the Token Traders are, outpost list |
 | `/lwfx [full\|reduced\|minimal\|off]` | everyone | your own particle level (no argument: your settings) |

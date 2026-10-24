@@ -72,7 +72,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
       } else {
          ParticleManager.Level level = args.length > 0 ? ParticleManager.Level.parse(args[0]) : null;
          if (level == null && args.length == 0) {
-            new com.lumiweapons.guis.SettingsMenu(this.plugin, player, null).open();
+            new com.lumiweapons.guis.SettingsMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
          } else if (level == null) {
             player.sendMessage(Component.text("Particles: " + this.plugin.getParticleManager().levelOf(player).name().toLowerCase(Locale.ROOT) + ". Use /lwfx <full|reduced|minimal|off>.", NamedTextColor.GRAY));
          } else {
@@ -86,7 +86,7 @@ public class TestingCommand implements CommandExecutor, TabCompleter {
 
    private boolean handleGui(CommandSender sender) {
       if (sender instanceof Player player) {
-         new com.lumiweapons.guis.GiveMenu(this.plugin, player, null).open();
+         new com.lumiweapons.guis.GiveMenu(this.plugin, player, new com.lumiweapons.guis.AdminMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player))).open();
       } else {
          sender.sendMessage("§cThis command can only be used by a player.");
       }

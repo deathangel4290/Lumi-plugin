@@ -28,7 +28,7 @@ public class TrustCommand implements CommandExecutor {
          } else if (command.getName().equalsIgnoreCase("untrust")) {
             this.handleUntrust(player, args);
          } else if (command.getName().equalsIgnoreCase("trustlist")) {
-            new com.lumiweapons.guis.TrustMenu(this.plugin, player, null).open();
+            new com.lumiweapons.guis.TrustMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
          }
 
          return true;

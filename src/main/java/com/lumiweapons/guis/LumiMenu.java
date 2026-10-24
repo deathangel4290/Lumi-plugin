@@ -50,16 +50,59 @@ public final class LumiMenu extends Menu {
    }
 
    @Override
+   protected boolean live() {
+      return true;
+   }
+
+   private String weaponName(org.bukkit.inventory.ItemStack item) {
+      var weapons = this.plugin.getWeaponManager();
+      if (!weapons.isLegendaryWeapon(item)) {
+         return null;
+      }
+
+      return item.getItemMeta().hasDisplayName()
+         ? net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(item.getItemMeta().displayName())
+         : weapons.getWeaponKey(item);
+   }
+
+   /** How many events are going on right now (for the World & Events button). */
+   private int running() {
+      var events = this.plugin.getEventManager();
+      var bosses = this.plugin.getBossManager();
+      int count = 0;
+      count += events.bounty().isRunning() ? 1 : 0;
+      count += events.koth().isRunning() ? 1 : 0;
+      count += events.fallenStar().isRunning() ? 1 : 0;
+      count += events.bloodMoon().isActive() ? 1 : 0;
+      count += events.mostWanted().isActive() ? 1 : 0;
+      count += bosses != null && bosses.isRunning() ? 1 : 0;
+      return count;
+   }
+
+   @Override
    protected void draw() {
       var events = this.plugin.getEventManager();
       var team = this.plugin.getTeamManager().teamOf(this.viewer);
       int waiting = events.vault().count(this.viewer.getUniqueId());
 
-      this.show(4, this.head(this.viewer.getUniqueId()).name(this.viewer.getName(), GOLD)
-         .stat("Team", team == null ? "none" : team.name, team == null ? TEXT : team.colour)
+      String main = this.weaponName(this.viewer.getInventory().getItemInMainHand());
+      String off = this.weaponName(this.viewer.getInventory().getItemInOffHand());
+      Icon me = this.head(this.viewer.getUniqueId()).name(this.viewer.getName(), GOLD)
+         .stat("Team", team == null ? "none" : (this.viewer.getUniqueId().equals(team.captain) ? "♛ " : "") + team.name, team == null ? TEXT : team.colour)
          .stat("Luminara Tokens", String.valueOf(TokenShop.count(this.viewer)), GOLD)
-         .stat("Rewards waiting", String.valueOf(waiting), waiting > 0 ? GOOD : TEXT)
-         .build());
+         .stat("Rewards waiting", String.valueOf(waiting), waiting > 0 ? GOOD : TEXT);
+      if (main != null || off != null) {
+         me.blank();
+         if (main != null) {
+            me.stat("Main hand", main, NamedTextColor.WHITE);
+         }
+
+         if (off != null) {
+            me.stat("Off-hand", off + (com.lumiweapons.abilities.Passives.WITH_PASSIVES.contains(this.plugin.getWeaponManager().getWeaponKey(this.viewer.getInventory().getItemInOffHand())) ? " (passives on)" : ""), NamedTextColor.WHITE);
+         }
+      }
+
+      this.show(4, me.build());
 
       this.button(11, Icon.of(RitualBlock.getRitualBlockItem()).name("Legendary Recipes", ACCENT)
          .clearLore()
@@ -114,10 +157,12 @@ public final class LumiMenu extends Menu {
          new TrustMenu(this.plugin, click.player(), this).open();
       });
 
+      int running = this.running();
       this.button(33, Icon.of(CustomItems.get().create(CustomItems.LUMINARA_TOKEN, 1)).name("World & Events", GOLD)
          .clearLore()
          .text("What's on now, the next event, outposts and where the Token Traders stand.")
-         .blank().click("look").build(), click -> {
+         .blank().line(running > 0 ? Icon.plain("● " + running + (running == 1 ? " event" : " events") + " happening now", GOOD) : Icon.plain("○ Nothing running right now", DIM))
+         .blank().click("look").glow(running > 0).build(), click -> {
          this.clickSound(click.player());
          new WorldMenu(this.plugin, click.player(), this).open();
       });

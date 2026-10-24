@@ -18,6 +18,9 @@ import org.bukkit.inventory.ItemStack;
  * already forged.
  */
 public final class RecipesMenu extends Menu {
+   private record Tile(ItemStack icon, String weapon) {
+   }
+
    public RecipesMenu(LumiWeapons plugin, Player viewer, Menu parent) {
       super(plugin, viewer, parent);
    }
@@ -53,12 +56,12 @@ public final class RecipesMenu extends Menu {
 
       this.show(4, how.build());
 
-      List<ItemStack> entries = new ArrayList<>();
+      List<Tile> entries = new ArrayList<>();
       var rituals = this.plugin.getRitualManager();
       if (!rituals.ancientAltars().isEmpty() || !rituals.craftedAltarsAllowed()) {
-         entries.add(Icon.of(RitualBlock.getAncientAltarItem()).clearLore().name("Ancient Altars", ACCENT)
+         entries.add(new Tile(Icon.of(RitualBlock.getAncientAltarItem()).clearLore().name("Ancient Altars", ACCENT)
             .text(rituals.ancientAltars().size() + " are hidden around the map. Find one to forge a legendary there.")
-            .blank().text(rituals.craftedAltarsAllowed() ? "You can also craft your own altar." : "Altars can't be crafted on this server.", DIM).build());
+            .blank().text(rituals.craftedAltarsAllowed() ? "You can also craft your own altar." : "Altars can't be crafted on this server.", DIM).build(), null));
       }
 
       if (config.isRitualBlockRecipeEnabled() && rituals.craftedAltarsAllowed()) {
@@ -71,7 +74,7 @@ public final class RecipesMenu extends Menu {
             altar.line(Icon.plain(" " + entry.getKey() + " = " + RitualRecipes.prettify(entry.getValue().name()), TEXT));
          }
 
-         entries.add(altar.build());
+         entries.add(new Tile(altar.build(), null));
       }
 
       for (String key : this.weapons()) {
@@ -92,13 +95,17 @@ public final class RecipesMenu extends Menu {
             icon.line(forged ? Icon.plain("✖ Already forged on this server", BAD) : Icon.plain("✔ Not forged yet", GOOD));
          }
 
-         entries.add(icon.build());
+         entries.add(new Tile(icon.blank().click("see it up close").build(), key));
       }
 
       int[] slots = this.inner();
-      List<ItemStack> shown = this.slice(entries, slots.length);
+      List<Tile> shown = this.slice(entries, slots.length);
       for (int i = 0; i < shown.size(); i++) {
-         this.show(slots[i], shown.get(i));
+         Tile tile = shown.get(i);
+         this.button(slots[i], tile.icon(), tile.weapon() == null ? null : click -> {
+            this.clickSound(click.player());
+            new WeaponMenu(this.plugin, click.player(), this, tile.weapon()).open();
+         });
       }
 
       this.show(this.rows() * 9 - 1, Icon.of(CustomItems.get().create(CustomItems.fragmentId(1), 1)).clearLore().name("Weapon Fragments", NamedTextColor.AQUA)

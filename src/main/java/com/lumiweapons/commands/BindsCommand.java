@@ -36,7 +36,7 @@ public class BindsCommand implements CommandExecutor, TabCompleter {
 
             return true;
          } else {
-            new SettingsMenu(this.plugin, player, null).open();
+            new SettingsMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
             return true;
          }
       }

@@ -71,7 +71,9 @@ read the weapon's numbers from `config.yml`.
 
 Every chest menu extends `guis/Menu` and builds its buttons with `guis/Icon`. Those two classes hold
 the shared look: frame, colours, sounds, controls in fixed places on the bottom row, and pages.
-`/lumi` is the hub. A menu icon can use a custom item model with `Icon.model("luminara:...")`, so
+`/lumi` is the hub. A menu that overrides `live()` redraws every second, and player heads come
+from `this.head(uuid)` so skins show for offline players too. A menu opened by a command gets the
+hub (or the Admin Panel) as its parent, so Back always works. A menu icon can use a custom item model with `Icon.model("luminara:...")`, so
 the art session can give menus their own icons later.
 
 ## The old name

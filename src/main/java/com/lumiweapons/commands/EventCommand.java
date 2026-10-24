@@ -254,7 +254,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                      }
 
                      if (captains.isEmpty() && sender instanceof Player player) {
-                        new com.lumiweapons.guis.DraftMenu.Setup(this.plugin, player, null).open();
+                        new com.lumiweapons.guis.DraftMenu.Setup(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
                      } else {
                         reply(sender, com.lumiweapons.teams.Draft.start(this.plugin, this.plugin.getTeamManager(), captains, new ArrayList<>(Bukkit.getOnlinePlayers())), null);
                      }

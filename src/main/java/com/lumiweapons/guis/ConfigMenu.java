@@ -22,7 +22,8 @@ import org.bukkit.inventory.ItemStack;
  *
  * Booleans toggle on click. Numbers: left-click up, right-click down, shift for ten steps, Q to
  * type a value. Text: click to type it (or cycle, when the setting has fixed choices). Lists of
- * text: left-click adds a line, shift-right-click removes the last one.
+ * text: left-click adds a line, shift-right-click removes the last one. A setting changed from the
+ * default has a ✎ after its name, and Ctrl+Q puts the default back.
  *
  * Every change is written to config.yml (its comments are kept) and applied like /lw reload.
  */
@@ -69,7 +70,18 @@ public final class ConfigMenu extends Menu {
          return "Every setting";
       }
 
-      return pretty(this.path.substring(this.path.lastIndexOf('.') + 1));
+      List<String> crumbs = new ArrayList<>();
+      for (String part : this.path.split("\\.")) {
+         crumbs.add(pretty(part));
+      }
+
+      String title = String.join(" › ", crumbs);
+      while (title.length() > 32 && crumbs.size() > 1) {      // keep the end of the path when it's long
+         crumbs.remove(0);
+         title = "… › " + String.join(" › ", crumbs);
+      }
+
+      return title;
    }
 
    @Override
@@ -188,7 +200,7 @@ public final class ConfigMenu extends Menu {
 
    private void entry(int slot, String key) {
       FileConfiguration config = this.config();
-      String name = pretty(key.substring(key.lastIndexOf('.') + 1));
+      String name = pretty(key.substring(key.lastIndexOf('.') + 1)) + (this.changed(key) ? " ✎" : "");
       if (config.isConfigurationSection(key)) {
          Icon icon = Icon.of(this.iconFor(key)).clearLore().name(name, GOLD);
          this.describe(icon, key);
@@ -204,6 +216,10 @@ public final class ConfigMenu extends Menu {
          icon.stat("Now", onOff(on), on ? GOOD : BAD);
          this.defaultLine(icon, key);
          this.button(slot, icon.blank().click("turn " + (on ? "off" : "on")).glow(on).build(), click -> {
+            if (this.reset(click, key)) {
+               return;
+            }
+
             this.change(key, !on);
             this.toggleSound(click.player(), !on);
          });
@@ -232,6 +248,10 @@ public final class ConfigMenu extends Menu {
       icon.blank().hint("Left-click", "add " + number(step, whole)).hint("Right-click", "take " + number(step, whole))
          .hint("Shift", "for " + number(step * 10.0, whole)).hint("Q", "type a value");
       this.button(slot, icon.build(), click -> {
+         if (this.reset(click, key)) {
+            return;
+         }
+
          if (click.drop()) {
             this.clickSound(click.player());
             ChatPrompt.ask(click.player(), "New value for " + key + ":", number(value, whole), typed -> {
@@ -281,6 +301,10 @@ public final class ConfigMenu extends Menu {
       }
 
       this.button(slot, icon.build(), click -> {
+         if (this.reset(click, key)) {
+            return;
+         }
+
          if (choices != null) {
             int at = -1;
             for (int i = 0; i < choices.size(); i++) {
@@ -326,6 +350,10 @@ public final class ConfigMenu extends Menu {
 
       icon.hint("Left-click", "add a line").hint("Shift-right-click", "remove the last line");
       this.button(slot, icon.build(), click -> {
+         if (this.reset(click, key)) {
+            return;
+         }
+
          List<Object> edited = new ArrayList<>(list);
          if (click.shift() && click.right()) {
             if (edited.isEmpty()) {
@@ -350,10 +378,33 @@ public final class ConfigMenu extends Menu {
    private void defaultLine(Icon icon, String key) {
       var defaults = this.config().getDefaults();
       Object fallback = defaults == null ? null : defaults.get(key);
-      Object now = this.config().get(key);
-      if (fallback != null && now != null && !String.valueOf(fallback).equals(String.valueOf(now))) {
-         icon.stat("Default", String.valueOf(fallback), DIM);
+      if (this.changed(key)) {
+         icon.stat("Default", String.valueOf(fallback), DIM).hint("Ctrl+Q", "reset to default");
       }
+   }
+
+   /** A leaf setting this server has changed from the plugin's default. */
+   private boolean changed(String key) {
+      var defaults = this.config().getDefaults();
+      Object fallback = defaults == null || this.config().isConfigurationSection(key) ? null : defaults.get(key);
+      Object now = this.config().get(key);
+      return fallback != null && now != null && !String.valueOf(fallback).equals(String.valueOf(now));
+   }
+
+   /** Ctrl+Q on a changed setting puts the default back. */
+   private boolean reset(Menu.Click click, String key) {
+      if (!click.reset()) {
+         return false;
+      }
+
+      if (!this.changed(key)) {
+         this.errorSound(click.player());
+         return true;
+      }
+
+      this.change(key, this.config().getDefaults().get(key));
+      this.toggleSound(click.player(), false);
+      return true;
    }
 
    // ------------------------------------------------------------------ changing

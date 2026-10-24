@@ -25,6 +25,11 @@ public final class AdminBossMenu extends Menu {
       return 5;
    }
 
+   @Override
+   protected boolean live() {
+      return true;                                        // the fight's health and phase
+   }
+
    static Material icon(String id) {
       return switch (id) {
          case "hollow_warden" -> Material.SCULK_SHRIEKER;

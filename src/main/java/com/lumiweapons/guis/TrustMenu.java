@@ -29,7 +29,9 @@ public final class TrustMenu extends Menu {
          }
       }
 
-      return out;
+      out.sort(java.util.Comparator.comparing((UUID id) -> Bukkit.getPlayer(id) == null)
+         .thenComparing(id -> String.valueOf(Bukkit.getOfflinePlayer(id).getName()), String.CASE_INSENSITIVE_ORDER));
+      return out;                                         // online first, then by name
    }
 
    @Override

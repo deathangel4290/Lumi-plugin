@@ -479,6 +479,16 @@ public class RitualManager implements Listener {
       return this.ancient.contains(blockOf(location));
    }
 
+   /** How many Ancient Altars someone has found (and used) so far. */
+   public int discoveredCount() {
+      int found = 0;
+      for (Location altar : this.discovered) {
+         found += this.ancient.contains(altar) ? 1 : 0;
+      }
+
+      return found;
+   }
+
    public Set<Location> ancientAltars() {
       return new HashSet<>(this.ancient);
    }

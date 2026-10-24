@@ -58,6 +58,11 @@ public abstract class Menu implements InventoryHolder {
          return this.type.isShiftClick();
       }
 
+      /** Ctrl+Q: reset to the default, where a menu offers it. */
+      public boolean reset() {
+         return this.type == ClickType.CONTROL_DROP;
+      }
+
       public boolean drop() {
          return this.type == ClickType.DROP || this.type == ClickType.CONTROL_DROP;
       }

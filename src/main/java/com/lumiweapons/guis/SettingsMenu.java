@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
  *
  *   row 1   [Ability key]  . [Left] [Right] [Swap F] [Drop Q] [None]
  *   row 2   [Effects]      . [Full] [Reduced] [Minimal] [Off]
+ *   row 3   [Team chat]    . [everyone / your team]   (on a team)
  */
 public final class SettingsMenu extends Menu {
    private record Bind(String action, String label, Material icon, String how) {
@@ -54,7 +55,7 @@ public final class SettingsMenu extends Menu {
 
    @Override
    protected int rows() {
-      return 4;
+      return 5;
    }
 
    @Override
@@ -111,6 +112,18 @@ public final class SettingsMenu extends Menu {
                this.toggleSound(click.player(), option.level() != ParticleManager.Level.OFF);
                this.refresh();
             }
+         });
+      }
+
+      var teams = this.plugin.getTeamManager();
+      var team = teams.teamOf(this.viewer);
+      if (team != null && teams.chatEnabled()) {
+         boolean chat = teams.chatOn(this.viewer);
+         this.show(28, Icon.of(Material.WRITABLE_BOOK).name("Team chat", ACCENT).text("Where your normal chat messages go. /tc always talks to your team.").build());
+         this.button(30, Icon.of(chat ? Material.LIME_DYE : Material.GRAY_DYE).name(chat ? "To " + team.name : "To everyone", chat ? team.colour : net.kyori.adventure.text.format.NamedTextColor.WHITE)
+            .blank().click("switch").glow(chat).build(), click -> {
+            this.toggleSound(click.player(), teams.toggleChat(click.player()));
+            this.refresh();
          });
       }
    }

@@ -33,7 +33,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          sender.sendMessage("§cYou don't have permission to use this command.");
          return true;
       } else if (args.length == 0 && sender instanceof Player panel) {
-         new com.lumiweapons.guis.AdminMenu(this.plugin, panel, null).open();
+         new com.lumiweapons.guis.AdminMenu(this.plugin, panel, new com.lumiweapons.guis.LumiMenu(this.plugin, panel)).open();
          return true;
       } else if (args.length == 0) {
          sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns>");

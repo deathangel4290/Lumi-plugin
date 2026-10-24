@@ -11,8 +11,8 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 
 /**
- * What is happening on the server: the events running right now, the next scheduled one, the
- * outposts and the Token Traders. Only what everyone may know (no disguised names, no armed
+ * What is happening on the server: the events running right now (row 1), the next scheduled one
+ * (header), the outposts, the Token Traders and the Ancient Altars (row 3). Only what everyone may know (no disguised names, no armed
  * Blood Moon before it rises).
  */
 public final class WorldMenu extends Menu {
@@ -31,6 +31,11 @@ public final class WorldMenu extends Menu {
    }
 
    @Override
+   protected boolean live() {
+      return true;
+   }
+
+   @Override
    protected void draw() {
       EventManager events = this.plugin.getEventManager();
       Icon next = Icon.of(Material.CLOCK).name("Next event", GOLD);
@@ -44,26 +49,26 @@ public final class WorldMenu extends Menu {
 
       this.show(4, next.build());
 
-      this.tile(19, Material.GOLD_INGOT, "Bounty Hunt", events.bounty().isRunning(), events.bounty().status(),
+      this.tile(10, Material.GOLD_INGOT, "Bounty Hunt", events.bounty().isRunning(), events.bounty().status(),
          "Everyone gets a target. Hunt yours, and stay alive.");
-      this.tile(20, Material.GOLDEN_HELMET, "King of the Hill", events.koth().isRunning(), events.koth().status(),
+      this.tile(11, Material.GOLDEN_HELMET, "King of the Hill", events.koth().isRunning(), events.koth().status(),
          "Hold the hill for points. Most points wins.");
-      this.tile(21, Material.NETHER_STAR, "Fallen Star", events.fallenStar().isRunning(), events.fallenStar().status(),
+      this.tile(12, Material.NETHER_STAR, "Fallen Star", events.fallenStar().isRunning(), events.fallenStar().status(),
          "A star falls. Beat its guardians and claim the Star Core.");
-      this.tile(22, Material.REDSTONE, "Blood Moon", events.bloodMoon().isActive(), events.bloodMoon().isActive() ? events.bloodMoon().status() : "Not up.",
+      this.tile(13, Material.REDSTONE, "Blood Moon", events.bloodMoon().isActive(), events.bloodMoon().isActive() ? events.bloodMoon().status() : "Not up.",
          "A night of stronger mobs and blood bounties.");
       var bosses = this.plugin.getBossManager();
       boolean boss = bosses != null && bosses.isRunning();
-      this.tile(23, Material.WITHER_SKELETON_SKULL, "World Boss", boss, boss ? bosses.status() : "No boss is awake.",
+      this.tile(14, Material.WITHER_SKELETON_SKULL, "World Boss", boss, boss ? bosses.status() : "No boss is awake.",
          "Four bosses, each with its own arena. Damage dealt counts for the rewards.");
-      this.tile(24, Material.TARGET, "Most Wanted", events.mostWanted().isActive(), events.mostWanted().isActive() ? "The hunt is on." : "Nobody is wanted.",
+      this.tile(15, Material.TARGET, "Most Wanted", events.mostWanted().isActive(), events.mostWanted().isActive() ? "The hunt is on." : "Nobody is wanted.",
          "One player carries a price on their head.");
       int drops = events.supplyDrops().active();
-      this.tile(25, Material.CHEST_MINECART, "Supply Drops", drops > 0, drops > 0 ? drops + " waiting to be claimed." : "None waiting.",
+      this.tile(16, Material.CHEST_MINECART, "Supply Drops", drops > 0, drops > 0 ? drops + " waiting to be claimed." : "None waiting.",
          "Crates fall from the sky with loot and fragments.");
 
       List<Component> outposts = events.outposts().list();
-      this.show(30, Icon.of(Material.BEACON).name("Outposts", GOLD)
+      this.show(29, Icon.of(Material.BEACON).name("Outposts", GOLD)
          .text("Capture one and it pays out while you hold it.")
          .blank().lines(outposts.subList(Math.min(1, outposts.size()), outposts.size())).build());
 
@@ -77,7 +82,20 @@ public final class WorldMenu extends Menu {
          shop.line(Icon.plain("  " + Ritual.dimensionName(home.getWorld()) + " " + home.getBlockX() + ", " + home.getBlockY() + ", " + home.getBlockZ(), NamedTextColor.YELLOW));
       }
 
-      this.show(32, shop.build());
+      this.show(31, shop.build());
+
+      var rituals = this.plugin.getRitualManager();
+      if (!rituals.ancientAltars().isEmpty()) {
+         int found = rituals.discoveredCount();
+         int total = rituals.ancientAltars().size();
+         this.show(33, Icon.of(com.lumiweapons.rituals.RitualBlock.getAncientAltarItem()).clearLore().name("Ancient Altars", ACCENT)
+            .stat("Found", found + " of " + total, found >= total ? GOOD : NamedTextColor.WHITE)
+            .blank().text("Hidden around the map. Forge a legendary at one, if you can find it.", DIM).build());
+      } else {
+         this.show(33, Icon.of(Material.ENCHANTING_TABLE).name("Rituals", ACCENT)
+            .stat("Running now", String.valueOf(rituals.getActiveRituals().size()), NamedTextColor.WHITE)
+            .blank().text(rituals.clock().windowsEnabled() ? "Rituals can be started " + rituals.clock().describe() + "." : "Craft an altar and forge a legendary.", DIM).build());
+      }
    }
 
    private void tile(int slot, Material icon, String name, boolean on, String status, String about) {

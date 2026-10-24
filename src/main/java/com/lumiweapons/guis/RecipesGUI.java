@@ -13,6 +13,6 @@ public class RecipesGUI {
    }
 
    public void open(@NotNull Player player) {
-      new RecipesMenu(this.plugin, player, null).open();
+      new RecipesMenu(this.plugin, player, new LumiMenu(this.plugin, player)).open();
    }
 }
