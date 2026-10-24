@@ -20,16 +20,11 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.World.Environment;
-import org.bukkit.entity.Display.Billboard;
-import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 /**
  * One running ritual.
@@ -55,7 +50,7 @@ public class Ritual {
    private final BukkitTask task;
    private final BukkitTask particleTask;
    private int secondsRemaining;
-   private ItemDisplay floatingItem;
+   private final RitualWeapon floating;
    private final RitualScene scene;
    private int lastMilestone = 0;
    private boolean finished = false;
@@ -73,7 +68,7 @@ public class Ritual {
       this.secondsRemaining = this.duration - (int)((System.currentTimeMillis() - startTime) / 1000L);
       Color[] colours = this.theme();
       this.scene = new RitualScene(plugin, this.location, colours[0], colours[1]);
-      this.createFloatingItem();
+      this.floating = new RitualWeapon(plugin, this.location, plugin.getWeaponManager().getWeapon(weaponKey), this.displayName(), colours[0], colours[1]);
       this.particleTask = (new BukkitRunnable() {
          double time = 0.0;
          int frame = 0;
@@ -93,6 +88,7 @@ public class Ritual {
             } else {
                if (Ritual.this.secondsRemaining <= 2) {
                   Ritual.this.scene.finale();
+                  Ritual.this.floating.finale();
                }
 
                Ritual.this.updateBars();
@@ -217,29 +213,6 @@ public class Ritual {
 
    // ------------------------------------------------------------------ visuals
 
-   private void createFloatingItem() {
-      Location spawnLocation = this.location.clone().add(0.5, RitualScene.WEAPON_HEIGHT, 0.5);
-      ItemStack weaponStack = this.plugin.getWeaponManager().getWeapon(this.weaponKey);
-      if (weaponStack == null || weaponStack.getType().isAir()) {
-         weaponStack = new ItemStack(Material.BARRIER);
-      }
-
-      final ItemStack shown = weaponStack;
-      final Color glow = this.theme()[0];
-      this.floatingItem = this.world.spawn(spawnLocation, ItemDisplay.class, display -> {
-         display.setItemStack(shown);
-         display.setPersistent(false);
-         display.setInvulnerable(true);
-         display.setBillboard(Billboard.FIXED);
-         display.setInterpolationDuration(3);
-         display.setCustomNameVisible(true);
-         display.customName(LegacyComponentSerializer.legacySection().deserialize(this.displayName()));
-         display.setGlowing(true);
-         display.setGlowColorOverride(glow);
-         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.3F, 1.3F, 1.3F), new Quaternionf()));
-      });
-   }
-
    /**
     * The weapon's ritual colours: { main, accent }. Read from weapons.<key>.ritual-colors in the
     * config ("#RRGGBB" strings), falling back to each weapon's built-in pair, matched to its look.
@@ -293,8 +266,9 @@ public class Ritual {
    }
 
    /**
-    * The ritual is drawn by RitualScene (rune circles, pylons, beams, sky beam); this keeps it built
-    * -- it is rebuilt if its chunks were unloaded -- and turns the weapon over the altar.
+    * The ritual is drawn by RitualScene (rune circles, pylons, beams, sky beam) and RitualWeapon (the
+    * weapon over the altar); this keeps both built -- they are rebuilt if their chunks were
+    * unloaded -- and moving.
     */
    private void drawEffects(double time, int frame) {
       if (this.world != null && this.world.isChunkLoaded(this.location.getBlockX() >> 4, this.location.getBlockZ() >> 4)) {
@@ -304,16 +278,8 @@ public class Ritual {
             this.scene.tick(progress, frame);
          }
 
-         // The weapon: bobbing, spinning faster as it nears completion. Respawn it if the chunk was
-         // unloaded (non-persistent displays are removed with the chunk).
-         if (this.floatingItem == null || !this.floatingItem.isValid()) {
-            this.createFloatingItem();
-         }
-
-         float spin = (float)(time * (1.0 + progress * 2.0));
-         this.floatingItem.setInterpolationDelay(0);
-         this.floatingItem.setInterpolationDuration(3);
-         this.floatingItem.setTransformation(new Transformation(new Vector3f(0.0F, (float)(Math.sin(time * 1.6) * 0.12), 0.0F), new Quaternionf().rotateY(spin), new Vector3f(1.3F, 1.3F, 1.3F), new Quaternionf()));
+         // the weapon over the altar (rebuilt too if the chunk was unloaded)
+         this.floating.tick(fresh, progress, frame, this.secondsRemaining);
       }
    }
 
@@ -411,9 +377,7 @@ public class Ritual {
 
       this.bars.clear();
       this.scene.remove();
-      if (this.floatingItem != null && this.floatingItem.isValid()) {
-         this.floatingItem.remove();
-      }
+      this.floating.remove();
    }
 
    // ------------------------------------------------------------------ accessors

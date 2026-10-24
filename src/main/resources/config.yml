@@ -484,6 +484,10 @@ weapons:
 ritual:
   timer: 900                            # SECONDS (900 = 15 minutes)
   altar-decoration: true                # small turning crystal above idle altars; false = glyph particles only
+  floating-weapon:                      # the weapon hovering over the altar while it is forged
+    scale: 1.5                          # 1.0 = about a block tall
+    label: true                         # its name and a progress bar over it
+    glow-outline: false                 # a coloured outline in the weapon's colour (shows through walls)
   # The altar is the resource pack's model (an empty spawner underneath: same mining time as an
   # enchanting table, immovable, and explosion-proof through the plugin). Existing enchanting-table
   # altars convert when their chunk loads. false = plain enchanting tables, for servers whose pack
