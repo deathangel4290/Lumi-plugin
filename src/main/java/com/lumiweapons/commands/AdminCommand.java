@@ -36,7 +36,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          new com.lumiweapons.guis.AdminMenu(this.plugin, panel, new com.lumiweapons.guis.LumiMenu(this.plugin, panel)).open();
          return true;
       } else if (args.length == 0) {
-         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns|crafted|uncraft>");
+         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns|crafted|uncraft|ritualclock>");
          return true;
       } else if (args[0].equalsIgnoreCase("give")) {
          if (sender instanceof Player player) {
@@ -87,6 +87,26 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("This command can only be used by a player.");
             return true;
          }
+      } else if (args[0].equalsIgnoreCase("ritualclock")) {
+         var rituals = this.plugin.getRitualManager();
+         var clock = rituals.clock();
+         sender.sendMessage("§dRitual clock: §f" + clock.now().format(java.time.format.DateTimeFormatter.ofPattern("EEE h:mm:ss a z", java.util.Locale.ENGLISH)) + " §7(" + clock.zone().getId() + ")");
+         if (!clock.windowsEnabled()) {
+            sender.sendMessage("§7Windows are off: rituals can be started any time.");
+         } else {
+            sender.sendMessage("§dWindows: §f" + clock.describe());
+            sender.sendMessage(clock.openNow()
+               ? "§aOpen now" + (clock.closesAt() == null ? "" : " §7until §f" + clock.closesAt())
+               : "§cClosed now" + (clock.nextOpening() == null ? "" : " §7next §f" + clock.nextOpening()));
+            for (String bad : clock.badLines()) {
+               sender.sendMessage("§cCan't read §f'" + bad + "'§c in ritual.windows.times (ignored). Use e.g. ALL 16:00-20:00");
+            }
+         }
+
+         sender.sendMessage("§dAltar mode: §f" + rituals.altarMode() + "§7 · Ancient Altars: §f" + rituals.ancientAltars().size()
+            + (rituals.altarMode().equals("CRAFTED") ? " §c(asleep in CRAFTED mode: use BOTH or ANCIENT)" : ""));
+         sender.sendMessage("§7Admins can start rituals any time; test the window with a player who isn't an admin.");
+         return true;
       } else if (args[0].equalsIgnoreCase("crafted")) {
          List<String> crafted = this.plugin.getRitualManager().craftedWeapons();
          sender.sendMessage(crafted.isEmpty() ? "§7No legendary has been forged yet." : "§dForged: §f" + String.join("§7, §f", crafted));
@@ -131,7 +151,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       if (args.length == 1) {
-         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns", "crafted", "uncraft");
+         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns", "crafted", "uncraft", "ritualclock");
       } else if (args.length == 2 && args[0].equalsIgnoreCase("uncraft")) {
          List<String> options = new ArrayList<>(this.plugin.getRitualManager().craftedWeapons());
          options.add("all");

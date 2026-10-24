@@ -87,6 +87,11 @@ anything harder than `tools.max-hardness`, and wear the tool (Unbreaking applies
 * **Crafting times:**
   - Rituals can only be started inside `ritual.windows`. By default that's every day from 4 PM to
     midnight Central Time (`ritual.timezone`); admins can start one any time.
+  - When the window opens everyone is told the altars have awakened, and again when they fall
+    quiet (`ritual.windows.announce`). Outside the window altars sleep (no crystal, a wisp of ash),
+    and an Ancient Altar's label says "Awake · until 9:00 PM CDT" or "Asleep · wakes 4:00 PM CDT".
+  - `/lw ritualclock` shows the server's ritual clock, the windows, whether they're open, and any
+    line in `ritual.windows.times` it can't read.
   - Ritual messages show the clock time a ritual finishes ("done at 8:42 PM CDT").
   - `weapons.<weapon>.ritual-time` gives one weapon its own ritual length.
 * **Ritual Altar** — crafted (obsidian/diamonds/nether star) or `/giveritualblock`. Right-click it

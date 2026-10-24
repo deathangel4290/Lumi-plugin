@@ -25,6 +25,7 @@ public final class RitualClock {
    private static final DateTimeFormatter CLOCK = DateTimeFormatter.ofPattern("h:mm a z", Locale.ENGLISH);
    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
    private final LumiWeapons plugin;
+   private final Set<String> warned = new java.util.HashSet<>();     // bad lines are logged once, not every second
 
    private record Window(Set<DayOfWeek> days, LocalTime from, LocalTime to, String daysText) {
       boolean covers(ZonedDateTime when) {
@@ -73,7 +74,7 @@ public final class RitualClock {
          Window window = parse(raw);
          if (window != null) {
             out.add(window);
-         } else {
+         } else if (this.warned.add(raw)) {
             this.plugin.getLogger().warning("ritual.windows.times: can't read '" + raw + "' (use e.g. \"ALL 17:00-23:00\")");
          }
       }
@@ -143,6 +144,37 @@ public final class RitualClock {
       }
 
       return false;
+   }
+
+   /** The lines in ritual.windows.times that can't be read (they are ignored). */
+   public List<String> badLines() {
+      List<String> out = new ArrayList<>();
+      if (this.ritual() != null) {
+         for (String raw : this.ritual().getStringList("windows.times")) {
+            if (parse(raw) == null) {
+               out.add(raw);
+            }
+         }
+      }
+
+      return out;
+   }
+
+   /** When the window open right now closes, e.g. "9:00 PM CDT"; null when none is open. */
+   public String closesAt() {
+      if (!this.windowsEnabled()) {
+         return null;
+      }
+
+      ZonedDateTime now = this.now();
+      LocalTime latest = null;
+      for (Window window : this.windows()) {
+         if (window.covers(now) && (latest == null || window.to().isAfter(latest))) {
+            latest = window.to();
+         }
+      }
+
+      return latest == null ? null : latest.equals(LocalTime.MAX) ? "midnight" : now.toLocalDate().atTime(latest).atZone(this.zone()).format(CLOCK);
    }
 
    /** "every day 5:00 PM-11:00 PM CDT; weekends 12:00 PM-4:00 PM CDT". */

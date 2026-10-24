@@ -506,6 +506,7 @@ ritual:
   timezone: "America/Chicago"           # Central Time (CST/CDT); any IANA zone, e.g. "America/New_York"
   windows:
     enabled: true                       # rituals can only be STARTED in these windows (admins always can)
+    announce: true                      # tell everyone when the altars wake up and fall quiet
     times:                              # "DAYS HH:MM-HH:MM" in the time zone above; DAYS = ALL, WEEKDAYS,
       - "ALL 16:00-23:59"               # WEEKEND, or MON,TUE,...  Running rituals finish whenever.
   # A weapon can take longer or shorter than ritual.timer: weapons.<weapon>.ritual-time (seconds).

@@ -62,6 +62,9 @@ public class RitualManager implements Listener {
    private final List<String> craftedWeapons = new ArrayList<>();
    private final Map<Location, ItemDisplay> altarCores = new HashMap<>();
    private final Map<Location, ItemDisplay> altarShells = new HashMap<>();
+   /** Whether the ritual window was open at the last check; null until the first one (or with windows off). */
+   private Boolean windowOpen;
+   private final Map<Location, String> labelTexts = new HashMap<>();
    /** Ancient Altars: found around the map, never crafted, unbreakable, at most ritual.ancient-altars.max. */
    private final Set<Location> ancient = new HashSet<>();
    private final Set<Location> discovered = new HashSet<>();
@@ -110,7 +113,14 @@ public class RitualManager implements Listener {
 
          public void run() {
             this.time += 1.0;
+            RitualManager.this.watchWindow();
             RitualManager.this.idleAltars(this.time);
+            // an open ritual menu follows the clock: "Not now" turns into "Begin Ritual" at opening time
+            for (Player player : Bukkit.getOnlinePlayers()) {
+               if (player.getOpenInventory().getTopInventory().getHolder() instanceof com.lumiweapons.guis.RitualGUI gui) {
+                  gui.update(player);
+               }
+            }
          }
       }).runTaskTimer(plugin, 40L, 20L);
    }
@@ -357,11 +367,59 @@ public class RitualManager implements Listener {
       }
    }
 
+   /** Altars can be used right now (by players who aren't admins). */
+   public boolean altarsAwake() {
+      return this.clock.openNow();
+   }
+
    /**
-    * An idle altar gets a slowly turning crystal above it and a few enchant glyphs drifting in,
-    * so it reads as something other than a plain enchanting table. Only near players.
+    * The ritual window opening or closing is announced to everyone (ritual.windows.announce), so
+    * the altars "waking" at opening time is something people see.
+    */
+   private void watchWindow() {
+      if (!this.clock.windowsEnabled()) {
+         this.windowOpen = null;
+         return;
+      }
+
+      boolean open = this.clock.openNow();
+      Boolean before = this.windowOpen;
+      this.windowOpen = open;
+      if (before == null || before == open || !this.plugin.getConfig().getBoolean("ritual.windows.announce", true)) {
+         return;
+      }
+
+      if (open) {
+         String until = this.clock.closesAt();
+         Bukkit.broadcast(Component.text("✦ The altars have awakened. ", NamedTextColor.LIGHT_PURPLE)
+            .append(Component.text("Rituals can be started" + (until == null ? "" : " until " + until) + ".", NamedTextColor.GRAY)));
+      } else {
+         String next = this.clock.nextOpening();
+         Bukkit.broadcast(Component.text("The altars fall quiet. ", NamedTextColor.DARK_PURPLE)
+            .append(Component.text(next == null ? "No more rituals can be started for now." : "They wake again at " + next + ". Running rituals still finish.", NamedTextColor.GRAY)));
+      }
+
+      for (Player player : Bukkit.getOnlinePlayers()) {
+         player.playSound(player.getLocation(), open ? org.bukkit.Sound.BLOCK_BEACON_ACTIVATE : org.bukkit.Sound.BLOCK_BEACON_DEACTIVATE, 0.6F, open ? 1.2F : 0.8F);
+      }
+
+      for (Location altar : this.altars) {
+         World world = altar.getWorld();
+         if (world != null && world.isChunkLoaded(altar.getBlockX() >> 4, altar.getBlockZ() >> 4)) {
+            Location top = altar.clone().add(0.5, 1.2, 0.5);
+            ParticleManager.spawn(open ? Particle.END_ROD : Particle.LARGE_SMOKE, top, open ? 30 : 12, 0.3, 0.4, 0.3, open ? 0.12 : 0.02);
+            this.plugin.getSoundManager().world(top, open ? org.bukkit.Sound.BLOCK_END_PORTAL_FRAME_FILL : org.bukkit.Sound.BLOCK_FIRE_EXTINGUISH, 1.0F, open ? 0.7F : 0.9F);
+         }
+      }
+   }
+
+   /**
+    * An awake altar gets a slowly turning crystal above it and a few enchant glyphs drifting in,
+    * so it reads as something other than a plain enchanting table. Outside the ritual window it
+    * sleeps: no crystal, just a wisp of ash. Only near players.
     */
    private void idleAltars(double time) {
+      boolean awake = this.clock.openNow();
       for (Location altar : this.altars) {
          World world = altar.getWorld();
          boolean loaded = world != null && world.isChunkLoaded(altar.getBlockX() >> 4, altar.getBlockZ() >> 4);
@@ -385,10 +443,14 @@ public class RitualManager implements Listener {
          ItemDisplay core = this.altarCores.get(altar);
          boolean decorate = this.plugin.getConfig().getBoolean("ritual.altar-decoration", true);
          if (loaded && watched && this.getRitualAtLocation(altar) == null) {
-            ParticleManager.spawn(Particle.ENCHANT, altar.clone().add(0.5, 1.4, 0.5), 6, 0.6, 0.3, 0.6, 0.6);
+            if (awake) {
+               ParticleManager.spawn(Particle.ENCHANT, altar.clone().add(0.5, 1.4, 0.5), 6, 0.6, 0.3, 0.6, 0.6);
+            } else {
+               ParticleManager.spawn(Particle.WHITE_ASH, altar.clone().add(0.5, 1.2, 0.5), 3, 0.3, 0.2, 0.3, 0.0);
+            }
          }
 
-         if (decorate && loaded && watched && this.getRitualAtLocation(altar) == null) {
+         if (awake && decorate && loaded && watched && this.getRitualAtLocation(altar) == null) {
             float size = custom ? 0.45F : 0.35F;
             if (core == null || !core.isValid()) {
                // the custom altar gets the pack's crystal hovering over its basin; the plain one an amethyst cluster
@@ -617,6 +679,7 @@ public class RitualManager implements Listener {
             }
 
             this.labels.remove(altar);
+            this.labelTexts.remove(altar);
          }
 
          return;
@@ -625,13 +688,39 @@ public class RitualManager implements Listener {
       if (label == null || !label.isValid()) {
          label = altar.getWorld().spawn(altar.clone().add(0.5, 2.1, 0.5), org.bukkit.entity.TextDisplay.class, display -> {
             display.setPersistent(false);
-            display.text(Component.text("✦ Ancient Altar ✦", NamedTextColor.LIGHT_PURPLE));
             display.setBillboard(Billboard.CENTER);
             display.setViewRange(0.25F);                  // only up close: they are meant to be found
             display.setSeeThrough(false);
             display.setShadowed(true);
          });
          this.labels.put(altar, label);
+         this.labelTexts.remove(altar);
+      }
+
+      // second line: whether it can be used now
+      String state;
+      if (this.altarMode().equals("CRAFTED")) {
+         state = "asleep";
+      } else if (!this.clock.windowsEnabled()) {
+         state = "";
+      } else if (this.clock.openNow()) {
+         String until = this.clock.closesAt();
+         state = "awake" + (until == null ? "" : "|until " + until);
+      } else {
+         String next = this.clock.nextOpening();
+         state = "asleep" + (next == null ? "" : "|wakes " + next);
+      }
+
+      if (!state.equals(this.labelTexts.get(altar))) {
+         this.labelTexts.put(altar, state);
+         Component text = Component.text("✦ Ancient Altar ✦", NamedTextColor.LIGHT_PURPLE);
+         if (!state.isEmpty()) {
+            String[] parts = state.split("\\|", 2);
+            boolean up = parts[0].equals("awake");
+            text = text.appendNewline().append(Component.text((up ? "Awake" : "Asleep") + (parts.length > 1 ? " · " + parts[1] : ""), up ? NamedTextColor.GREEN : NamedTextColor.GRAY));
+         }
+
+         label.text(text);
       }
    }
 
