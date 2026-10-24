@@ -85,6 +85,20 @@ public abstract class Menu implements InventoryHolder {
    protected void onClose() {
    }
 
+   /** Menus that show live status (events, the draft clock) say so and are redrawn every second. */
+   protected boolean live() {
+      return false;
+   }
+
+   final boolean isLive() {
+      return this.live();
+   }
+
+   /** A player's head with their skin, from the server's cache when they are offline. */
+   protected final Icon head(java.util.UUID id) {
+      return Icon.head(id, this.plugin.getPlayerRosterManager().cachedTextures(id));
+   }
+
    @NotNull
    public Inventory getInventory() {
       return this.inventory;

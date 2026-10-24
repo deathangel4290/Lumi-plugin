@@ -154,6 +154,20 @@ public class ConfigManager {
          }
       }
 
+      // teams 1.3: "allies: true/false" and "coloured-names" became sections
+      if (this.config.isBoolean("teams.allies")) {
+         boolean allies = this.config.getBoolean("teams.allies");
+         this.config.set("teams.allies", null);
+         this.config.set("teams.allies.abilities-skip", allies);
+         this.config.set("teams.allies.friendly-fire", !allies);
+         this.config.set("teams.allies.share-outposts", allies);
+      }
+
+      if (this.config.isBoolean("teams.coloured-names")) {
+         this.config.set("teams.nametags.enabled", this.config.getBoolean("teams.coloured-names"));
+         this.config.set("teams.coloured-names", null);
+      }
+
       for (String path : OBSOLETE) {
          if (this.config.isSet(path)) {
             this.config.set(path, null);

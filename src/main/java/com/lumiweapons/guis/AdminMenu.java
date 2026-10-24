@@ -11,8 +11,8 @@ import org.bukkit.inventory.ItemStack;
  * The admin panel (/lw, /lumi admin). Everything here runs the same code as the matching command,
  * so the chat replies and checks are the ones admins already know.
  *
- *   row 1   [Server Settings]  [Events]        [Bosses]
- *   row 3   [Give Items]       [Testing Tools] [Reload Config]
+ *   row 1   [Server Settings] [Events] [Bosses] [Teams & Draft]
+ *   row 3   [Give Items]  [Testing Tools]  [Reload Config]
  */
 public final class AdminMenu extends Menu {
    public static final String PERMISSION = "lumiweapons.admin";
@@ -52,15 +52,21 @@ public final class AdminMenu extends Menu {
          .blank().text(this.plugin.getTeamManager().teams().size() + " teams" + (this.plugin.getTeamManager().draft() != null ? ", a draft is running" : "") + ".", NamedTextColor.WHITE)
          .text(bosses == null ? "Bosses are off." : bosses.status(), NamedTextColor.WHITE).build());
 
-      this.button(11, Icon.of(Material.REPEATER).name("Server Settings", ACCENT)
+      this.button(10, Icon.of(Material.REPEATER).name("Server Settings", ACCENT)
          .text("Turn features on and off and tune numbers without opening config.yml. Changes save and apply straight away.")
          .blank().click("open").build(), opens(this, p -> new ConfigMenu(this.plugin, p, this, null)));
-      this.button(13, Icon.of(Material.BELL).name("Events", GOLD)
+      this.button(12, Icon.of(Material.BELL).name("Events", GOLD)
          .text("Start and stop events, and run the Event Director.")
          .blank().click("open").build(), opens(this, p -> new AdminEventsMenu(this.plugin, p, this)));
-      this.button(15, Icon.of(Material.WITHER_SKELETON_SKULL).name("Bosses", GOLD)
+      this.button(14, Icon.of(Material.WITHER_SKELETON_SKULL).name("Bosses", GOLD)
          .text("Set arenas, summon a boss, or dismiss one.")
          .blank().click("open").build(), opens(this, p -> new AdminBossMenu(this.plugin, p, this)));
+      var teams = this.plugin.getTeamManager();
+      this.button(16, Icon.of(teams.draft() != null ? Material.LIME_BANNER : Material.WHITE_BANNER).name("Teams & Draft", GOLD)
+         .text("Run a captain draft, or make and edit teams by hand.")
+         .blank().stat("Teams", String.valueOf(teams.teams().size()), NamedTextColor.WHITE)
+         .stat("Draft", teams.draft() != null ? "running" : "not running", teams.draft() != null ? GOOD : TEXT)
+         .blank().click("open").glow(teams.draft() != null).build(), opens(this, p -> new AdminTeamsMenu(this.plugin, p, this)));
 
       this.button(29, Icon.of(Material.CHEST).name("Give Items", ACCENT)
          .text("Every legendary, fragment, event item and tool.")

@@ -52,10 +52,24 @@ public final class Icon {
 
    /** A player's head; the skin fills in from the server's profile cache. */
    public static Icon head(UUID id) {
+      return head(id, null);
+   }
+
+   /** A player's head with a known skin (texture property), so offline players aren't Steve. */
+   public static Icon head(UUID id, com.destroystokyo.paper.profile.ProfileProperty skin) {
       Icon icon = of(Material.PLAYER_HEAD);
       icon.item.editMeta(meta -> {
          if (meta instanceof SkullMeta skull) {
-            skull.setOwningPlayer(Bukkit.getOfflinePlayer(id));
+            org.bukkit.entity.Player online = Bukkit.getPlayer(id);
+            if (online != null) {
+               skull.setPlayerProfile(online.getPlayerProfile());
+            } else if (skin != null) {
+               com.destroystokyo.paper.profile.PlayerProfile profile = Bukkit.createProfile(id, null);
+               profile.setProperty(skin);
+               skull.setPlayerProfile(profile);
+            } else {
+               skull.setOwningPlayer(Bukkit.getOfflinePlayer(id));
+            }
          }
       });
       return icon;

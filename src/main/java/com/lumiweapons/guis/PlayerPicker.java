@@ -49,7 +49,7 @@ public final class PlayerPicker extends Menu {
       List<Player> shown = this.slice(this.online(), slots.length);
       for (int i = 0; i < shown.size(); i++) {
          Player target = shown.get(i);
-         this.button(slots[i], Icon.head(target.getUniqueId()).name(target.getName(), NamedTextColor.WHITE).click(this.verb).build(), click -> {
+         this.button(slots[i], this.head(target.getUniqueId()).name(target.getName(), NamedTextColor.WHITE).click(this.verb).build(), click -> {
             if (!target.isOnline()) {
                this.errorSound(click.player());
                this.open();

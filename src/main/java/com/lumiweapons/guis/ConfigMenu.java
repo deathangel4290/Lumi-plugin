@@ -359,11 +359,16 @@ public final class ConfigMenu extends Menu {
    // ------------------------------------------------------------------ changing
 
    private void change(String key, Object value) {
-      this.config().set(key, value);
-      this.plugin.saveConfig();
-      this.plugin.reloadSettings();
-      this.plugin.getLogger().info(this.viewer.getName() + " set " + key + " to " + value + " (settings menu)");
+      apply(this.plugin, this.viewer, key, value);
       this.refresh();
+   }
+
+   /** Saves one setting to config.yml and applies it like /lw reload (any menu can use this). */
+   static void apply(LumiWeapons plugin, Player who, String key, Object value) {
+      plugin.getConfig().set(key, value);
+      plugin.saveConfig();
+      plugin.reloadSettings();
+      plugin.getLogger().info(who.getName() + " set " + key + " to " + value + " (settings menu)");
    }
 
    // ------------------------------------------------------------------ helpers

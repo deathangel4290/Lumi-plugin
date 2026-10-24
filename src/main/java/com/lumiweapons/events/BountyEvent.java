@@ -85,7 +85,7 @@ public class BountyEvent {
 
             for (Player hunter : pool) {
                UUID target = this.targets.get(hunter.getUniqueId());
-               if (target != null && this.plugin.getTeamManager().sameTeam(hunter.getUniqueId(), target)) {
+               if (target != null && this.teammates(hunter.getUniqueId(), target)) {
                   this.assignNewTarget(hunter, null);          // never hunt a teammate
                }
             }
@@ -138,12 +138,17 @@ public class BountyEvent {
       }
    }
 
+   /** teams.allies.bounty-skips-teammates: never hunt your own team. */
+   private boolean teammates(UUID a, UUID b) {
+      return this.plugin.getConfig().getBoolean("teams.allies.bounty-skips-teammates", true) && this.plugin.getTeamManager().sameTeam(a, b);
+   }
+
    private void assignNewTarget(Player hunter, UUID avoid) {
       List<Player> options = new ArrayList<>();
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          if (!player.equals(hunter) && eligible(player) && !player.getUniqueId().equals(avoid)
-            && !this.plugin.getTeamManager().sameTeam(hunter.getUniqueId(), player.getUniqueId())) {
+            && !this.teammates(hunter.getUniqueId(), player.getUniqueId())) {
             options.add(player);
          }
       }

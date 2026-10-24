@@ -186,7 +186,7 @@ public class LumiWeapons extends JavaPlugin {
          this.customItems,
          new com.lumiweapons.listeners.AmethystToolsListener(this),
          new AbilityListener(this, this.abilityDispatcher, enderGlaiveListener),
-         new com.lumiweapons.guis.MenuListener(),
+         new com.lumiweapons.guis.MenuListener(this),
          new com.lumiweapons.guis.ChatPrompt(this),
          new TrustListener(this, this.trustManager, this.configManager, this.weaponManager)
       }) {

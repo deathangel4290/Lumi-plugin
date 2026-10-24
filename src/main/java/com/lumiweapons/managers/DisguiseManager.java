@@ -51,6 +51,7 @@ public class DisguiseManager {
    private final LumiWeapons plugin;
    private final Map<UUID, Disguise> active = new HashMap<>();
    private final Map<UUID, TextDisplay> nametags = new HashMap<>();
+   private final Map<UUID, Component> tagLooks = new HashMap<>();
    private final Set<UUID> tagged = new HashSet<>();
 
    public DisguiseManager(LumiWeapons plugin) {
@@ -184,7 +185,7 @@ public class DisguiseManager {
          disguised.setProperties(textures(textures));
          player.setPlayerProfile(disguised);
          player.displayName(Component.text(fakeName));
-         player.playerListName(Component.text(fakeName));
+         player.playerListName(this.lookOf(fakeName));
          // The vanilla tag would show the real (or, renamed, the shared) name: hide this player's
          // entry and float the disguise name instead. Only this player's entry is hidden, so a real
          // namesake standing next to them keeps their own vanilla tag.
@@ -276,33 +277,56 @@ public class DisguiseManager {
       }
    }
 
-   private void spawnNametag(Player player, String name) {
-      {
-         this.removeNametag(player.getUniqueId());
-         Location at = this.tagLocation(player);
-         TextDisplay tag = at.getWorld().spawn(at, TextDisplay.class, display -> {
-            display.text(Component.text(name, NamedTextColor.WHITE));
-            display.setBillboard(Billboard.CENTER);
-            display.setSeeThrough(true);
-            display.setShadowed(false);
-            display.setDefaultBackground(true);
-            display.setPersistent(false);
-            display.setTeleportDuration(2);
-            display.setViewRange(0.5F);
-            display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.0F, 1.0F, 1.0F), new Quaternionf()));
-         });
-         player.hideEntity(this.plugin, tag);
-         this.nametags.put(player.getUniqueId(), tag);
-      }
+   /**
+    * How the disguise's name looks: the impersonated player's team colour and captain/member mark
+    * when they are on a team (a plain white tag on someone with a team was a giveaway).
+    */
+   private Component lookOf(String fakeName) {
+      java.util.UUID target = this.plugin.getPlayerRosterManager().idOf(fakeName);
+      var teams = this.plugin.getTeamManager();
+      return target == null || teams == null ? Component.text(fakeName, NamedTextColor.WHITE) : teams.decorated(target, fakeName);
    }
 
+   /**
+    * The fake tag is a text display made to pass for a real name tag: same height, size, background,
+    * full brightness, no shadow, seen through walls unless the player sneaks, out to 64 blocks
+    * (32 sneaking). It follows by teleport with the same 3-tick smoothing the client gives other
+    * players' movement, so the two glide together instead of the tag trailing behind.
+    */
+   private static final int TAG_SMOOTHING = 3;
+
+   private void spawnNametag(Player player, String name) {
+      this.removeNametag(player.getUniqueId());
+      Location at = this.tagLocation(player);
+      Component look = this.lookOf(name);
+      TextDisplay tag = at.getWorld().spawn(at, TextDisplay.class, display -> {
+         display.text(look);
+         display.setBillboard(Billboard.CENTER);
+         display.setSeeThrough(true);
+         display.setShadowed(false);
+         display.setDefaultBackground(true);
+         display.setPersistent(false);
+         display.setBrightness(new org.bukkit.entity.Display.Brightness(15, 15));
+         display.setTeleportDuration(TAG_SMOOTHING);
+         display.setViewRange(1.0F);
+         display.setTransformation(new Transformation(new Vector3f(), new Quaternionf(), new Vector3f(1.0F, 1.0F, 1.0F), new Quaternionf()));
+      });
+      player.hideEntity(this.plugin, tag);
+      this.nametags.put(player.getUniqueId(), tag);
+      this.tagLooks.put(player.getUniqueId(), look);
+   }
+
+   /** Vanilla draws a player's name tag half a block above their head (lower while sneaking). */
    private Location tagLocation(Player player) {
       Location loc = player.getLocation();
-      return loc.add(0.0, player.getHeight() + (player.isSneaking() ? 0.2 : 0.35), 0.0);
+      loc.setYaw(0.0F);
+      loc.setPitch(0.0F);
+      return loc.add(0.0, player.getHeight() + (player.isSneaking() ? 0.3 : 0.48), 0.0);
    }
 
    private void removeNametag(UUID id) {
       TextDisplay tag = this.nametags.remove(id);
+      this.tagLooks.remove(id);
       if (tag != null && tag.isValid()) {
          tag.remove();
       }
@@ -319,12 +343,34 @@ public class DisguiseManager {
          if (player != null && player.isOnline() && this.tagged.contains(entry.getKey())) {
             if (tag == null || !tag.isValid() || !tag.getWorld().equals(player.getWorld())) {
                this.spawnNametag(player, entry.getValue().fakeName());
-            } else if (player.isDead()) {
-               tag.setViewRange(0.0F);
+            } else if (player.isDead() || player.isInvisible() || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) {
+               tag.setViewRange(0.0F);                   // a real tag would not show either
             } else {
-               tag.setViewRange(0.5F);
-               tag.setSeeThrough(!player.isSneaking());
-               tag.teleport(this.tagLocation(player));
+               boolean sneaking = player.isSneaking();
+               float range = sneaking ? 0.5F : 1.0F;
+               if (tag.getViewRange() != range) {
+                  tag.setViewRange(range);
+               }
+
+               if (tag.isSeeThrough() == sneaking) {
+                  tag.setSeeThrough(!sneaking);
+               }
+
+               Component look = this.lookOf(entry.getValue().fakeName());
+               if (!look.equals(this.tagLooks.get(entry.getKey()))) {
+                  tag.text(look);                        // their team changed
+                  this.tagLooks.put(entry.getKey(), look);
+               }
+
+               Location to = this.tagLocation(player);
+               // a teleport or a long fall: jump there at once rather than gliding across
+               boolean far = tag.getLocation().distanceSquared(to) > 9.0;
+               int smoothing = far ? 0 : TAG_SMOOTHING;
+               if (tag.getTeleportDuration() != smoothing) {
+                  tag.setTeleportDuration(smoothing);
+               }
+
+               tag.teleport(to);
             }
          }
       }

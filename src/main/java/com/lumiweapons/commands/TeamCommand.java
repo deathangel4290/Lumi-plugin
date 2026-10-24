@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
  *   /team            your team (menu)
  *   /team chat       switch your chat between your team and everyone
  *   /team list       every team and its players
+ *   /team leave      leave your team (when teams.allow-leave is on)
  *   /tc <message>    say something to your team
  *   /draft           the draft board (pick there when you're a captain)
  */
@@ -48,20 +49,32 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             if (args.length == 0) {
                player.sendMessage(Component.text("Usage: /tc <message>", NamedTextColor.GRAY));
             } else if (!teams.say(player, String.join(" ", args))) {
-               player.sendMessage(Component.text("You're not on a team.", NamedTextColor.RED));
+               player.sendMessage(Component.text(teams.teamOf(player) == null ? "You're not on a team." : "Team chat is off on this server.", NamedTextColor.RED));
             }
          }
-         case "draft" -> new DraftMenu(this.plugin, player, null).open();
+         case "draft" -> new DraftMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
          default -> {
-            if (args.length > 0 && args[0].equalsIgnoreCase("chat")) {
+            if (args.length > 0 && args[0].equalsIgnoreCase("leave")) {
+               var team = teams.teamOf(player);
+               if (team == null) {
+                  player.sendMessage(Component.text("You're not on a team.", NamedTextColor.RED));
+               } else if (!teams.allowLeave()) {
+                  player.sendMessage(Component.text("Teams are set by the draft here. Ask an admin to move you.", NamedTextColor.RED));
+               } else {
+                  teams.remove(player.getUniqueId());
+                  player.sendMessage(Component.text("You left " + team.name + ".", NamedTextColor.GRAY));
+               }
+            } else if (args.length > 0 && args[0].equalsIgnoreCase("chat")) {
                if (teams.teamOf(player) == null) {
                   player.sendMessage(Component.text("You're not on a team.", NamedTextColor.RED));
+               } else if (!teams.chatEnabled()) {
+                  player.sendMessage(Component.text("Team chat is off on this server.", NamedTextColor.RED));
                } else {
                   boolean on = teams.toggleChat(player);
                   player.sendMessage(Component.text(on ? "Your chat now goes to your team. /team chat to switch back." : "Your chat goes to everyone again.", NamedTextColor.GREEN));
                }
             } else {
-               new TeamMenu(this.plugin, player, null).open();
+               new TeamMenu(this.plugin, player, new com.lumiweapons.guis.LumiMenu(this.plugin, player)).open();
             }
          }
       }
@@ -87,7 +100,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       if (command.getName().equalsIgnoreCase("team") && args.length == 1) {
-         return List.of("chat", "list").stream().filter(option -> option.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
+         return List.of("chat", "list", "leave").stream().filter(option -> option.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
       }
 
       return List.of();

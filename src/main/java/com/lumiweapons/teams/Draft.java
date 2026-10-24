@@ -20,10 +20,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
- * A captain draft. Each captain gets a team; then they take turns picking from the pool in snake
- * order (1 2 3 3 2 1 1 2 3 ...), each with teams.draft.pick-seconds to choose on the draft board
- * (/draft). Run out of time and a random player is picked for you (teams.draft.auto-pick). It ends
- * when the pool is empty or every team is full (teams.draft.max-team-size).
+ * A captain draft. Each captain gets a team; then they take turns picking from the pool, in snake
+ * order (1 2 3 3 2 1 1 2 3 ...) or round order (teams.draft.order), each with
+ * teams.draft.pick-seconds to choose on the draft board (/draft). Run out of time and a random
+ * player is picked for you (teams.draft.auto-pick). It ends when the pool is empty or every team is
+ * full (teams.draft.max-team-size). Everything else is in teams.draft.* too.
  */
 public final class Draft {
    private final LumiWeapons plugin;
@@ -56,6 +57,53 @@ public final class Draft {
       return this.config() == null ? 0 : this.config().getInt("max-team-size", 0);
    }
 
+   private boolean flag(String key, boolean fallback) {
+      return this.config() == null ? fallback : this.config().getBoolean(key, fallback);
+   }
+
+   private boolean snake() {
+      return this.config() == null || !"ROUND".equalsIgnoreCase(this.config().getString("order", "SNAKE"));
+   }
+
+   private void sound(Player player, Sound sound, float volume, float pitch) {
+      if (this.flag("sounds", true)) {
+         this.plugin.getSoundManager().self(player, sound, volume, pitch);
+      }
+   }
+
+   private void title(Player player, Title title) {
+      if (this.flag("titles", true)) {
+         player.showTitle(title);
+      }
+   }
+
+   /** The draft's colours (teams.draft.colours), in captain order. */
+   public static List<NamedTextColor> colours(LumiWeapons plugin) {
+      List<NamedTextColor> out = new ArrayList<>();
+      for (String raw : plugin.getConfig().getStringList("teams.draft.colours")) {
+         NamedTextColor colour = NamedTextColor.NAMES.value(raw.trim().toLowerCase(Locale.ROOT));
+         if (colour != null && !out.contains(colour)) {
+            out.add(colour);
+         }
+      }
+
+      return out.isEmpty() ? TeamManager.COLOURS : out;
+   }
+
+   public static int minCaptains(LumiWeapons plugin) {
+      return Math.max(2, plugin.getConfig().getInt("teams.draft.min-captains", 2));
+   }
+
+   static String colourName(NamedTextColor colour) {
+      String raw = NamedTextColor.NAMES.key(colour).replace('_', ' ');
+      StringBuilder out = new StringBuilder();
+      for (String word : raw.split(" ")) {
+         out.append(out.length() == 0 ? "" : " ").append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+      }
+
+      return out.toString();
+   }
+
    /**
     * Starts a draft. Null on success, else why not. Existing teams of the captains and pool are
     * left (players change team when picked).
@@ -65,23 +113,30 @@ public final class Draft {
          return "A draft is already running.";
       }
 
-      if (captains.size() < 2) {
-         return "Pick at least two captains.";
+      List<NamedTextColor> colours = colours(plugin);
+      if (captains.size() < minCaptains(plugin)) {
+         return "Pick at least " + minCaptains(plugin) + " captains.";
       }
 
-      if (captains.size() > TeamManager.COLOURS.size()) {
-         return "At most " + TeamManager.COLOURS.size() + " captains.";
+      if (captains.size() > colours.size()) {
+         return "At most " + colours.size() + " captains (one per colour in teams.draft.colours).";
+      }
+
+      List<Player> order = new ArrayList<>(captains);
+      if ("RANDOM".equalsIgnoreCase(plugin.getConfig().getString("teams.draft.captain-order", "CHOSEN"))) {
+         java.util.Collections.shuffle(order);
       }
 
       Draft draft = new Draft(plugin, teams);
-      for (int i = 0; i < captains.size(); i++) {
-         Player captain = captains.get(i);
-         NamedTextColor colour = TeamManager.COLOURS.get(i);
-         String colourName = NamedTextColor.NAMES.key(colour).replace('_', ' ');
-         String name = colourName.substring(0, 1).toUpperCase(Locale.ROOT) + colourName.substring(1) + " Team";
+      String format = plugin.getConfig().getString("teams.draft.team-name", "{colour} Team");
+      for (int i = 0; i < order.size(); i++) {
+         Player captain = order.get(i);
+         NamedTextColor colour = colours.get(i);
+         String name = (format == null || format.isBlank() ? "{colour} Team" : format)
+            .replace("{colour}", colourName(colour)).replace("{color}", colourName(colour)).replace("{captain}", captain.getName());
          TeamManager.Team existing = teams.byName(name);
-         if (existing != null) {
-            teams.disband(existing);                        // an old team of that colour from a previous draft
+         if (existing != null && plugin.getConfig().getBoolean("teams.draft.replace-old-teams", true)) {
+            teams.disband(existing);                        // an old team of that name from a previous draft
          }
 
          draft.order.add(teams.create(name, colour, captain.getUniqueId(), captain.getName()));
@@ -110,8 +165,11 @@ public final class Draft {
 
       Bukkit.broadcast(Component.text("  " + draft.pool.size() + " players in the pool. Watch it with /draft.", NamedTextColor.GRAY));
       for (Player online : Bukkit.getOnlinePlayers()) {
-         online.showBossBar(draft.bar);
-         plugin.getSoundManager().self(online, Sound.EVENT_RAID_HORN, 0.5F, 1.4F);
+         if (draft.flag("boss-bar", true)) {
+            online.showBossBar(draft.bar);
+         }
+
+         draft.sound(online, Sound.EVENT_RAID_HORN, 0.5F, 1.4F);
       }
 
       draft.announceTurn();
@@ -171,9 +229,9 @@ public final class Draft {
 
    // ------------------------------------------------------------------ turns
 
-   /** Snake order: even rounds go 0..n-1, odd rounds come back n-1..0. */
+   /** Snake order: even rounds go 0..n-1, odd rounds come back n-1..0. Round order always goes 0..n-1. */
    private int slot() {
-      return this.round % 2 == 0 ? this.turn : this.order.size() - 1 - this.turn;
+      return !this.snake() || this.round % 2 == 0 ? this.turn : this.order.size() - 1 - this.turn;
    }
 
    private boolean full(TeamManager.Team team) {
@@ -188,7 +246,8 @@ public final class Draft {
       TeamManager.Team team = this.current();
       Player captain = team == null || team.captain == null ? null : Bukkit.getPlayer(team.captain);
       if (captain == null) {
-         this.secondsLeft = Math.min(this.secondsLeft, 5);      // an absent captain does not hold everyone up
+         // an absent captain does not hold everyone up
+         this.secondsLeft = Math.min(this.secondsLeft, Math.max(1, this.config() == null ? 5 : this.config().getInt("absent-captain-seconds", 5)));
       }
 
       this.secondsLeft--;
@@ -198,15 +257,19 @@ public final class Draft {
             UUID random = this.pool.get(ThreadLocalRandom.current().nextInt(this.pool.size()));
             this.take(team, random, true);
          } else {
-            Bukkit.broadcast(Component.text("⚑ " + team.name + " ran out of time and skips this pick.", NamedTextColor.GRAY));
+            if (this.flag("announce-picks", true)) {
+               Bukkit.broadcast(Component.text("⚑ " + team.name + " ran out of time and skips this pick.", NamedTextColor.GRAY));
+            }
+
             this.advance();
          }
 
          return;
       }
 
-      if (this.secondsLeft <= 5 && captain != null) {
-         this.plugin.getSoundManager().self(captain, Sound.BLOCK_NOTE_BLOCK_HAT, 0.8F, 1.6F);
+      int warn = this.config() == null ? 5 : this.config().getInt("warn-seconds", 5);
+      if (this.secondsLeft <= warn && captain != null) {
+         this.sound(captain, Sound.BLOCK_NOTE_BLOCK_HAT, 0.8F, 1.6F);
       }
 
       this.updateBar();
@@ -235,18 +298,24 @@ public final class Draft {
       this.pool.remove(target);
       String name = this.nameOf(target);
       this.teams.add(team, target, name);
-      Bukkit.broadcast(Component.text("⚑ ", team.colour).append(Component.text(team.name, team.colour, TextDecoration.BOLD))
-         .append(Component.text(random ? " were given " : " pick ", NamedTextColor.GRAY)).append(Component.text(name, NamedTextColor.WHITE))
-         .append(Component.text(random ? " (time ran out)" : "", NamedTextColor.DARK_GRAY)));
+      if (this.flag("announce-picks", true)) {
+         Bukkit.broadcast(Component.text("⚑ ", team.colour).append(Component.text(team.name, team.colour, TextDecoration.BOLD))
+            .append(Component.text(random ? " were given " : " pick ", NamedTextColor.GRAY)).append(Component.text(name, NamedTextColor.WHITE))
+            .append(Component.text(random ? " (time ran out)" : "", NamedTextColor.DARK_GRAY)));
+      }
+
       Player picked = Bukkit.getPlayer(target);
       if (picked != null) {
-         picked.showTitle(Title.title(Component.text(team.name, team.colour, TextDecoration.BOLD), Component.text("picked you!", NamedTextColor.GRAY)));
-         this.plugin.getSoundManager().self(picked, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7F, 1.2F);
+         this.title(picked, Title.title(Component.text(team.name, team.colour, TextDecoration.BOLD), Component.text("picked you!", NamedTextColor.GRAY)));
+         this.sound(picked, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.7F, 1.2F);
+         if (!this.flag("announce-picks", true)) {
+            picked.sendMessage(Component.text("⚑ You're on " + team.name + ".", team.colour));
+         }
       }
 
       for (Player online : Bukkit.getOnlinePlayers()) {
          if (online != picked) {
-            this.plugin.getSoundManager().self(online, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1.2F);
+            this.sound(online, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1.2F);
          }
       }
 
@@ -287,8 +356,8 @@ public final class Draft {
       this.updateBar();
       Player captain = team.captain == null ? null : Bukkit.getPlayer(team.captain);
       if (captain != null) {
-         captain.showTitle(Title.title(Component.text("Your pick!", team.colour, TextDecoration.BOLD), Component.text("Open /draft to choose", NamedTextColor.GRAY)));
-         this.plugin.getSoundManager().self(captain, Sound.BLOCK_BELL_USE, 1.0F, 1.2F);
+         this.title(captain, Title.title(Component.text("Your pick!", team.colour, TextDecoration.BOLD), Component.text("Open /draft to choose", NamedTextColor.GRAY)));
+         this.sound(captain, Sound.BLOCK_BELL_USE, 1.0F, 1.2F);
          captain.sendMessage(Component.text("⚑ Your pick, " + this.secondsLeft + " seconds. ", team.colour)
             .append(Component.text("[Open the draft board]", NamedTextColor.YELLOW).clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/draft"))));
       }
@@ -314,7 +383,7 @@ public final class Draft {
    }
 
    public void showTo(Player player) {
-      if (this.running) {
+      if (this.running && this.flag("boss-bar", true)) {
          player.showBossBar(this.bar);
       }
    }
@@ -353,10 +422,10 @@ public final class Draft {
       for (Player online : Bukkit.getOnlinePlayers()) {
          TeamManager.Team team = this.teams.teamOf(online);
          if (team != null) {
-            online.showTitle(Title.title(Component.text(team.name, team.colour, TextDecoration.BOLD), Component.text("Your teammates are your allies now. /team", NamedTextColor.GRAY)));
+            this.title(online, Title.title(Component.text(team.name, team.colour, TextDecoration.BOLD), Component.text("Your teammates are your allies now. /team", NamedTextColor.GRAY)));
          }
 
-         this.plugin.getSoundManager().self(online, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6F, 1.0F);
+         this.sound(online, Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.6F, 1.0F);
       }
 
       this.changed();
@@ -369,8 +438,10 @@ public final class Draft {
       }
 
       this.stopTicking();
-      for (TeamManager.Team team : this.order) {
-         this.teams.disband(team);
+      if (this.flag("cancel-removes-teams", true)) {
+         for (TeamManager.Team team : this.order) {
+            this.teams.disband(team);
+         }
       }
 
       Bukkit.broadcast(Component.text("⚑ The Team Draft was cancelled" + (reason == null ? "." : " (" + reason + ")."), NamedTextColor.RED));

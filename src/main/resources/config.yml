@@ -857,13 +857,44 @@ director:
 # ============================================================================
 teams:
   enabled: true
-  allies: true                  # teammates count as trusting each other (no friendly fire, shared outposts)
-  coloured-names: true          # team colour and [Team] tag on name tags and in the tab list
+  allow-leave: false            # players can leave their own team (/team leave); admins can always move people
+  allies:                       # what being on the same team means
+    abilities-skip: true        # legendary abilities never hit a teammate
+    friendly-fire: false        # true = teammates can still hurt each other with normal hits and arrows
+    share-outposts: true        # teammates count as one side at outposts
+    bounty-skips-teammates: true  # a Bounty Hunt never gives you a teammate as your target
+  nametags:                     # names over heads and in the tab list
+    enabled: true               # the team colour on names; false = plain names
+    captain-symbol: "♛"         # shown before a captain's name ("" for none)
+    captain-symbol-colour: GOLD # TEAM, or a colour: GOLD, WHITE, RED, ...
+    member-symbol: "✦"          # shown before everyone else on a team ("" for none)
+    member-symbol-colour: TEAM
+    show-team-name: false       # also put "[Red Team]" before the name
+  chat:
+    enabled: true               # /tc and /team chat
+    prefix: "[{team}]"          # {team} = the team's name, {symbol} = the sender's captain/member mark
+    default-on: false           # newly drafted players talk to their team by default (/team chat switches)
+  captains:
+    can-rename: true            # captains rename their team in /team
+    max-name-length: 20
+    can-kick: false             # captains can remove players from their team
   draft:
-    pick-seconds: 45            # each captain's time to pick; then a random player is picked
-    auto-pick: true             # false = running out of time skips the pick instead
+    pick-seconds: 45            # each captain's time to pick
+    warn-seconds: 5             # the last seconds tick for the captain
+    auto-pick: true             # time runs out: a random pick (false = that turn is skipped)
+    absent-captain-seconds: 5   # a captain who is offline gets only this long before the pick passes on
+    order: SNAKE                # SNAKE (1 2 3 3 2 1 1 2 3 ...) or ROUND (1 2 3 1 2 3 ...)
+    captain-order: CHOSEN       # CHOSEN (the order the admin picked them in) or RANDOM
+    min-captains: 2
     max-team-size: 0            # 0 = no limit (the pool is shared out evenly anyway)
-
+    team-name: "{colour} Team"  # {colour} = Red, Blue, ...; {captain} = the captain's name
+    colours: [RED, BLUE, GREEN, YELLOW, AQUA, LIGHT_PURPLE, GOLD, WHITE]   # one per captain, in order
+    replace-old-teams: true     # a new draft first removes earlier teams with the same name
+    cancel-removes-teams: true  # cancelling a draft removes the teams it made (false = keeps them as they are)
+    boss-bar: true              # everyone sees whose pick it is and the clock
+    titles: true                # "Your pick!" for captains, "<team> picked you!" for players
+    sounds: true
+    announce-picks: true        # every pick in chat
 
 # ============================================================================
 #  Outposts -- permanent capture points (/outposts). Admins place them with

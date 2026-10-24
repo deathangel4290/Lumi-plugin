@@ -55,7 +55,7 @@ public final class LumiMenu extends Menu {
       var team = this.plugin.getTeamManager().teamOf(this.viewer);
       int waiting = events.vault().count(this.viewer.getUniqueId());
 
-      this.show(4, Icon.head(this.viewer.getUniqueId()).name(this.viewer.getName(), GOLD)
+      this.show(4, this.head(this.viewer.getUniqueId()).name(this.viewer.getName(), GOLD)
          .stat("Team", team == null ? "none" : team.name, team == null ? TEXT : team.colour)
          .stat("Luminara Tokens", String.valueOf(TokenShop.count(this.viewer)), GOLD)
          .stat("Rewards waiting", String.valueOf(waiting), waiting > 0 ? GOOD : TEXT)

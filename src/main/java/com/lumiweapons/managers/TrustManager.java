@@ -62,28 +62,33 @@ public class TrustManager {
       this.saveTrustData();
    }
 
-   /** Teammates count as trusting each other both ways. */
-   private boolean teammates(java.util.UUID a, java.util.UUID b) {
+   /** Teammates count as trusting each other for whatever teams.allies.<rule> allows. */
+   private boolean teammates(java.util.UUID a, java.util.UUID b, String rule, boolean fallback) {
       var teams = this.plugin.getTeamManager();
-      return teams != null && this.plugin.getConfig().getBoolean("teams.allies", true) && teams.sameTeam(a, b);
+      return teams != null && this.plugin.getConfig().getBoolean("teams.allies." + rule, fallback) && teams.sameTeam(a, b);
    }
 
+   /** Trust from /trust alone (teams not counted). */
+   public boolean personallyTrusts(java.util.UUID truster, java.util.UUID trusted) {
+      return this.trustDataConfig.getStringList("trusted." + truster).contains(trusted.toString());
+   }
+
+   /** Abilities skip whoever this player trusts, and their teammates (teams.allies.abilities-skip). */
    public boolean isTrusted(Player player, Player targetPlayer) {
-      if (this.teammates(player.getUniqueId(), targetPlayer.getUniqueId())) {
-         return true;
-      }
-
-      List<String> trustedList = this.getTrustedPlayers(player);
-      return trustedList != null && trustedList.contains(targetPlayer.getUniqueId().toString());
+      return this.teammates(player.getUniqueId(), targetPlayer.getUniqueId(), "abilities-skip", true)
+         || this.personallyTrusts(player.getUniqueId(), targetPlayer.getUniqueId());
    }
 
+   /** No friendly fire: trust both ways, or teammates unless teams.allies.friendly-fire is on. */
    public boolean isMutuallyTrusted(Player player1, Player player2) {
-      return this.isTrusted(player1, player2) && this.isTrusted(player2, player1);
+      var teams = this.plugin.getTeamManager();
+      boolean teammatesSafe = teams != null && !this.plugin.getConfig().getBoolean("teams.allies.friendly-fire", false)
+         && teams.sameTeam(player1.getUniqueId(), player2.getUniqueId());
+      return teammatesSafe || this.personallyTrusts(player1.getUniqueId(), player2.getUniqueId()) && this.personallyTrusts(player2.getUniqueId(), player1.getUniqueId());
    }
 
-   /** Same as above for players who may be offline (outpost owners). */
+   /** Outposts: one side when trusting both ways, or teammates (teams.allies.share-outposts). */
    public boolean isMutuallyTrusted(java.util.UUID a, java.util.UUID b) {
-      return this.teammates(a, b) || this.trustDataConfig.getStringList("trusted." + a).contains(b.toString())
-         && this.trustDataConfig.getStringList("trusted." + b).contains(a.toString());
+      return this.teammates(a, b, "share-outposts", true) || this.personallyTrusts(a, b) && this.personallyTrusts(b, a);
    }
 }

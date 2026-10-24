@@ -66,8 +66,8 @@ public final class TrustMenu extends Menu {
          UUID id = shown.get(i);
          OfflinePlayer other = Bukkit.getOfflinePlayer(id);
          String name = other.getName() == null ? id.toString().substring(0, 8) : other.getName();
-         boolean mutual = trust.isMutuallyTrusted(this.viewer.getUniqueId(), id);
-         this.button(slots[i], Icon.head(id).name(name, NamedTextColor.WHITE)
+         boolean mutual = trust.personallyTrusts(id, this.viewer.getUniqueId());
+         this.button(slots[i], this.head(id).name(name, NamedTextColor.WHITE)
             .line(mutual ? Icon.plain("✔ Trusts you back", GOOD) : Icon.plain("✖ Doesn't trust you back", TEXT))
             .line(Icon.plain(other.isOnline() ? "● Online" : "○ Offline", other.isOnline() ? GOOD : DIM))
             .blank().hint("Shift-click", "stop trusting").build(), click -> {
@@ -135,7 +135,7 @@ public final class TrustMenu extends Menu {
          for (int i = 0; i < shown.size(); i++) {
             Player other = shown.get(i);
             boolean trustsMe = this.plugin.getTrustManager().isTrusted(other, this.viewer);
-            this.button(slots[i], Icon.head(other.getUniqueId()).name(other.getName(), NamedTextColor.WHITE)
+            this.button(slots[i], this.head(other.getUniqueId()).name(other.getName(), NamedTextColor.WHITE)
                .line(trustsMe ? Icon.plain("✔ Already trusts you", GOOD) : Icon.plain("Doesn't trust you yet", TEXT))
                .blank().click("trust").build(), click -> {
                if (!other.isOnline()) {

@@ -17,6 +17,17 @@ public final class MenuListener implements Listener {
    private static final long DEBOUNCE_MILLIS = 120L;
    private final Map<UUID, Long> lastClick = new HashMap<>();
 
+   /** Redraws the live menus players have open, once a second. */
+   public MenuListener(org.bukkit.plugin.Plugin plugin) {
+      plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+         for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (player.getOpenInventory().getTopInventory().getHolder() instanceof Menu menu && menu.isLive()) {
+               menu.refresh();
+            }
+         }
+      }, 20L, 20L);
+   }
+
    @EventHandler(priority = EventPriority.LOW)
    public void onClick(InventoryClickEvent event) {
       if (!(event.getView().getTopInventory().getHolder() instanceof Menu menu)) {

@@ -16,6 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -165,6 +166,10 @@ public final class TeamManager implements Listener {
       }
 
       this.memberOf.put(id, team.id);
+      if (this.config() != null && this.config().getBoolean("chat.default-on", false) && this.chatEnabled()) {
+         this.teamChat.add(id);
+      }
+
       this.save();
       Player online = Bukkit.getPlayer(id);
       if (online != null) {
@@ -201,10 +206,7 @@ public final class TeamManager implements Listener {
       }
 
       this.teams.remove(team.id);
-      org.bukkit.scoreboard.Team board = Bukkit.getScoreboardManager().getMainScoreboard().getTeam(BOARD_PREFIX + team.id);
-      if (board != null) {
-         board.unregister();
-      }
+      this.unregisterBoards(team);
 
       this.save();
    }
@@ -217,6 +219,42 @@ public final class TeamManager implements Listener {
 
    public void rename(Team team, String name) {
       team.name = name;
+      this.save();
+      this.syncBoards();
+   }
+
+   public boolean allowLeave() {
+      return this.config() != null && this.config().getBoolean("allow-leave", false);
+   }
+
+   public boolean captainsCanRename() {
+      return this.config() == null || this.config().getBoolean("captains.can-rename", true);
+   }
+
+   public boolean captainsCanKick() {
+      return this.config() != null && this.config().getBoolean("captains.can-kick", false);
+   }
+
+   public int maxNameLength() {
+      return Math.max(3, Math.min(32, this.config() == null ? 20 : this.config().getInt("captains.max-name-length", 20)));
+   }
+
+   /** Makes someone on the team its captain. */
+   public void setCaptain(Team team, UUID id) {
+      if (team.members.contains(id)) {
+         team.captain = id;
+         this.save();
+         Player online = Bukkit.getPlayer(id);
+         if (online != null) {
+            this.syncPlayer(online);
+         }
+
+         this.syncBoards();
+      }
+   }
+
+   public void recolour(Team team, NamedTextColor colour) {
+      team.colour = colour;
       this.save();
       this.syncBoards();
    }
@@ -240,14 +278,22 @@ public final class TeamManager implements Listener {
       return this.teamChat.contains(player.getUniqueId());
    }
 
-   /** Sends `text` to `from`'s team. False if they have none. */
+   public boolean chatEnabled() {
+      return this.config() == null || this.config().getBoolean("chat.enabled", true);
+   }
+
+   /** Sends `text` to `from`'s team. False if they have none (or team chat is off). */
    public boolean say(Player from, String text) {
       Team team = this.teamOf(from);
-      if (team == null) {
+      if (team == null || !this.chatEnabled()) {
          return false;
       }
 
-      Component line = Component.text("[" + team.name + "] ", team.colour).append(Component.text(from.getName() + ": ", NamedTextColor.WHITE))
+      String format = this.config() == null ? "[{team}]" : this.config().getString("chat.prefix", "[{team}]");
+      String prefix = (format == null ? "[{team}]" : format)
+         .replace("{team}", team.name)
+         .replace("{symbol}", this.symbol(from.getUniqueId().equals(team.captain)));
+      Component line = Component.text(prefix.isBlank() ? "" : prefix.trim() + " ", team.colour).append(Component.text(from.getName() + ": ", NamedTextColor.WHITE))
          .append(Component.text(text, NamedTextColor.GRAY));
       for (UUID id : team.members) {
          Player member = Bukkit.getPlayer(id);
@@ -263,7 +309,7 @@ public final class TeamManager implements Listener {
    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
    public void onChat(AsyncChatEvent event) {
       Player player = event.getPlayer();
-      if (!this.teamChat.contains(player.getUniqueId()) || this.teamOf(player) == null) {
+      if (!this.teamChat.contains(player.getUniqueId()) || this.teamOf(player) == null || !this.chatEnabled()) {
          return;
       }
 
@@ -274,15 +320,76 @@ public final class TeamManager implements Listener {
 
    // ------------------------------------------------------------------ name tags and tab colours
 
+   /** teams.nametags.*: the team colour on names over heads and in tab, with a captain / member mark. */
+   private ConfigurationSection tags() {
+      return this.config() == null ? null : this.config().getConfigurationSection("nametags");
+   }
+
    private boolean nametags() {
-      return this.config() == null || this.config().getBoolean("coloured-names", true);
+      ConfigurationSection tags = this.tags();
+      if (tags != null) {
+         return tags.getBoolean("enabled", true);
+      }
+
+      return this.config() == null || this.config().getBoolean("coloured-names", true);   // the old setting
+   }
+
+   private String symbol(boolean captain) {
+      ConfigurationSection tags = this.tags();
+      String symbol = tags == null ? (captain ? "♛" : "✦") : tags.getString(captain ? "captain-symbol" : "member-symbol", captain ? "♛" : "✦");
+      return symbol == null ? "" : symbol.trim();
+   }
+
+   private TextColor symbolColour(Team team, boolean captain) {
+      ConfigurationSection tags = this.tags();
+      String raw = tags == null ? "" : tags.getString(captain ? "captain-symbol-colour" : "member-symbol-colour", captain ? "GOLD" : "TEAM");
+      NamedTextColor named = raw == null || raw.equalsIgnoreCase("TEAM") ? null : NamedTextColor.NAMES.value(raw.trim().toLowerCase(Locale.ROOT));
+      return named == null ? team.colour : named;
+   }
+
+   private boolean showTeamName() {
+      ConfigurationSection tags = this.tags();
+      return tags != null && tags.getBoolean("show-team-name", false);
+   }
+
+   /** What goes in front of a name: "♛ " / "✦ " (and "[Red Team] " when show-team-name is on). */
+   public Component prefix(Team team, boolean captain) {
+      Component out = Component.empty();
+      String symbol = this.symbol(captain);
+      if (!symbol.isEmpty()) {
+         out = out.append(Component.text(symbol + " ", this.symbolColour(team, captain)));
+      }
+
+      if (this.showTeamName()) {
+         out = out.append(Component.text("[" + team.name + "] ", team.colour));
+      }
+
+      return out;
+   }
+
+   /**
+    * A name as it looks over this player's head: prefix plus the name in the team colour, or the
+    * plain white name for someone without a team. The Veil's fake tags use it to look real.
+    */
+   public Component decorated(UUID id, String name) {
+      Team team = this.teamOf(id);
+      if (team == null || !this.enabled() || !this.nametags()) {
+         return Component.text(name, NamedTextColor.WHITE);
+      }
+
+      return this.prefix(team, id.equals(team.captain)).append(Component.text(name, team.colour));
    }
 
    /** What each board's colour team was last set to, so unchanged teams send no update packets. */
    private final Map<String, String> applied = new java.util.HashMap<>();
 
-   private org.bukkit.scoreboard.Team boardTeam(Scoreboard board, Team team) {
-      String name = BOARD_PREFIX + team.id;
+   private static String boardName(Team team, boolean captain) {
+      return BOARD_PREFIX + team.id + (captain ? "_c" : "");
+   }
+
+   /** The scoreboard team for a team's captain or its members (the prefix differs). */
+   private org.bukkit.scoreboard.Team boardTeam(Scoreboard board, Team team, boolean captain) {
+      String name = boardName(team, captain);
       org.bukkit.scoreboard.Team entry = board.getTeam(name);
       String slot = System.identityHashCode(board) + ":" + name;
       if (entry == null) {
@@ -290,14 +397,25 @@ public final class TeamManager implements Listener {
          this.applied.remove(slot);
       }
 
-      String look = team.name + "|" + NamedTextColor.NAMES.key(team.colour);
+      Component prefix = this.prefix(team, captain);
+      String look = NamedTextColor.NAMES.key(team.colour) + "|" + team.name + "|" + this.symbol(captain) + "|" + this.symbolColour(team, captain) + "|" + this.showTeamName();
       if (!look.equals(this.applied.get(slot))) {
          entry.color(team.colour);
-         entry.prefix(Component.text("[" + team.name + "] ", team.colour));
+         entry.prefix(prefix);
          this.applied.put(slot, look);
       }
 
       return entry;
+   }
+
+   private void unregisterBoards(Team team) {
+      Scoreboard main = Bukkit.getScoreboardManager().getMainScoreboard();
+      for (boolean captain : new boolean[]{false, true}) {
+         org.bukkit.scoreboard.Team board = main.getTeam(boardName(team, captain));
+         if (board != null) {
+            board.unregister();
+         }
+      }
    }
 
    private void clearEntry(String entry) {
@@ -308,7 +426,7 @@ public final class TeamManager implements Listener {
       }
    }
 
-   /** Puts an online player in their colour team on the boards they see (not while disguised). */
+   /** Puts an online player in their colour team on the main board (not while disguised). */
    public void syncPlayer(Player player) {
       Team team = this.teamOf(player);
       boolean disguised = this.plugin.getDisguiseManager() != null && this.plugin.getDisguiseManager().isDisguised(player);
@@ -318,33 +436,36 @@ public final class TeamManager implements Listener {
       }
 
       if (disguised) {
-         return;                                          // the Veil hides their tag; a colour would give them away
+         return;                                          // the Veil hides their tag and draws the disguise's own
       }
 
       Scoreboard main = Bukkit.getScoreboardManager().getMainScoreboard();
+      String wanted = boardName(team, player.getUniqueId().equals(team.captain));
       org.bukkit.scoreboard.Team current = main.getEntryTeam(player.getName());
-      if (current == null || current.getName().startsWith(BOARD_PREFIX) && !current.getName().equals(BOARD_PREFIX + team.id)) {
-         this.boardTeam(main, team).addEntry(player.getName());
+      if (current == null || current.getName().startsWith(BOARD_PREFIX) && !current.getName().equals(wanted)) {
+         this.boardTeam(main, team, player.getUniqueId().equals(team.captain)).addEntry(player.getName());
       }
    }
 
    /** Every few seconds: everyone in the right colour, including on event scoreboards. */
    public void syncBoards() {
       Scoreboard main = Bukkit.getScoreboardManager().getMainScoreboard();
-      for (Team team : this.teams.values()) {
-         this.boardTeam(main, team);
+      if (this.nametags() && this.enabled()) {
+         for (Team team : this.teams.values()) {
+            this.boardTeam(main, team, false);
+            this.boardTeam(main, team, true);
+         }
       }
 
       for (Player player : Bukkit.getOnlinePlayers()) {
          this.syncPlayer(player);
          Scoreboard seen = player.getScoreboard();
-         if (seen != main && this.nametags()) {
+         if (seen != main && this.nametags() && this.enabled()) {
             for (Team team : this.teams.values()) {
-               org.bukkit.scoreboard.Team mirror = this.boardTeam(seen, team);
                for (UUID id : team.members) {
                   Player member = Bukkit.getPlayer(id);
                   if (member != null && !this.plugin.getDisguiseManager().isDisguised(member) && seen.getEntryTeam(member.getName()) == null) {
-                     mirror.addEntry(member.getName());
+                     this.boardTeam(seen, team, id.equals(team.captain)).addEntry(member.getName());
                   }
                }
             }
