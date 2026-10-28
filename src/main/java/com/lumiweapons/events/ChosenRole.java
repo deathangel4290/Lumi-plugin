@@ -168,19 +168,25 @@ public final class ChosenRole implements Listener {
 
    /** Picks someone at random from everyone online who may be the Chosen. Null on success, else why not. */
    public String pick() {
+      Player picked = this.randomEligible(null);
+      if (picked == null) {
+         return "Nobody online can be the Chosen: everyone has a legendary (or is spectating).";
+      }
+
+      this.makeChosen(picked, null);
+      return null;
+   }
+
+   /** Someone online who may be the Chosen, other than the current one and `besides`; null if nobody. */
+   private Player randomEligible(Player besides) {
       List<Player> pool = new ArrayList<>();
       for (Player player : Bukkit.getOnlinePlayers()) {
-         if (this.eligible(player) && !this.isChosen(player)) {
+         if (this.eligible(player) && !this.isChosen(player) && !player.equals(besides)) {
             pool.add(player);
          }
       }
 
-      if (pool.isEmpty()) {
-         return "Nobody online can be the Chosen: everyone has a legendary (or is spectating).";
-      }
-
-      this.makeChosen(pool.get(ThreadLocalRandom.current().nextInt(pool.size())));
-      return null;
+      return pool.isEmpty() ? null : pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
    }
 
    public String set(String name) {
@@ -193,7 +199,7 @@ public final class ChosenRole implements Listener {
          return player.getName() + " has a legendary. Only someone without one can be the Chosen.";
       }
 
-      this.makeChosen(player);
+      this.makeChosen(player, null);
       return null;
    }
 
@@ -210,7 +216,8 @@ public final class ChosenRole implements Listener {
       return null;
    }
 
-   private void makeChosen(Player player) {
+   /** `announcement` replaces the usual "the light has chosen" line (null keeps it). */
+   private void makeChosen(Player player, Component announcement) {
       if (this.chosen != null) {
          this.endFight(Bukkit.getPlayer(this.chosen), false);
       }
@@ -219,7 +226,7 @@ public final class ChosenRole implements Listener {
       this.chosenName = player.getName();
       this.manager.save();
       if (this.settings().getBoolean("announce", true)) {
-         Bukkit.broadcast(Component.text("✦ The light has chosen " + this.manager.publicName(player) + ". ", NamedTextColor.GOLD)
+         Bukkit.broadcast(announcement != null ? announcement : Component.text("✦ The light has chosen " + this.manager.publicName(player) + ". ", NamedTextColor.GOLD)
             .append(Component.text("Face a legendary with a diamond or netherite weapon and it answers in kind.", NamedTextColor.GRAY)));
       }
 
@@ -231,6 +238,33 @@ public final class ChosenRole implements Listener {
       }
 
       player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0.0, 2.2, 0.0), 40, 0.3, 0.4, 0.3, 0.08);
+   }
+
+   /**
+    * The Chosen was killed by a player. A killer with no legendary earns the role; a legendary
+    * holder can't carry it, so it goes to someone at random instead (never the one who just died).
+    * Deaths to anything but a player leave the role where it is.
+    */
+   private void passOn(Player dead, Player killer, boolean killerHasLegendary) {
+      if (!this.isChosen(dead)) {
+         return;
+      }
+
+      String fallen = this.manager.publicName(dead);
+      if (!killerHasLegendary && killer.isOnline() && this.eligible(killer)) {
+         String earned = this.manager.publicName(killer);
+         this.makeChosen(killer, Component.text("⚔ " + earned + " slew the Chosen " + fallen + " and earned their light.", NamedTextColor.GOLD));
+         return;
+      }
+
+      Player next = this.randomEligible(dead);
+      if (next == null) {
+         this.lose(dead, fallen + " fell to a legendary, and nobody is left to carry the light.");
+         return;
+      }
+
+      this.makeChosen(next, Component.text("✦ " + fallen + " fell to a legendary. ", NamedTextColor.GOLD)
+         .append(Component.text("The light has passed to " + this.manager.publicName(next) + ".", NamedTextColor.YELLOW)));
    }
 
    private void lose(Player player, String why) {
@@ -612,6 +646,12 @@ public final class ChosenRole implements Listener {
          } else {
             this.fight = null;                            // the inventory is about to be emptied: drops are handled above
          }
+      }
+
+      Player killer = dead.getKiller();
+      if (this.isChosen(dead) && killer != null && !killer.equals(dead) && this.settings().getBoolean("pass-on-death", true)) {
+         boolean legendary = this.ownsLegendary(killer);                      // checked now, before anyone picks up the drops
+         this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.passOn(dead, killer, legendary));
       }
    }
 
