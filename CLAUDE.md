@@ -87,6 +87,9 @@ namespace, so things made before the rename still work. Always make tag keys wit
 
 - `mvn -B package` produces `target/LumiWeapons-1.3.0.jar`. It needs paper-api 1.21.11 and
   BetterModel's `bettermodel-api` and `bettermodel-bukkit-api` 2.2.0 (provided; not shaded).
+- **Cloud sessions can't reach repo.papermc.io.** Run `tools/build-paper-api.sh` once per container:
+  it builds paper-api 1.21.11 from Paper's GitHub source (and brigadier from Mojang's) and installs
+  it in `~/.m2`, then `mvn -B -o package` works.
 - The pack zip holds `pack.mcmeta` and `assets/` from `resourcepack/`.
 - **1.21.11 renames:** `CHAIN` is `IRON_CHAIN`. When a material differs between versions, look it up
   with `Material.matchMaterial` instead of naming the constant.

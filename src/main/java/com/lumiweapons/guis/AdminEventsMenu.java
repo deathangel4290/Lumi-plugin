@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
  *   header   Event Director
  *   row 1    Bounty · King of the Hill · Fallen Star · Blood Moon · Most Wanted · Bosses · Teams
  *   row 2    early / mid / late supply drops
- *   row 3    outposts · status of everything
+ *   row 3    outposts · the Chosen · status of everything
  *   corner   stop everything
  */
 public final class AdminEventsMenu extends Menu {
@@ -145,12 +145,12 @@ public final class AdminEventsMenu extends Menu {
       }
 
       java.util.List<net.kyori.adventure.text.Component> outposts = events.outposts().list();
-      this.show(30, Icon.of(Material.BEACON).name("Outposts", GOLD)
+      this.show(29, Icon.of(Material.BEACON).name("Outposts", GOLD)
          .lines(outposts.subList(Math.min(1, outposts.size()), outposts.size()))
          .blank().text("Make one with /lwevent outpost create <name> <type> where it should be.", DIM).build());
 
       Icon all = Icon.of(Material.KNOWLEDGE_BOOK).name("Everything at a glance", ACCENT);
-      for (String line : java.util.List.of(events.bounty().status(), events.koth().status(), events.mostWanted().status(),
+      for (String line : java.util.List.of(events.bounty().status(), events.koth().status(), events.mostWanted().status(), events.chosen().status(),
          "Supply drops waiting: " + events.supplyDrops().active(), events.fallenStar().status(), events.bloodMoon().status(),
          bosses == null ? "Bosses: off" : bosses.status())) {
          all.text("• " + line, NamedTextColor.WHITE);
@@ -160,7 +160,30 @@ public final class AdminEventsMenu extends Menu {
          all.text("• " + line, NamedTextColor.WHITE);
       }
 
-      this.show(32, all.build());
+      this.show(33, all.build());
+
+      var chosen = events.chosen();
+      boolean someone = chosen.hasChosen();
+      this.button(31, Icon.of(Material.GOLDEN_HELMET).name("The Chosen", someone ? GOLD : NamedTextColor.WHITE)
+         .line(Icon.plain(someone ? "● " + chosen.chosenName() : "○ Nobody", someone ? GOLD : DIM))
+         .blank().text(chosen.status(), NamedTextColor.WHITE)
+         .text("Someone without a legendary, with a halo. Their diamond or netherite weapon becomes the legendary they're fighting, until the fight ends.", DIM)
+         .blank().hint("Left-click", "pick someone at random").hint("Shift-click", "choose the player").hint("Right-click", "clear")
+         .glow(someone).build(), click -> {
+         if (click.right()) {
+            this.toggleSound(click.player(), false);
+            AdminMenu.run(this, click.player(), "lwevent chosen clear");
+         } else if (click.shift()) {
+            this.clickSound(click.player());
+            new PlayerPicker(this.plugin, click.player(), this, "Choose the Chosen", "make them the Chosen", (admin, target) -> {
+               admin.performCommand("lwevent chosen set " + target.getName());
+               this.open();
+            }).open();
+         } else {
+            this.toggleSound(click.player(), true);
+            AdminMenu.run(this, click.player(), "lwevent chosen pick");
+         }
+      });
 
       this.button(this.rows() * 9 - 1, Icon.of(Material.TNT).name("Stop everything", BAD)
          .text("Stops the bounty hunt, King of the Hill, Fallen Star, Blood Moon and any boss, without prizes.")

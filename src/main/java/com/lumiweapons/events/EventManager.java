@@ -48,6 +48,7 @@ public class EventManager implements Listener {
    private final OutpostManager outposts;
    private final TokenShop tokenShop;
    private final EventDirector director;
+   private final ChosenRole chosen;
    private final File file;
    private final YamlConfiguration data;
 
@@ -65,10 +66,12 @@ public class EventManager implements Listener {
       this.outposts = new OutpostManager(plugin, this);
       this.tokenShop = new TokenShop(plugin);
       this.director = new EventDirector(plugin, this);
+      this.chosen = new ChosenRole(plugin, this);
       this.file = new File(plugin.getDataFolder(), "events.yml");
       this.data = YamlConfiguration.loadConfiguration(this.file);
       this.mostWanted.load(this.data.getConfigurationSection("most-wanted"));
       this.director.load(this.data.getConfigurationSection("director"));
+      this.chosen.load(this.data.getConfigurationSection("chosen"));
       this.fallenStar.recover(this.data.getConfigurationSection("fallen-star"));
       String hill = this.data.getString("koth.center");
       if (hill != null) {
@@ -131,6 +134,10 @@ public class EventManager implements Listener {
       return this.director;
    }
 
+   public ChosenRole chosen() {
+      return this.chosen;
+   }
+
    public boolean isMostWanted(Player player) {
       return this.mostWanted.isWanted(player);
    }
@@ -149,6 +156,11 @@ public class EventManager implements Listener {
       if (this.director != null) {
          ConfigurationSection dir = this.data.getConfigurationSection("director");
          this.director.save(dir != null ? dir : this.data.createSection("director"));
+      }
+
+      if (this.chosen != null) {
+         ConfigurationSection role = this.data.getConfigurationSection("chosen");
+         this.chosen.save(role != null ? role : this.data.createSection("chosen"));
       }
 
       if (this.fallenStar != null) {
@@ -180,6 +192,7 @@ public class EventManager implements Listener {
       this.fallenStar.shutdown();
       this.bloodMoon.stop();
       this.outposts.shutdown();
+      this.chosen.shutdown();
       this.save();
    }
 

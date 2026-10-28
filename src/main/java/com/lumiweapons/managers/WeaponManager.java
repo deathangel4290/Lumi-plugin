@@ -153,7 +153,8 @@ public class WeaponManager {
          return false;
       } else {
          ItemMeta meta = item.getItemMeta();
-         if (meta.getPersistentDataContainer().has(this.splitKey, PersistentDataType.BYTE)) {
+         if (meta.getPersistentDataContainer().has(this.splitKey, PersistentDataType.BYTE)
+            || meta.getPersistentDataContainer().has(LumiWeapons.key("chosen-echo"), PersistentDataType.STRING)) {   // a Chosen's echo keeps its own lore
             return false;
          } else {
             String weaponKey = this.getWeaponKey(item);

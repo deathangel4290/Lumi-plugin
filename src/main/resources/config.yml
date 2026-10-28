@@ -659,6 +659,22 @@ events:
           - "AMETHYST_SHOVEL 1 w1"
           - "AMETHYST_AXE 1 w1"
 
+  # The Chosen (/lwevent chosen pick): someone without a legendary, wearing a halo. When they fight
+  # a player wielding a legendary with one of these weapons in hand, it becomes a copy of that
+  # legendary (an "echo") until the fight ends. Taking up a real legendary ends the role.
+  chosen:
+    weapons: [DIAMOND_SWORD, DIAMOND_AXE, DIAMOND_SPEAR, NETHERITE_SWORD, NETHERITE_AXE, NETHERITE_SPEAR]
+    fight-timeout: 15          # SECONDS without a hit between the two before the echo turns back
+    max-distance: 48.0         # ...or when they are further apart than this
+    include-admins: true       # admins can be picked too
+    announce: true             # tell everyone who was chosen
+    halo:
+      enabled: true
+      colour: "#FFD24A"        # turns the legendary's own colour while an echo is held
+      points: 12
+      radius: 0.32
+      height: 0.25             # above the top of the head
+
   most-wanted:
     alias: "MostWanted"        # the name everyone sees; must be a valid username (letters, digits, _)
     max-health: 40.0           # 20 hearts

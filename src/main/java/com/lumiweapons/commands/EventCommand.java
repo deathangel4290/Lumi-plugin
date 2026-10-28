@@ -138,6 +138,20 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                   }
                }
                break;
+            case "chosen":
+               switch (action) {
+                  case "pick", "random" -> {
+                     String error = this.events().chosen().pick();
+                     reply(sender, error, error == null ? this.events().chosen().status() : null);
+                  }
+                  case "set" -> {
+                     String error = args.length < 3 ? "Usage: /lwevent chosen set <player>" : this.events().chosen().set(args[2]);
+                     reply(sender, error, error == null ? this.events().chosen().status() : null);
+                  }
+                  case "clear", "stop" -> reply(sender, this.events().chosen().clear(), "Nobody is the Chosen now.");
+                  default -> sender.sendMessage(Component.text(this.events().chosen().status(), NamedTextColor.GRAY));
+               }
+               break;
             case "mostwanted":
             case "mw":
                switch (action) {
@@ -450,6 +464,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                sender.sendMessage(Component.text(this.events().bounty().status(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text(this.events().koth().status(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text(this.events().mostWanted().status(), NamedTextColor.GRAY));
+               sender.sendMessage(Component.text(this.events().chosen().status(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text("Supply drops waiting to be claimed: " + this.events().supplyDrops().active(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text(this.events().fallenStar().status(), NamedTextColor.GRAY));
                sender.sendMessage(Component.text(this.events().bloodMoon().status(), NamedTextColor.GRAY));
@@ -471,6 +486,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          "/lwevent koth marker | setcenter | start [minutes] | stop | status",
          "/lwevent supplydrop <early|mid|late> [count] [world]",
          "/lwevent mostwanted set <player> | confirm | clear | status",
+         "/lwevent chosen pick | set <player> | clear | status",
          "/lwevent fallenstar start [world] | stop | status",
          "/lwevent bloodmoon start [world] | stop | status",
          "/lwevent director on | off | status | skip | run <event>",
@@ -488,12 +504,13 @@ public class EventCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       List<String> options = switch (args.length) {
-         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "fallenstar", "bloodmoon", "director", "outpost", "draft", "team", "altar", "boss", "trader", "status", "stopall");
+         case 1 -> List.of("bounty", "koth", "supplydrop", "mostwanted", "chosen", "fallenstar", "bloodmoon", "director", "outpost", "draft", "team", "altar", "boss", "trader", "status", "stopall");
          case 2 -> switch (args[0].toLowerCase(Locale.ROOT)) {
             case "bounty" -> List.of("start", "stop", "status");
             case "koth" -> List.of("marker", "setcenter", "start", "stop", "status");
             case "supplydrop", "supply" -> SupplyDrops.TIERS;
             case "mostwanted", "mw" -> List.of("set", "confirm", "clear", "status");
+            case "chosen" -> List.of("pick", "set", "clear", "status");
             case "fallenstar", "star", "bloodmoon" -> List.of("start", "stop", "status");
             case "director" -> List.of("on", "off", "status", "skip", "run");
             case "outpost", "outposts" -> List.of("create", "remove", "reset", "list");
@@ -506,6 +523,7 @@ public class EventCommand implements CommandExecutor, TabCompleter {
          };
          case 3 -> args[0].equalsIgnoreCase("mostwanted") && args[1].equalsIgnoreCase("set")
             ? this.plugin.getPlayerRosterManager().entries().stream().map(java.util.Map.Entry::getValue).toList()
+            : args[0].equalsIgnoreCase("chosen") && args[1].equalsIgnoreCase("set") ? Bukkit.getOnlinePlayers().stream().map(Player::getName).toList()
             : (args[0].toLowerCase(Locale.ROOT).startsWith("boss") && (args[1].equalsIgnoreCase("arena") || args[1].equalsIgnoreCase("start")) ? com.lumiweapons.bosses.BossManager.IDS
             : (args[0].equalsIgnoreCase("director") && args[1].equalsIgnoreCase("run") ? List.of("supplydrop:early", "supplydrop:mid", "supplydrop:late", "bounty", "koth", "fallenstar", "bloodmoon", "boss", "boss:hollow_warden", "boss:wither_king", "boss:leviathan", "boss:ender_colossus")
             : (args[0].toLowerCase(Locale.ROOT).startsWith("outpost") && !args[1].equalsIgnoreCase("create") ? this.events().outposts().names()
