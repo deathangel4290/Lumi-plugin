@@ -149,7 +149,8 @@ veil-of-mimicry:
     - "Morph | into any player who has joined"
     - "~Their name, their skin, their chat."
     - "Fails if | anyone within {n:witness-range} blocks can see you"
-    - "Breaks when | you attack, take {h:break-damage-threshold}❤+, or use the book again"
+    - "Breaks when | you attack, lose {h:break-damage-threshold}❤ in {s:break-damage-window}, or use the book again"
+    - "~It also slips when you fall to {h:break-health-below}❤."
   cooldowns:
     - "Morph | {s:morph-cooldown}"
   notes:

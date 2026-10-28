@@ -53,6 +53,8 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    private static final DateTimeFormatter STAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
    private final VeilGUI gui;
    private final File chatLog;
+   /** Recent damage a disguised player took: { when (ms), amount }. */
+   private final java.util.Map<UUID, java.util.ArrayDeque<double[]>> recentDamage = new java.util.HashMap<>();
 
    public VeilOfMimicryListener(LumiWeapons plugin) {
       super(plugin);
@@ -196,6 +198,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
 
    private void reveal(Player player, String reasonForSelf) {
       DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().remove(player);
+      this.recentDamage.remove(player.getUniqueId());
       if (disguise != null) {
          Bukkit.broadcast(Component.translatable("multiplayer.player.left", NamedTextColor.YELLOW, Component.text(disguise.fakeName())));
          if (reasonForSelf != null) {
@@ -220,12 +223,39 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onDamaged(EntityDamageEvent event) {
       if (event.getEntity() instanceof Player player && this.plugin.getDisguiseManager().isDisguised(player) && !this.plugin.getEventManager().isMostWanted(player)) {
-         if (event.getFinalDamage() >= this.ability("break-damage-threshold", 8.0)) {
-            this.reveal(player, "The hit broke your disguise.");
+         double damage = event.getFinalDamage();
+         double healthAfter = player.getHealth() - damage;           // final damage is already past armour and absorption
+         double lowHealth = this.ability("break-health-below", 6.0);
+         if (this.damageTaken(player, damage) >= this.ability("break-damage-threshold", 8.0)) {
+            this.reveal(player, "The hits broke your disguise.");
+         } else if (lowHealth > 0.0 && healthAfter <= lowHealth) {
+            this.reveal(player, "Too hurt to hold the face: your disguise slips.");
          } else if (event instanceof EntityDamageByEntityEvent && Math.random() < this.ability("tell-chance", 0.25)) {
             this.showTell(player);
          }
       }
+   }
+
+   /**
+    * Damage the player has taken within break-damage-window (ticks; 0 = this hit alone), this hit
+    * included. Armour makes single 4-heart hits rare, so a run of hits counts too.
+    */
+   private double damageTaken(Player player, double damage) {
+      long now = System.currentTimeMillis();
+      long window = Math.max(0L, this.abilityLong("break-damage-window", 60L)) * 50L;
+      java.util.ArrayDeque<double[]> hits = this.recentDamage.computeIfAbsent(player.getUniqueId(), id -> new java.util.ArrayDeque<>());
+      hits.addLast(new double[]{now, damage});
+      double total = 0.0;
+      for (java.util.Iterator<double[]> it = hits.iterator(); it.hasNext(); ) {
+         double[] hit = it.next();
+         if (now - hit[0] > window) {
+            it.remove();
+         } else {
+            total += hit[1];
+         }
+      }
+
+      return window == 0L ? damage : total;
    }
 
    /**
@@ -375,6 +405,7 @@ public class VeilOfMimicryListener extends AbstractWeaponListener {
    @EventHandler(priority = EventPriority.LOWEST)
    public void onQuit(PlayerQuitEvent event) {
       DisguiseManager.Disguise disguise = this.plugin.getDisguiseManager().remove(event.getPlayer());
+      this.recentDamage.remove(event.getPlayer().getUniqueId());
       if (disguise != null) {
          event.quitMessage(Component.translatable("multiplayer.player.left", NamedTextColor.YELLOW, Component.text(disguise.fakeName())));
       }

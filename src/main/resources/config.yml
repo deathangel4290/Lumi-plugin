@@ -448,7 +448,9 @@ weapons:
       witness-range: 20.0
       witness-fov-degrees: 110.0        # a witness has to be facing you
       sound-mask-range: 16.0
-      break-damage-threshold: 8.0       # 4 hearts in one hit
+      break-damage-threshold: 8.0       # health lost within break-damage-window that breaks the disguise (8 = 4 hearts, after armour)
+      break-damage-window: 60           # ticks (3s) the damage above adds up over; 0 = one hit on its own
+      break-health-below: 6.0           # the disguise also drops when you fall to this much health (6 = 3 hearts); 0 = off
       tell-chance: 0.25                 # lighter hits: chance of a brief particle glitch
       tell-duration: 20
       allow-online-targets: true
