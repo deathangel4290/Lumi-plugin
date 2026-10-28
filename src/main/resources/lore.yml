@@ -25,8 +25,8 @@ scythe-of-diablo:
 ender-glaive:
   flavour: "Folded from the space between worlds."
   ability:
-    - "Throw the glaive | {h:spear-damage}❤ damage"
-    - "~It finds its way back to you."
+    - "Throw | an echo of the glaive, {h:spear-damage}❤ damage"
+    - "~The glaive itself stays in your hand."
     - "Sneak + hold ability | charge a Spear Pearl"
     - "~Hold longer to throw it further."
   cooldowns:

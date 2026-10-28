@@ -40,10 +40,12 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
    private final HashMap<UUID, com.lumiweapons.managers.SpriteFx.Held> chargeRings = new HashMap<>();
    private final NamespacedKey glaiveKey;
    private final HashMap<UUID, UUID> tridentOwners = new HashMap<>();
-   private final HashMap<UUID, ItemStack> glaiveItems = new HashMap<>();
    /** trident -> the display that shows the real glaive model flying in its place */
    private final HashMap<UUID, org.bukkit.entity.ItemDisplay> glaiveDisplays = new HashMap<>();
-   /** Glaives owed to a player, kept on the player so a logout or restart mid-flight can't lose one. */
+   /**
+    * Glaives owed from before the throw kept the glaive in hand (the old throw took it out of the
+    * hand until it came back). Nothing is owed any more; this only hands back old ones on join.
+    */
    private final com.lumiweapons.managers.OwedItems owedGlaives;
 
    @Override
@@ -90,7 +92,7 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       }
    }
 
-   /** Plugin disable: return every glaive still in the air. */
+   /** Plugin disable: clear every thrown echo still in the air. */
    public void cleanup() {
       for (UUID tridentId : new java.util.ArrayList<>(this.tridentOwners.keySet())) {
          this.returnGlaiveToPlayer(tridentId);
@@ -127,15 +129,10 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
                return;
             }
 
-            ItemStack glaiveItem = mainHand.clone();
-            glaiveItem.setAmount(1);
-            if (mainHand.getAmount() > 1) {
-               mainHand.setAmount(mainHand.getAmount() - 1);
-            } else {
-               player.getInventory().setItemInMainHand(null);
-            }
-
-            this.throwTrident(player, glaiveItem);
+            // the glaive stays in your hand: what flies is its echo, so you can keep fighting with it
+            ItemStack shown = mainHand.clone();
+            shown.setAmount(1);
+            this.throwTrident(player, shown);
          }
       }
    }
@@ -281,8 +278,6 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       trident.getPersistentDataContainer().set(LumiWeapons.key("glaive-damage"), PersistentDataType.DOUBLE, baseDamage);
       this.tridentOwners.put(trident.getUniqueId(), player.getUniqueId());
       com.lumiweapons.managers.SpriteFx.slash(player, org.bukkit.Color.fromRGB(150, 60, 235), 2.4, 0.25);
-      this.glaiveItems.put(trident.getUniqueId(), glaiveItem);
-      this.owedGlaives.push(player, glaiveItem);
       // The thrown entity would render as a vanilla trident; hide it and fly the glaive model instead.
       for (Player viewer : player.getWorld().getPlayers()) {
          viewer.hideEntity(this.plugin, trident);
@@ -338,36 +333,28 @@ public class EnderGlaiveListener implements Listener, WeaponAbility {
       }
    }
 
+   /** The thrown echo is done (it hit, landed or timed out): it folds back to its owner. */
    private void returnGlaiveToPlayer(UUID tridentId) {
       org.bukkit.entity.ItemDisplay display = this.glaiveDisplays.remove(tridentId);
+      Location from = display != null && display.isValid() ? display.getLocation() : null;
       if (display != null && display.isValid()) {
          display.remove();
       }
 
-      if (this.tridentOwners.containsKey(tridentId) && this.glaiveItems.containsKey(tridentId)) {
-         UUID playerId = this.tridentOwners.get(tridentId);
-         ItemStack glaiveItem = this.glaiveItems.get(tridentId);
-         Player player = Bukkit.getPlayer(playerId);
-         if (player != null && player.isOnline()) {
-            this.owedGlaives.pop(player, () -> null);                  // offline owners keep it owed until they rejoin
-            HashMap<Integer, ItemStack> leftover = player.getInventory().addItem(new ItemStack[]{glaiveItem});
-            if (leftover.isEmpty()) {
-               this.plugin.getSoundManager().self(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1.2F);
-               ParticleManager.spawn(Particle.PORTAL, player.getLocation().add(0.0, 1.0, 0.0), 10, 0.5, 0.5, 0.5, 0.1);
-            } else {
-               player.getWorld().dropItem(player.getLocation(), glaiveItem);
-               this.plugin.getSoundManager().self(player, Sound.ENTITY_ITEM_PICKUP, 0.5F, 1.0F);
-               com.lumiweapons.managers.HudManager.message(player, Component.text("Ender Glaive dropped - inventory full", NamedTextColor.LIGHT_PURPLE));
-               ParticleManager.spawn(Particle.PORTAL, player.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
-            }
+      UUID playerId = this.tridentOwners.remove(tridentId);
+      Entity trident = Bukkit.getEntity(tridentId);
+      if (trident != null && trident.isValid()) {
+         trident.remove();
+      }
+
+      Player player = playerId == null ? null : Bukkit.getPlayer(playerId);
+      if (player != null && player.isOnline()) {
+         if (from != null) {
+            ParticleManager.spawn(Particle.REVERSE_PORTAL, from, 12, 0.2, 0.2, 0.2, 0.05);
          }
 
-         this.tridentOwners.remove(tridentId);
-         this.glaiveItems.remove(tridentId);
-         Entity trident = Bukkit.getEntity(tridentId);
-         if (trident != null && trident.isValid()) {
-            trident.remove();
-         }
+         ParticleManager.spawn(Particle.PORTAL, player.getLocation().add(0.0, 1.0, 0.0), 10, 0.4, 0.4, 0.4, 0.1);
+         this.plugin.getSoundManager().self(player, Sound.ENTITY_ENDERMAN_TELEPORT, 0.4F, 1.4F);
       }
    }
 
