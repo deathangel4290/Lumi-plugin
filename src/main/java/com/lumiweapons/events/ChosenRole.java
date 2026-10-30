@@ -300,6 +300,23 @@ public final class ChosenRole implements Listener {
          .append(Component.text("The light has passed to " + this.manager.publicName(next) + ".", NamedTextColor.YELLOW)));
    }
 
+   /**
+    * The Chosen took up a real legendary, so they can't carry the light any more: it goes to
+    * someone at random who can (events.chosen.pass-on-legendary), or ends if nobody can.
+    */
+   private void passFromLegendary(Player player) {
+      String fallen = this.manager.publicName(player);
+      Player next = this.settings().getBoolean("pass-on-legendary", true) ? this.randomEligible(player) : null;
+      if (next == null) {
+         this.lose(player, fallen + " took up a legendary of their own.");
+         return;
+      }
+
+      this.endFight(player, false);
+      this.makeChosen(next, Component.text("✦ " + fallen + " took up a legendary and gave up the light. ", NamedTextColor.GOLD)
+         .append(Component.text("It has passed to " + this.manager.publicName(next) + ".", NamedTextColor.YELLOW)));
+   }
+
    private void lose(Player player, String why) {
       this.endFight(player, false);
       Bukkit.broadcast(Component.text("The Chosen's light fades: ", NamedTextColor.GOLD).append(Component.text(why, NamedTextColor.GRAY)));
@@ -566,7 +583,7 @@ public final class ChosenRole implements Listener {
 
       if (this.ticks % 20 == 0) {
          if (player != null && this.ownsLegendary(player)) {
-            this.lose(player, this.chosenName + " took up a legendary of their own.");
+            this.passFromLegendary(player);
          }
 
          for (Player online : Bukkit.getOnlinePlayers()) {

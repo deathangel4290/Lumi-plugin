@@ -667,6 +667,7 @@ events:
     fight-timeout: 15          # SECONDS without a hit between the two before the echo turns back
     max-distance: 48.0         # ...or when they are further apart than this
     include-admins: true       # admins can be picked too
+    pass-on-legendary: true    # the Chosen takes up a real legendary: the role goes to someone at random
     pass-on-death: true        # killed by a player without a legendary: the killer becomes the Chosen;
                                # killed by a legendary holder: someone at random does. Other deaths keep it.
     announce: true             # tell everyone who was chosen
