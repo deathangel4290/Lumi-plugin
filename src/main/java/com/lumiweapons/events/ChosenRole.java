@@ -152,13 +152,14 @@ public final class ChosenRole implements Listener {
 
    /** Where this player keeps a real legendary ("inventory", "ender chest"), or null. */
    private String legendaryWhere(Player player) {
-      List<ItemStack> carried = new ArrayList<>(List.of(player.getInventory().getContents()));
+      // empty slots are null, so Arrays.asList (List.of throws on them)
+      List<ItemStack> carried = new ArrayList<>(java.util.Arrays.asList(player.getInventory().getContents()));
       carried.add(player.getItemOnCursor());
       if (this.anyLegendary(carried)) {
          return "inventory";
       }
 
-      return this.anyLegendary(List.of(player.getEnderChest().getContents())) ? "ender chest" : null;
+      return this.anyLegendary(java.util.Arrays.asList(player.getEnderChest().getContents())) ? "ender chest" : null;
    }
 
    private boolean anyLegendary(List<ItemStack> items) {
