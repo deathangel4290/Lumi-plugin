@@ -76,15 +76,30 @@ public final class ChosenRole implements Listener {
       final UUID opponent;
       final String opponentName;
       final String weaponKey;
-      final String id = UUID.randomUUID().toString();
+      final String id;                                     // stamped on the echo; kept when the Chosen switches
       long lastHit = System.currentTimeMillis();
 
       Fight(Player opponent, String publicName, String weaponKey) {
+         this(opponent, publicName, weaponKey, UUID.randomUUID().toString());
+      }
+
+      Fight(Player opponent, String publicName, String weaponKey, String id) {
          this.opponent = opponent.getUniqueId();
          this.opponentName = publicName;
          this.weaponKey = weaponKey;
+         this.id = id;
       }
    }
+
+   /** A different legendary the Chosen may switch the echo to: offered in chat, taken with /chosen switch. */
+   private record Offer(UUID opponent, String opponentName, String weaponKey, long until) {
+   }
+
+   private static final long OFFER_MILLIS = 10_000L;
+   private static final long DECLINE_MILLIS = 30_000L;
+   private Offer offer;
+   /** opponent -> until when "keep" holds: no new offer for them before then. */
+   private final java.util.Map<UUID, Long> declined = new java.util.HashMap<>();
 
    ChosenRole(LumiWeapons plugin, EventManager manager) {
       this.plugin = plugin;
@@ -388,6 +403,10 @@ public final class ChosenRole implements Listener {
    }
 
    private ItemStack makeEcho(ItemStack from, String weaponKey, String fightId) {
+      return this.makeEcho(from.serializeAsBytes(), itemName(from), weaponKey, fightId);
+   }
+
+   private ItemStack makeEcho(byte[] original, String originalName, String weaponKey, String fightId) {
       ItemStack echo = this.plugin.getWeaponManager().getWeapon(weaponKey);
       if (echo.getType().isAir()) {
          return null;
@@ -395,11 +414,11 @@ public final class ChosenRole implements Listener {
 
       ItemMeta meta = echo.getItemMeta();
       meta.getPersistentDataContainer().set(this.echoKey, PersistentDataType.STRING, fightId);
-      meta.getPersistentDataContainer().set(this.originalKey, PersistentDataType.BYTE_ARRAY, from.serializeAsBytes());
+      meta.getPersistentDataContainer().set(this.originalKey, PersistentDataType.BYTE_ARRAY, original);
       List<Component> lore = meta.lore() == null ? new ArrayList<>() : new ArrayList<>(meta.lore());
       lore.add(Component.empty());
       lore.add(Component.text("✦ The Chosen's echo", NamedTextColor.GOLD).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
-      lore.add(Component.text("Turns back into your " + itemName(from) + " when the fight ends.", NamedTextColor.GRAY).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
+      lore.add(Component.text("Turns back into your " + originalName + " when the fight ends.", NamedTextColor.GRAY).decoration(net.kyori.adventure.text.format.TextDecoration.ITALIC, false));
       meta.lore(lore);
       echo.setItemMeta(meta);
       return echo;
@@ -448,6 +467,11 @@ public final class ChosenRole implements Listener {
       if (this.fight != null) {
          if (this.fight.opponent.equals(opponent.getUniqueId())) {
             this.fight.lastHit = System.currentTimeMillis();
+         } else {
+            String other = this.heldLegendary(opponent);
+            if (other != null) {
+               this.plugin.getServer().getScheduler().runTask(this.plugin, () -> this.offerSwitch(chosenPlayer, opponent, other));
+            }
          }
 
          return;                                          // one echo at a time
@@ -492,10 +516,111 @@ public final class ChosenRole implements Listener {
       opponent.sendMessage(Component.text("✦ " + this.manager.publicName(chosenPlayer) + " is the Chosen: their weapon has become your " + this.weaponName(weaponKey) + " for this fight.", NamedTextColor.GOLD));
    }
 
+   /**
+    * Mid-fight, someone else with a legendary joins in. The same legendary: the echo simply faces
+    * them now. A different one: the Chosen is asked in chat whether to switch (events.chosen.switch-offer).
+    */
+   private void offerSwitch(Player chosenPlayer, Player opponent, String weaponKey) {
+      Fight current = this.fight;
+      if (current == null || !this.isChosen(chosenPlayer) || !chosenPlayer.isOnline() || !opponent.isOnline()) {
+         return;
+      }
+
+      long now = System.currentTimeMillis();
+      String name = this.manager.publicName(opponent);
+      if (weaponKey.equals(current.weaponKey)) {
+         this.fight = new Fight(opponent, name, weaponKey, current.id);
+         return;
+      }
+
+      if (!this.settings().getBoolean("switch-offer", true)
+         || this.offer != null && this.offer.opponent().equals(opponent.getUniqueId()) && this.offer.weaponKey().equals(weaponKey) && this.offer.until() > now
+         || this.declined.getOrDefault(opponent.getUniqueId(), 0L) > now) {
+         return;
+      }
+
+      this.offer = new Offer(opponent.getUniqueId(), name, weaponKey, now + OFFER_MILLIS);
+      String next = this.weaponName(weaponKey);
+      chosenPlayer.sendMessage(Component.text("⚔ " + name + " wields " + next + ". ", NamedTextColor.GOLD)
+         .append(Component.text("[Switch]", NamedTextColor.GREEN, net.kyori.adventure.text.format.TextDecoration.BOLD)
+            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/chosen switch"))
+            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Your echo becomes " + next + " and you fight " + name, NamedTextColor.GRAY))))
+         .append(Component.text(" "))
+         .append(Component.text("[Keep " + this.weaponName(current.weaponKey) + "]", NamedTextColor.GRAY)
+            .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/chosen keep"))
+            .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Stay as you are", NamedTextColor.GRAY))))
+         .append(Component.text("  (" + OFFER_MILLIS / 1000L + "s)", NamedTextColor.DARK_GRAY)));
+      this.plugin.getSoundManager().self(chosenPlayer, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8F, 1.6F);
+   }
+
+   /** /chosen switch: the echo becomes the offered legendary. Null on success, else why not. */
+   public String switchEcho(Player player) {
+      Fight current = this.fight;
+      Offer pending = this.offer;
+      if (!this.isChosen(player)) {
+         return "Only the Chosen can switch.";
+      } else if (current == null) {
+         return "You aren't holding an echo right now.";
+      } else if (pending == null || pending.until() < System.currentTimeMillis()) {
+         this.offer = null;
+         return "There's nothing to switch to right now.";
+      }
+
+      Player opponent = Bukkit.getPlayer(pending.opponent());
+      if (opponent == null || !opponent.isOnline() || opponent.isDead() || !pending.weaponKey().equals(this.heldLegendary(opponent))) {
+         this.offer = null;
+         return pending.opponentName() + " no longer wields " + this.weaponName(pending.weaponKey()) + ".";
+      }
+
+      // every echo of this fight becomes the new legendary, carrying the very same original weapon
+      int switched = 0;
+      PlayerInventory inventory = player.getInventory();
+      ItemStack[] contents = inventory.getContents();
+      for (int i = 0; i < contents.length; i++) {
+         if (this.isEcho(contents[i]) && this.echoOf(contents[i], current.id)) {
+            byte[] original = contents[i].getItemMeta().getPersistentDataContainer().get(this.originalKey, PersistentDataType.BYTE_ARRAY);
+            ItemStack back = this.original(contents[i]);
+            ItemStack echo = original == null || back == null ? null : this.makeEcho(original, itemName(back), pending.weaponKey(), current.id);
+            if (echo != null) {
+               inventory.setItem(i, echo);
+               switched++;
+            }
+         }
+      }
+
+      if (switched == 0) {
+         return "Your echo isn't in your inventory (is it in flight?).";
+      }
+
+      this.offer = null;
+      Fight next = new Fight(opponent, pending.opponentName(), pending.weaponKey(), current.id);
+      this.fight = next;
+      Location at = player.getLocation().add(0.0, 1.0, 0.0);
+      ParticleManager.showcase(Particle.END_ROD, at, 20, 0.4, 0.6, 0.4, 0.08, null);
+      this.plugin.getSoundManager().world(at, Sound.BLOCK_BEACON_POWER_SELECT, 1.0F, 1.9F);
+      player.sendMessage(Component.text("✦ Your echo turns to " + pending.opponentName() + ": it is " + this.weaponName(pending.weaponKey()) + " now.", NamedTextColor.GOLD));
+      opponent.sendMessage(Component.text("✦ " + this.manager.publicName(player) + " is the Chosen: their weapon has become your " + this.weaponName(pending.weaponKey()) + " for this fight.", NamedTextColor.GOLD));
+      return null;
+   }
+
+   /** /chosen keep: stay with the current echo; no new offer for that player for a while. */
+   public String keepEcho(Player player) {
+      Offer pending = this.offer;
+      if (!this.isChosen(player) || pending == null) {
+         return "There's nothing to decide right now.";
+      }
+
+      this.offer = null;
+      this.declined.put(pending.opponent(), System.currentTimeMillis() + DECLINE_MILLIS);
+      HudManager.message(player, Component.text("You keep your echo.", NamedTextColor.GOLD));
+      return null;
+   }
+
    /** The fight is over: every echo the Chosen carries turns back. `quiet` skips the message. */
    private void endFight(Player player, boolean quiet) {
       Fight ended = this.fight;
       this.fight = null;
+      this.offer = null;
       if (player == null || ended == null) {
          return;
       }

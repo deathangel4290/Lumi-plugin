@@ -59,7 +59,7 @@ commands:
     permission: lumiweapons.admin
   chosen:
     description: Who the Chosen is. Admins - pick one at random, set one, or clear it.
-    usage: /chosen [pick|set <player>|clear|status]
+    usage: /chosen [pick|set <player>|clear|status|switch|keep]
   team:
     description: Your team (menu), /team chat to talk to your team by default, /team list for every team.
     usage: /team [chat|list]

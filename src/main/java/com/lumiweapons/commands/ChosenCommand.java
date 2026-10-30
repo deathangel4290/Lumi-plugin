@@ -38,6 +38,14 @@ public class ChosenCommand implements CommandExecutor, TabCompleter {
       ChosenRole chosen = this.plugin.getEventManager().chosen();
       String action = args.length == 0 ? "status" : args[0].toLowerCase(Locale.ROOT);
       boolean admin = sender.hasPermission("lumiweapons.admin");
+      if (action.equals("switch") || action.equals("keep")) {             // the Chosen's own answer to a switch offer
+         if (sender instanceof Player player) {
+            reply(sender, action.equals("switch") ? chosen.switchEcho(player) : chosen.keepEcho(player), null);
+         }
+
+         return true;
+      }
+
       if (!admin && !action.equals("status")) {
          sender.sendMessage(Component.text("Only admins can choose the Chosen.", NamedTextColor.RED));
          return true;
