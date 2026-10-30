@@ -41,7 +41,7 @@ axe-of-zeus:
   ability:
     - "Hurl the axe | {h:throw-damage}❤ damage"
     - "~Stuns for {s:throw-stun-duration}, then Weakness for {s:throw-weakness-duration}."
-    - "~Comes back on its own, hit or miss."
+    - "~The axe itself stays in your hand."
   cooldowns:
     - "Throw | {s:throw-cooldown}"
 

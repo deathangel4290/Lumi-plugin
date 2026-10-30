@@ -42,14 +42,11 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
    private final WeaponManager weaponManager;
    private final NamespacedKey axeKey;
    private final Map<UUID, BukkitRunnable> axeTasks = new HashMap<>();
-   /** axe display -> owner, so a shutdown can hand every axe in flight back. */
+   /** axe display -> owner, so a shutdown can clear every echo in flight. */
    private final Map<UUID, UUID> axeOwners = new HashMap<>();
    /** owner -> hotbar slot the axe was thrown from, so it comes back where it was. */
    private final Map<UUID, Integer> thrownFrom = new HashMap<>();
-   /**
-    * Axes owed to a player, stored on the player so it survives a logout or restart mid-flight
-    * (the thrown axe used to be deleted if its owner left while it was in the air).
-    */
+   /** Axes owed by the old throw (it took the axe out of the hand); only handed back on join now. */
    private final com.lumiweapons.managers.OwedItems owedAxes;
 
    @Override
@@ -83,7 +80,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       return this.axeOwners.containsValue(owner);
    }
 
-   /** Rejoining with an axe still owed from a flight that never finished: hand it back. */
+   /** Rejoining with an axe still owed from the old throw (before the axe stayed in hand): hand it back. */
    @EventHandler
    public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
       Player player = event.getPlayer();
@@ -95,7 +92,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       }
    }
 
-   /** Plugin disable: every axe still flying goes straight back to its owner. */
+   /** Plugin disable: clear every thrown echo still flying. */
    public void cleanup() {
       for (Map.Entry<UUID, UUID> entry : new HashMap<>(this.axeOwners).entrySet()) {
          BukkitRunnable task = this.axeTasks.remove(entry.getKey());
@@ -108,10 +105,6 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
             axe.remove();
          }
 
-         Player owner = Bukkit.getPlayer(entry.getValue());
-         if (owner != null && owner.isOnline()) {
-            this.giveAxeBack(owner);
-         }
       }
 
       this.axeOwners.clear();
@@ -136,18 +129,10 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       if (this.weaponManager.isLegendaryWeapon(mainHand) && "axe-of-zeus".equals(this.weaponManager.getWeaponKey(mainHand))) {
          long cooldown = (long)this.ability("throw-cooldown", 200.0);
          if (this.plugin.getCooldownManager().tryUseWithItemFeedback(player, "axe-of-zeus-throw", cooldown)) {
-            // the player's own axe flies and comes back: enchantments, name and all
-            ItemStack thrown = mainHand.clone();
-            thrown.setAmount(1);
-            this.owedAxes.push(player, thrown);
-            this.thrownFrom.put(player.getUniqueId(), player.getInventory().getHeldItemSlot());
-            if (mainHand.getAmount() > 1) {
-               mainHand.setAmount(mainHand.getAmount() - 1);
-            } else {
-               player.getInventory().setItemInMainHand(null);
-            }
-
-            this.launchAxe(player, thrown);
+            // the axe stays in your hand: what flies is its echo (same look), like every thrown legendary
+            ItemStack shown = mainHand.clone();
+            shown.setAmount(1);
+            this.launchAxe(player, shown);
          }
       }
    }
@@ -251,7 +236,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                      ParticleManager.spawn(Particle.CRIT, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
                   }
                } else {
-                  axe.remove();                               // owner left: the axe stays owed until they rejoin
+                  axe.remove();                               // owner left: the echo just goes
                   AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                   AxeOfZeusListener.this.axeOwners.remove(axeUUID);
                   this.cancel();
@@ -260,7 +245,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                AxeOfZeusListener.this.axeOwners.remove(axeUUID);
                if (owner != null && owner.isOnline()) {
-                  AxeOfZeusListener.this.giveAxeBack(owner);    // display vanished (chunk unload, killed): still return it
+                  AxeOfZeusListener.this.caught(owner);         // display vanished (chunk unload, killed)
                }
 
                this.cancel();
@@ -322,7 +307,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                AxeOfZeusListener.this.axeOwners.remove(axeUUID);
                if (owner != null && owner.isOnline()) {
-                  AxeOfZeusListener.this.giveAxeBack(owner);
+                  AxeOfZeusListener.this.caught(owner);
                }
 
                this.cancel();
@@ -332,7 +317,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                axe.remove();                                    // owner changed dimension: skip the flight home
                AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                AxeOfZeusListener.this.axeOwners.remove(axeUUID);
-               AxeOfZeusListener.this.giveAxeBack(owner);
+               AxeOfZeusListener.this.caught(owner);
                this.cancel();
             } else if (owner != null && owner.isOnline()) {
                Location playerLoc = owner.getEyeLocation();
@@ -341,7 +326,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                   axe.remove();
                   AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                   AxeOfZeusListener.this.axeOwners.remove(axeUUID);
-                  AxeOfZeusListener.this.giveAxeBack(owner);
+                  AxeOfZeusListener.this.caught(owner);
                   this.cancel();
                } else {
                   Vector movement = toPlayer.normalize().multiply(returnSpeed);
@@ -354,7 +339,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
                   ParticleManager.spawn(Particle.ELECTRIC_SPARK, this.currentLocation, 1, 0.05, 0.05, 0.05, 0.01);
                }
             } else {
-               axe.remove();                                    // owner offline: still owed, given on rejoin
+               axe.remove();                                    // owner offline: the echo just goes
                AxeOfZeusListener.this.axeTasks.remove(axeUUID);
                AxeOfZeusListener.this.axeOwners.remove(axeUUID);
                this.cancel();
@@ -365,6 +350,13 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
       this.axeTasks.put(axeUUID, task);
    }
 
+   /** The thrown echo is home: a catch sound and a spark (the axe never left the hand). */
+   private void caught(Player player) {
+      this.plugin.getSoundManager().self(player, Sound.ITEM_TRIDENT_RETURN, 0.6F, 1.2F);
+      ParticleManager.spawn(Particle.ELECTRIC_SPARK, player.getLocation().add(0.0, 1.2, 0.0), 6, 0.3, 0.3, 0.3, 0.05);
+   }
+
+   /** Axes owed by the old throw, which took the axe out of the hand until it came back. */
    private void giveAxeBack(Player player) {
       ItemStack axe = this.owedAxes.pop(player, () -> this.weaponManager.createWeapon("axe-of-zeus"));
       if (axe != null && !axe.getType().isAir()) {                // null: nothing owed, never mint a second axe
