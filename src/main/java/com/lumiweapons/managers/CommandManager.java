@@ -51,6 +51,9 @@ public class CommandManager {
       EventCommand eventCommand = new EventCommand(this.plugin);
       this.plugin.getCommand("lwevent").setExecutor(eventCommand);
       this.plugin.getCommand("lwevent").setTabCompleter(eventCommand);
+      com.lumiweapons.commands.ChosenCommand chosenCommand = new com.lumiweapons.commands.ChosenCommand(this.plugin);
+      this.plugin.getCommand("chosen").setExecutor(chosenCommand);
+      this.plugin.getCommand("chosen").setTabCompleter(chosenCommand);
       com.lumiweapons.commands.PlayerEventCommand playerEvents = new com.lumiweapons.commands.PlayerEventCommand(this.plugin);
       for (String name : new String[]{"rewards", "tokenshop", "outposts"}) {
          this.plugin.getCommand(name).setExecutor(playerEvents);

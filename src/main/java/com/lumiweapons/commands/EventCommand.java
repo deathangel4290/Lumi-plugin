@@ -140,11 +140,11 @@ public class EventCommand implements CommandExecutor, TabCompleter {
                break;
             case "chosen":
                switch (action) {
-                  case "pick", "random" -> {
+                  case "pick", "random", "start", "choose" -> {
                      String error = this.events().chosen().pick();
                      reply(sender, error, error == null ? this.events().chosen().status() : null);
                   }
-                  case "set" -> {
+                  case "set", "give" -> {
                      String error = args.length < 3 ? "Usage: /lwevent chosen set <player>" : this.events().chosen().set(args[2]);
                      reply(sender, error, error == null ? this.events().chosen().status() : null);
                   }

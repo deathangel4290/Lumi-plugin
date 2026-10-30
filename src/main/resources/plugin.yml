@@ -55,8 +55,11 @@ commands:
     permission: lumiweapons.admin
   lwevent:
     description: Starts and stops events, and runs the Event Director, outposts, the Team Draft and teams.
-    usage: /lwevent <bounty|koth|supplydrop|mostwanted|fallenstar|bloodmoon|director|outpost|draft|team|boss|trader|status|stopall>
+    usage: /lwevent <bounty|koth|supplydrop|mostwanted|chosen|fallenstar|bloodmoon|director|outpost|draft|team|boss|trader|status|stopall>
     permission: lumiweapons.admin
+  chosen:
+    description: Who the Chosen is. Admins - pick one at random, set one, or clear it.
+    usage: /chosen [pick|set <player>|clear|status]
   team:
     description: Your team (menu), /team chat to talk to your team by default, /team list for every team.
     usage: /team [chat|list]

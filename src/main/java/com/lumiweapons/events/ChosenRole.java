@@ -147,10 +147,22 @@ public final class ChosenRole implements Listener {
 
    /** A real legendary anywhere they keep things (an echo doesn't count). */
    public boolean ownsLegendary(Player player) {
+      return this.legendaryWhere(player) != null;
+   }
+
+   /** Where this player keeps a real legendary ("inventory", "ender chest"), or null. */
+   private String legendaryWhere(Player player) {
+      List<ItemStack> carried = new ArrayList<>(List.of(player.getInventory().getContents()));
+      carried.add(player.getItemOnCursor());
+      if (this.anyLegendary(carried)) {
+         return "inventory";
+      }
+
+      return this.anyLegendary(List.of(player.getEnderChest().getContents())) ? "ender chest" : null;
+   }
+
+   private boolean anyLegendary(List<ItemStack> items) {
       var weapons = this.plugin.getWeaponManager();
-      List<ItemStack> items = new ArrayList<>(List.of(player.getInventory().getContents()));
-      items.addAll(List.of(player.getEnderChest().getContents()));
-      items.add(player.getItemOnCursor());
       for (ItemStack item : items) {
          if (weapons.isLegendaryWeapon(item) && !this.isEcho(item)) {
             return true;
@@ -160,17 +172,36 @@ public final class ChosenRole implements Listener {
       return false;
    }
 
+   /** Why this player can't be the Chosen, or null when they can. */
+   private String whyNot(Player player) {
+      if (!player.isOnline()) {
+         return "offline";
+      } else if (player.getGameMode() == GameMode.SPECTATOR) {
+         return "spectating";
+      } else if (this.manager.isMostWanted(player)) {
+         return "the Most Wanted";
+      } else if (!this.settings().getBoolean("include-admins", true) && player.hasPermission("lumiweapons.admin")) {
+         return "an admin (events.chosen.include-admins is off)";
+      }
+
+      String where = this.legendaryWhere(player);
+      return where == null ? null : "has a legendary in their " + where;
+   }
+
    private boolean eligible(Player player) {
-      return player.isOnline() && player.getGameMode() != GameMode.SPECTATOR && !this.ownsLegendary(player)
-         && !this.manager.isMostWanted(player)
-         && (this.settings().getBoolean("include-admins", true) || !player.hasPermission("lumiweapons.admin"));
+      return this.whyNot(player) == null;
    }
 
    /** Picks someone at random from everyone online who may be the Chosen. Null on success, else why not. */
    public String pick() {
       Player picked = this.randomEligible(null);
       if (picked == null) {
-         return "Nobody online can be the Chosen: everyone has a legendary (or is spectating).";
+         List<String> reasons = new ArrayList<>();
+         for (Player player : Bukkit.getOnlinePlayers()) {
+            reasons.add(player.getName() + (this.isChosen(player) ? " (already the Chosen)" : " (" + this.whyNot(player) + ")"));
+         }
+
+         return reasons.isEmpty() ? "Nobody is online." : "Nobody online can be the Chosen: " + String.join(", ", reasons) + ".";
       }
 
       this.makeChosen(picked, null);
@@ -195,8 +226,9 @@ public final class ChosenRole implements Listener {
          return name + " isn't online.";
       }
 
-      if (this.ownsLegendary(player)) {
-         return player.getName() + " has a legendary. Only someone without one can be the Chosen.";
+      String why = this.whyNot(player);
+      if (why != null) {
+         return player.getName() + " can't be the Chosen: " + why + "." + (why.startsWith("has a legendary") ? " Only someone without one can be." : "");
       }
 
       this.makeChosen(player, null);
