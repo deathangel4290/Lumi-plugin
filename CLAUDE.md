@@ -96,6 +96,14 @@ namespace, so things made before the rename still work. Always make tag keys wit
 - The scripts in `resourcepack/_source/` generated the **old** textures and models. Running them
   overwrites the current art, so don't run them unless the art session asks for it.
 
+## Config checks
+
+`managers/ConfigCheck` reads `config.yml` on start, on reload and on `/lw checkconfig`, and lists
+settings that won't work as written. When you add a setting with fixed values, add it to
+`ConfigCheck.CHOICES` (the settings menu cycles through the same list). A section whose keys the
+admin names (mobs, outpost types, windows) goes in `FREE_FORM`, or it will be reported as unknown.
+The stock `config.yml` must produce no problems.
+
 ## Config changes for existing servers
 
 A server keeps its own `config.yml`. When you change a default that existing servers should also

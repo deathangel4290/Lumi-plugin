@@ -15,7 +15,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -389,10 +388,6 @@ public class Ritual {
 
    public String getDisplayName() {
       return this.displayName();
-   }
-
-   public int getSecondsRemaining() {
-      return this.secondsRemaining;
    }
 
    public String getFormattedTimeRemaining() {

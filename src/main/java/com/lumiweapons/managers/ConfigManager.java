@@ -21,7 +21,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemStack;
 
 public class ConfigManager {
    private final LumiWeapons plugin;
@@ -163,6 +162,13 @@ public class ConfigManager {
          this.config.set("teams.allies.share-outposts", allies);
       }
 
+      // 1.2: one-per-server lived under ritual; the acquisition section replaced it
+      if (this.config.isBoolean("ritual.single-craft-per-weapon")) {
+         this.config.set("acquisition.single-craft-per-weapon", this.config.getBoolean("ritual.single-craft-per-weapon"));
+         this.config.set("ritual.single-craft-per-weapon", null);
+         this.plugin.getLogger().info("Moved ritual.single-craft-per-weapon to acquisition.single-craft-per-weapon");
+      }
+
       if (this.config.isBoolean("teams.coloured-names")) {
          this.config.set("teams.nametags.enabled", this.config.getBoolean("teams.coloured-names"));
          this.config.set("teams.coloured-names", null);
@@ -197,7 +203,7 @@ public class ConfigManager {
    }
 
    public boolean isSingleCraft() {
-      return this.config.getBoolean("acquisition.single-craft-per-weapon", this.config.getBoolean("ritual.single-craft-per-weapon", true));
+      return this.config.getBoolean("acquisition.single-craft-per-weapon", true);
    }
 
    public boolean isRitualCraftingEnabled() {
@@ -210,10 +216,6 @@ public class ConfigManager {
 
    public boolean isFragmentFusionEnabled() {
       return this.config.getBoolean("acquisition.fragment-fusion", true);
-   }
-
-   public FileConfiguration raw() {
-      return this.config;
    }
 
    public String getMessage(String key, boolean withPrefix) {

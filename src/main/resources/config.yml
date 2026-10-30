@@ -2,9 +2,34 @@
 #  LumiWeapons (formerly LegendaryWeapons) / Luminara  --  plugin 1.3
 # ============================================================================
 #
+#  EDITING
+#    In game: /lw (Admin Panel) > Server Settings edits every setting here, with these comments
+#    as help, and applies changes straight away. A setting changed from the default shows a ✎;
+#    Ctrl+Q on it puts the default back.
+#    By hand: edit this file, then /lw reload.
+#    /lw checkconfig lists any setting that won't work as written (a typo, an unknown item, a
+#    bad colour or time...). The same list goes to the console on start, and the settings menu
+#    marks those settings with ⚠. A setting that won't work falls back to its default.
+#
+#  WHERE THINGS ARE
+#    audio, effects, hud ........ sounds, particles, the action bar
+#    protection, trust-system ... who abilities can touch
+#    acquisition, fragments ..... how legendaries are obtained; fragment drops
+#    passives ................... off-hand passives
+#    weapons .................... every legendary's numbers, enchantments and ritual recipe
+#    ritual, ritual-block-recipe  altars, Ancient Altars, ritual times (Central Time by default)
+#    events ..................... bounty, KotH, supply drops, Fallen Star, Blood Moon,
+#                                 Most Wanted, the Chosen, relics, loot tables
+#    director ................... the Event Director's daily windows
+#    teams ...................... the captain draft, nametags, team chat
+#    outposts, token-shop ....... capture points, tokens and the Token Trader
+#    bosses ..................... the four world bosses
+#    tools, messages ............ Amethyst tools; chat text
+#
 #  UNITS
-#    Durations are in TICKS unless the comment says otherwise. 20 ticks = 1 second.
-#    The one exception is ritual.timer, which is in seconds.
+#    Durations are in TICKS unless the name or comment says otherwise. 20 ticks = 1 second.
+#    Settings named ...-seconds or ...-minutes, and comments that say SECONDS, are in seconds
+#    (ritual.timer and weapons.<weapon>.ritual-time too).
 #    Damage is in half-hearts: a player has 20 health = 10 hearts.
 #
 #  DAMAGE REFERENCE (for balancing)
@@ -1031,7 +1056,15 @@ token-shop:
 #    wither_king:    landed (phase 4 body)
 #    leviathan:      surfaced
 #    ender_colossus: cast
-#  A missing state falls back to idle. Example:
+#  A missing state falls back to idle. Other model settings (all optional):
+#    bettermodel: <name>      use this BetterModel model instead (animated; needs BetterModel)
+#    bettermodel-scale: 1.0   its size      animations: {state: animation}  rename what plays
+#    scale / offset-y / yaw-offset   size, height and turn of an item-model body
+#    hide-body: true          hide the vanilla mob under the model
+#    view-range: 2.0          how far away the model is drawn (1.0 = a normal mob)
+#    item: PAPER              the item a custom_model_data state is drawn on
+#    once: [attack, ...]      states that play once instead of looping
+#  Example:
 #    model:            each boss has a ready template wired up (enabled: false):
 #      enabled: true   see docs/BOSS_MODELS.md and resourcepack/_source/blockbench/templates/
 #      scale: 1.32

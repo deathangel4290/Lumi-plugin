@@ -254,6 +254,7 @@ The hub shows the legendaries in your hands and lights up while an event is runn
 | `/charge [percent] [player] [weapon]` | admin | fill Luminosity's SuperNova or Titan's Slam |
 | `/lwtest reset \| finishrituals \| fragments \| give <item> [n]` | admin | undo all effects, finish rituals, get test items |
 | `/lw`, `/lw give\|reload\|...` | admin | the admin panel; the original admin commands |
+| `/lw checkconfig` | admin | lists every config.yml setting that won't work as written (typos, unknown items, bad colours or times...); also printed to the console on start, and marked with ⚠ in Server Settings |
 | `/lw crafted`, `/lw uncraft <weapon\|all>` | admin | which legendaries are forged; free one to be forged again (copies players have are kept). Also: shift-right-click "Already forged" on a weapon's recipe page |
 
 Permissions: `lumiweapons.admin` (op), `lumiweapons.veil.spy` (op) — see who is really

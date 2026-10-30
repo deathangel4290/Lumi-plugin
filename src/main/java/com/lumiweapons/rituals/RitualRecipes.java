@@ -77,11 +77,7 @@ public final class RitualRecipes {
          }
       }
 
-      if (out.size() > MAX_INGREDIENTS) {
-         this.plugin.getLogger().warning("Recipe for " + weaponKey + " has " + out.size() + " ingredients; the altar only has " + MAX_INGREDIENTS + " slots.");
-      }
-
-      return out;
+      return out;                                        // bad lines and too many ingredients are reported once by ConfigCheck
    }
 
    private Entry parse(String weaponKey, String token) {
@@ -91,7 +87,6 @@ public final class RitualRecipes {
          try {
             amount = Math.max(1, Integer.parseInt(parts[1].trim()));
          } catch (NumberFormatException var6) {
-            this.plugin.getLogger().warning("Bad amount in recipe for " + weaponKey + ": " + token);
             return null;
          }
       }
@@ -104,7 +99,6 @@ public final class RitualRecipes {
          if (material != null && !material.isAir()) {
             return new Entry(material, null, amount);
          } else {
-            this.plugin.getLogger().warning("Unknown material in recipe for " + weaponKey + ": " + parts[0]);
             return null;
          }
       }

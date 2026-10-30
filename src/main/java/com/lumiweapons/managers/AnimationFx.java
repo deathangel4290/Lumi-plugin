@@ -180,20 +180,6 @@ public final class AnimationFx {
       plugin.getServer().getScheduler().runTaskLater(plugin, () -> play(displays, downs, ticks - rise), 2L + rise + Math.max(1, ticks / 3));
    }
 
-   /** A row of spikes that erupts along a direction, one step after another. */
-   public static void spikeLine(Location start, Vector direction, double length, double blocksPerTick, Material material, boolean glow) {
-      if (!enabled() || start.getWorld() == null) return;
-      Vector step = direction.clone().setY(0.0);
-      if (step.lengthSquared() < 1.0E-4) return;
-      step.normalize().multiply(1.5);
-      int steps = (int)Math.max(1, length / 1.5);
-
-      for (int i = 1; i <= steps; i++) {
-         Location at = start.clone().add(step.clone().multiply(i));
-         plugin.getServer().getScheduler().runTaskLater(plugin, () -> spikes(at, material, 3, 0.5, 1.1, 12, glow), Math.max(1L, Math.round(i * 1.5 / Math.max(0.1, blocksPerTick))));
-      }
-   }
-
    /** A thin crescent of dust sweeping in front of the attacker's chest, never at eye level. */
    public static void slash(Player player, Color from, Color to) {
       if (!enabled()) return;

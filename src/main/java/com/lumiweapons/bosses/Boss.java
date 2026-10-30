@@ -483,10 +483,6 @@ public abstract class Boss {
       this.cleanup();
    }
 
-   public boolean isOver() {
-      return this.over;
-   }
-
    protected void cleanup() {
       this.over = true;
       this.model.remove();

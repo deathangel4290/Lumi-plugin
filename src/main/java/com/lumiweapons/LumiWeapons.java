@@ -63,6 +63,7 @@ public class LumiWeapons extends JavaPlugin {
    private EnderGlaiveListener enderGlaiveListener;
    private HermesBladeListener hermesBladeListener;
    private ConfigManager configManager;
+   private com.lumiweapons.managers.ConfigCheck configCheck;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
    private RitualRecipes ritualRecipes;
@@ -198,6 +199,8 @@ public class LumiWeapons extends JavaPlugin {
       this.getCommand("trustlist").setExecutor(trustCommand);
       // Soft dependencies are enabled after us; hook them once the server has finished starting.
       this.getServer().getScheduler().runTask(this, () -> this.protectionManager.hook());
+      this.configCheck = new com.lumiweapons.managers.ConfigCheck(this);
+      this.configCheck.runAndLog();                     // typos and bad values show up in the console, not as silent defaults
       this.getLogger().info("LumiWeapons has been enabled!");
    }
 
@@ -386,6 +389,14 @@ public class LumiWeapons extends JavaPlugin {
       if (this.ritualManager != null) {
          this.ritualManager.refreshRecipe();
       }
+
+      if (this.configCheck != null) {
+         this.configCheck.run();                          // quietly: the settings menu calls this on every click
+      }
+   }
+
+   public com.lumiweapons.managers.ConfigCheck getConfigCheck() {
+      return this.configCheck;
    }
 
    public com.lumiweapons.teams.TeamManager getTeamManager() {
@@ -394,10 +405,6 @@ public class LumiWeapons extends JavaPlugin {
 
    public EventManager getEventManager() {
       return this.eventManager;
-   }
-
-   public AbilityDispatcher getAbilityDispatcher() {
-      return this.abilityDispatcher;
    }
 
    public ChionesBladeListener getChionesBladeListener() {

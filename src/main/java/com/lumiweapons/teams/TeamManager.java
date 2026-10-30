@@ -327,11 +327,7 @@ public final class TeamManager implements Listener {
 
    private boolean nametags() {
       ConfigurationSection tags = this.tags();
-      if (tags != null) {
-         return tags.getBoolean("enabled", true);
-      }
-
-      return this.config() == null || this.config().getBoolean("coloured-names", true);   // the old setting
+      return tags == null || tags.getBoolean("enabled", true);           // the old coloured-names is migrated by ConfigManager
    }
 
    private String symbol(boolean captain) {

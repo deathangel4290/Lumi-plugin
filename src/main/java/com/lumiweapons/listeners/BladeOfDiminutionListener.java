@@ -21,7 +21,6 @@ import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -285,10 +284,5 @@ public class BladeOfDiminutionListener extends AbstractWeaponListener {
 
          return true;
       }
-   }
-
-   /** Used by the testing commands. */
-   public boolean isShrunk(Entity entity) {
-      return this.shrinkUntil.containsKey(entity.getUniqueId());
    }
 }

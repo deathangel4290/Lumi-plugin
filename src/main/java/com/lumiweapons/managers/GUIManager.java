@@ -33,10 +33,6 @@ public class GUIManager {
       this.openRitualGUIs.remove(player.getUniqueId());
    }
 
-   public RitualGUI getOpenRitualGUI(Player player) {
-      return this.openRitualGUIs.get(player.getUniqueId());
-   }
-
    public RecipesGUI getRecipesGUI() {
       return this.recipesGUI;
    }

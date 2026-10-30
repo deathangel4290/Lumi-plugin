@@ -34,19 +34,6 @@ public final class OwedItems {
       return value == null ? 0 : Math.max(0, value);
    }
 
-   /** Record one thrown item. */
-   public void push(Player player, ItemStack item) {
-      PersistentDataContainer pdc = player.getPersistentDataContainer();
-      int count = this.count(player);
-      try {
-         pdc.set(this.slot(count), PersistentDataType.BYTE_ARRAY, item.serializeAsBytes());
-      } catch (RuntimeException ignored) {
-         // unserializable item: the count alone still guarantees a replacement
-      }
-
-      pdc.set(this.countKey, PersistentDataType.INTEGER, count + 1);
-   }
-
    /**
     * Take back the most recent throw: the stored item, or the fallback when only a count survives
     * (debts from older versions). Null when nothing is owed, so nothing is ever minted for free.

@@ -36,7 +36,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
          new com.lumiweapons.guis.AdminMenu(this.plugin, panel, new com.lumiweapons.guis.LumiMenu(this.plugin, panel)).open();
          return true;
       } else if (args.length == 0) {
-         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns|crafted|uncraft|ritualclock>");
+         sender.sendMessage("Usage: /lw <give|giveritualblock|reload|setkills|resetcooldowns|crafted|uncraft|ritualclock|checkconfig>");
          return true;
       } else if (args[0].equalsIgnoreCase("give")) {
          if (sender instanceof Player player) {
@@ -71,6 +71,24 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
       } else if (args[0].equalsIgnoreCase("reload")) {
          this.plugin.reloadSettings();
          sender.sendMessage("§aLumiWeapons config reloaded.");
+         int problems = this.plugin.getConfigCheck().count();
+         if (problems > 0) {
+            sender.sendMessage("§e" + problems + " setting" + (problems == 1 ? "" : "s") + " won't work as written. §7/lw checkconfig lists them.");
+         }
+
+         return true;
+      } else if (args[0].equalsIgnoreCase("checkconfig") || args[0].equalsIgnoreCase("doctor")) {
+         var check = this.plugin.getConfigCheck();
+         check.run();
+         if (check.count() == 0) {
+            sender.sendMessage("§aconfig.yml looks good: every setting is one LumiWeapons can use.");
+         } else {
+            sender.sendMessage("§e" + check.count() + " setting" + (check.count() == 1 ? "" : "s") + " won't work as written (the default is used instead):");
+            for (String line : check.lines()) {
+               sender.sendMessage("§7 • §f" + line);
+            }
+         }
+
          return true;
       } else if (args[0].equalsIgnoreCase("setkills")) {
          if (sender instanceof Player playerx) {
@@ -151,7 +169,7 @@ public class AdminCommand implements CommandExecutor, TabCompleter {
 
    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
       if (args.length == 1) {
-         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns", "crafted", "uncraft", "ritualclock");
+         return Arrays.asList("give", "giveritualblock", "reload", "setkills", "resetcooldowns", "crafted", "uncraft", "ritualclock", "checkconfig");
       } else if (args.length == 2 && args[0].equalsIgnoreCase("uncraft")) {
          List<String> options = new ArrayList<>(this.plugin.getRitualManager().craftedWeapons());
          options.add("all");

@@ -115,10 +115,6 @@ public final class RelicManager implements Listener {
          this.lastSafe = at.clone();
          this.bar = BossBar.bossBar(Component.empty(), 1.0F, type.barColour, BossBar.Overlay.PROGRESS);
       }
-
-      public boolean isDone() {
-         return this.done;
-      }
    }
 
    private final LumiWeapons plugin;
@@ -498,7 +494,6 @@ public final class RelicManager implements Listener {
             Bukkit.broadcast(Component.text(relic.type.icon + " The carrier fled the server. The " + relic.type.label + " has dropped!", relic.type.colour));
          }
       }
-
    }
 
    public void onJoin(Player player) {

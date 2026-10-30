@@ -77,10 +77,6 @@ public class KeybindManager {
       return removed;
    }
 
-   public boolean hasKeybind(Player player) {
-      return this.playerKeybinds.containsKey(player.getUniqueId());
-   }
-
    public String getKeybind(Player player) {
       return this.playerKeybinds.getOrDefault(player.getUniqueId(), "NONE");
    }

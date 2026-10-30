@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -68,10 +67,6 @@ public class AbilityDispatcher {
 
    public Collection<WeaponAbility> all() {
       return Collections.unmodifiableCollection(this.abilities.values());
-   }
-
-   public Set<String> registeredKeys() {
-      return Collections.unmodifiableSet(this.abilities.keySet());
    }
 
    public boolean isProtectedTrustedTarget(Player player) {

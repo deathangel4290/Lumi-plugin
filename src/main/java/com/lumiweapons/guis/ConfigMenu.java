@@ -38,15 +38,10 @@ public final class ConfigMenu extends Menu {
    };
    private static final String[][] SHORTCUTS = {
       {"weapons", "Weapons"}, {"bosses", "Bosses"}, {"events", "Events"}, {"effects", "Effects"},
-      {"ritual", "Rituals"}, {"season", "Season"}, {"", "Every setting"}
+      {"ritual", "Rituals"}, {"teams", "Teams"}, {"", "Every setting"}
    };
-   /** Settings with a fixed set of values: a click cycles through them. */
-   private static final Map<String, List<String>> CHOICES = Map.of(
-      "effects.default-player-level", List.of("FULL", "REDUCED", "MINIMAL", "OFF"),
-      "director.supply-tier", List.of("early", "mid", "late"),
-      "passives.off-hand-strength", List.of("FULL", "REDUCED"),
-      "ritual.altar-mode", List.of("CRAFTED", "ANCIENT", "BOTH")
-   );
+   /** Settings with a fixed set of values: a click cycles through them (shared with ConfigCheck). */
+   private static final Map<String, List<String>> CHOICES = com.lumiweapons.managers.ConfigCheck.CHOICES;
    /** Bookkeeping the plugin manages itself. */
    private static final List<String> HIDDEN = List.of("config-version", "balance-revision");
    private final String path;
@@ -172,6 +167,18 @@ public final class ConfigMenu extends Menu {
    private void describe(Icon icon, String key) {
       if (key.isEmpty()) {
          return;
+      }
+
+      // ConfigCheck's verdict first: a setting that won't work says so, a section counts its problems
+      var check = this.plugin.getConfigCheck();
+      if (check != null) {
+         String problem = check.problemWith(key);
+         long inside = check.lines().stream().filter(line -> line.startsWith(key + ".")).count();
+         if (problem != null) {
+            icon.line(Icon.plain("⚠ " + problem, BAD)).blank();
+         } else if (inside > 0) {
+            icon.line(Icon.plain("⚠ " + inside + " setting" + (inside == 1 ? "" : "s") + " inside won't work as written", BAD)).blank();
+         }
       }
 
       List<String> lines = new ArrayList<>();
@@ -477,7 +484,8 @@ public final class ConfigMenu extends Menu {
          case "ritual-block-recipe" -> Material.CRAFTING_TABLE;
          case "events" -> Material.BELL;
          case "director" -> Material.OBSERVER;
-         case "season" -> Material.GOLDEN_HELMET;
+         case "teams" -> Material.WHITE_BANNER;
+         case "passives" -> Material.TOTEM_OF_UNDYING;
          case "outposts" -> Material.BEACON;
          case "token-shop" -> Material.EMERALD;
          case "bosses" -> Material.WITHER_SKELETON_SKULL;

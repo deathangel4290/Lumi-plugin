@@ -52,9 +52,15 @@ public final class AdminMenu extends Menu {
          .blank().text(this.plugin.getTeamManager().teams().size() + " teams" + (this.plugin.getTeamManager().draft() != null ? ", a draft is running" : "") + ".", NamedTextColor.WHITE)
          .text(bosses == null ? "Bosses are off." : bosses.status(), NamedTextColor.WHITE).build());
 
-      this.button(10, Icon.of(Material.REPEATER).name("Server Settings", ACCENT)
-         .text("Turn features on and off and tune numbers without opening config.yml. Changes save and apply straight away.")
-         .blank().click("open").build(), opens(this, p -> new ConfigMenu(this.plugin, p, this, null)));
+      int problems = this.plugin.getConfigCheck() == null ? 0 : this.plugin.getConfigCheck().count();
+      Icon settings = Icon.of(Material.REPEATER).name("Server Settings", ACCENT)
+         .text("Turn features on and off and tune numbers without opening config.yml. Changes save and apply straight away.");
+      if (problems > 0) {
+         settings.blank().line(Icon.plain("⚠ " + problems + " setting" + (problems == 1 ? "" : "s") + " won't work as written", BAD))
+            .text("They're marked with ⚠ inside. /lw checkconfig lists them.", DIM);
+      }
+
+      this.button(10, settings.blank().click("open").glow(problems > 0).build(), opens(this, p -> new ConfigMenu(this.plugin, p, this, null)));
       this.button(12, Icon.of(Material.BELL).name("Events", GOLD)
          .text("Start and stop events, and run the Event Director.")
          .blank().click("open").build(), opens(this, p -> new AdminEventsMenu(this.plugin, p, this)));

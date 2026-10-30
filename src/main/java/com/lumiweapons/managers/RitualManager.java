@@ -367,11 +367,6 @@ public class RitualManager implements Listener {
       }
    }
 
-   /** Altars can be used right now (by players who aren't admins). */
-   public boolean altarsAwake() {
-      return this.clock.openNow();
-   }
-
    /**
     * The ritual window opening or closing is announced to everyone (ritual.windows.announce), so
     * the altars "waking" at opening time is something people see.
@@ -771,10 +766,6 @@ public class RitualManager implements Listener {
 
    public boolean isRitualBlock(Location location) {
       return this.altars.contains(blockOf(location));
-   }
-
-   public Set<Location> getAltars() {
-      return new HashSet<>(this.altars);
    }
 
    public boolean isCrafted(String weaponKey) {

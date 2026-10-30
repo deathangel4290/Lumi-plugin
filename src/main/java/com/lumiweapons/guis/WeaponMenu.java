@@ -2,7 +2,6 @@ package com.lumiweapons.guis;
 
 import com.lumiweapons.LumiWeapons;
 import com.lumiweapons.abilities.Passives;
-import com.lumiweapons.items.CustomItems;
 import com.lumiweapons.rituals.RitualRecipes;
 import java.util.List;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -42,10 +41,7 @@ public final class WeaponMenu extends Menu {
    }
 
    private ItemStack ingredient(RitualRecipes.Entry entry) {
-      ItemStack item = entry.customId() != null
-         ? CustomItems.get().create(entry.customId(), Math.max(1, Math.min(64, entry.amount())))
-         : new ItemStack(entry.material() == null ? Material.BARRIER : entry.material(), Math.max(1, Math.min(64, entry.amount())));
-      return Icon.of(item).clearLore().name(entry.describe(), entry.customId() != null ? NamedTextColor.AQUA : NamedTextColor.WHITE)
+      return Icon.of(entry.display()).clearLore().name(entry.describe(), entry.customId() != null ? NamedTextColor.AQUA : NamedTextColor.WHITE)
          .text(entry.amount() + " needed", TEXT).build();
    }
 

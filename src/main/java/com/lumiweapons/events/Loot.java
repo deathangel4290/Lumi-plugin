@@ -72,64 +72,95 @@ public final class Loot {
       return min >= max ? min : ThreadLocalRandom.current().nextInt(min, max + 1);
    }
 
+   /** What's wrong with one loot line ("ITEM [amount] [wWEIGHT]"), or null if it works. For ConfigCheck. */
+   public String problem(String line) {
+      String[] parts = line.trim().split("\\s+");
+      try {
+         for (int i = 1; i < parts.length; i++) {
+            if (parts[i].toLowerCase(Locale.ROOT).startsWith("w")) {
+               Integer.parseInt(parts[i].substring(1));
+            } else {
+               range(parts[i]);
+            }
+         }
+      } catch (NumberFormatException failure) {
+         return "the amount or weight isn't a number (e.g. \"DIAMOND 2-4 w3\")";
+      }
+
+      try {
+         this.build(parts[0], 1);
+         return null;
+      } catch (RuntimeException failure) {
+         return failure.getMessage() == null ? "can't be made into an item" : failure.getMessage();
+      }
+   }
+
    /** Build one item from its spec, or null (logged) if it cannot be resolved. */
    public ItemStack item(String spec, int amount) {
       if (amount <= 0) {
          return null;
-      } else {
-         String[] parts = spec.split(":");
-         ItemStack custom = CustomItems.get().fromToken(parts[0], amount);
-         if (custom != null) {
-            return custom;
-         } else {
-            String head = parts[0].toUpperCase(Locale.ROOT);
+      }
 
-            try {
-               switch (head) {
-                  case "ENCHANTED_BOOK": {
-                     ItemStack book = new ItemStack(Material.ENCHANTED_BOOK, amount);
-                     Enchantment enchantment = enchantment(parts[1]);
-                     int level = parts.length > 2 ? Integer.parseInt(parts[2]) : 1;
-                     book.editMeta(EnchantmentStorageMeta.class, meta -> meta.addStoredEnchant(enchantment, level, true));
-                     return book;
-                  }
-                  case "POTION":
-                  case "SPLASH_POTION":
-                  case "LINGERING_POTION": {
-                     ItemStack potion = new ItemStack(Material.valueOf(head), amount);
-                     PotionType type = Registry.POTION.get(NamespacedKey.minecraft(parts[1].toLowerCase(Locale.ROOT)));
-                     if (type == null) {
-                        throw new IllegalArgumentException("unknown potion " + parts[1]);
-                     }
+      try {
+         return this.build(spec, amount);
+      } catch (RuntimeException failure) {
+         this.plugin.getLogger().warning("Could not build loot item '" + spec + "': " + failure.getMessage());
+         return null;
+      }
+   }
 
-                     potion.editMeta(PotionMeta.class, meta -> meta.setBasePotionType(type));
-                     return potion;
-                  }
-                  case "ENCHANTED": {
-                     ItemStack item = new ItemStack(Material.valueOf(parts[1].toUpperCase(Locale.ROOT)), amount);
-                     if (parts.length > 2) {
-                        for (String pair : parts[2].split(",")) {
-                           String[] kv = pair.split("=");
-                           item.addUnsafeEnchantment(enchantment(kv[0]), kv.length > 1 ? Integer.parseInt(kv[1]) : 1);
-                        }
-                     }
+   /** Builds the item, or throws with what's wrong. */
+   private ItemStack build(String spec, int amount) {
+      String[] parts = spec.split(":");
+      ItemStack custom = CustomItems.get().fromToken(parts[0], amount);
+      if (custom != null) {
+         return custom;
+      }
 
-                     return item;
-                  }
-                  default: {
-                     Material material = Material.matchMaterial(head);
-                     if (material == null || material.isAir()) {
-                        throw new IllegalArgumentException("unknown material " + head);
-                     }
+      String head = parts[0].toUpperCase(Locale.ROOT);
+      try {
+         switch (head) {
+            case "ENCHANTED_BOOK": {
+               ItemStack book = new ItemStack(Material.ENCHANTED_BOOK, amount);
+               Enchantment enchantment = enchantment(parts[1]);
+               int level = parts.length > 2 ? Integer.parseInt(parts[2]) : 1;
+               book.editMeta(EnchantmentStorageMeta.class, meta -> meta.addStoredEnchant(enchantment, level, true));
+               return book;
+            }
+            case "POTION":
+            case "SPLASH_POTION":
+            case "LINGERING_POTION": {
+               ItemStack potion = new ItemStack(Material.valueOf(head), amount);
+               PotionType type = Registry.POTION.get(NamespacedKey.minecraft(parts[1].toLowerCase(Locale.ROOT)));
+               if (type == null) {
+                  throw new IllegalArgumentException("unknown potion " + parts[1]);
+               }
 
-                     return new ItemStack(material, amount);
+               potion.editMeta(PotionMeta.class, meta -> meta.setBasePotionType(type));
+               return potion;
+            }
+            case "ENCHANTED": {
+               ItemStack item = new ItemStack(Material.valueOf(parts[1].toUpperCase(Locale.ROOT)), amount);
+               if (parts.length > 2) {
+                  for (String pair : parts[2].split(",")) {
+                     String[] kv = pair.split("=");
+                     item.addUnsafeEnchantment(enchantment(kv[0]), kv.length > 1 ? Integer.parseInt(kv[1]) : 1);
                   }
                }
-            } catch (RuntimeException var10) {
-               this.plugin.getLogger().warning("Could not build loot item '" + spec + "': " + var10.getMessage());
-               return null;
+
+               return item;
+            }
+            default: {
+               Material material = Material.matchMaterial(head);
+               if (material == null || material.isAir()) {
+                  throw new IllegalArgumentException("unknown material " + head);
+               }
+
+               return new ItemStack(material, amount);
             }
          }
+      } catch (ArrayIndexOutOfBoundsException missing) {
+         throw new IllegalArgumentException("'" + spec + "' is missing a part (e.g. ENCHANTED_BOOK:SHARPNESS:5)");
       }
    }
 
