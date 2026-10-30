@@ -426,17 +426,75 @@ public final class ChosenRole implements Listener {
 
    /** The legendary an opponent fights with: main hand first, then off-hand. */
    private String heldLegendary(Player player) {
-      var weapons = this.plugin.getWeaponManager();
-      for (ItemStack item : new ItemStack[]{player.getInventory().getItemInMainHand(), player.getInventory().getItemInOffHand()}) {
-         if (weapons.isLegendaryWeapon(item) && !this.isEcho(item)) {
-            String key = weapons.getWeaponKey(item);
-            if (key != null && !weapons.getWeapon(key).getType().isAir()) {
-               return key;
-            }
+      for (ItemStack item : this.searchOrder(player)) {
+         String key = this.realLegendaryKey(item);
+         if (key != null) {
+            return key;
          }
       }
 
       return null;
+   }
+
+   /** Whether this player carries this legendary anywhere in their inventory. */
+   private boolean carries(Player player, String weaponKey) {
+      for (ItemStack item : this.searchOrder(player)) {
+         if (weaponKey.equals(this.realLegendaryKey(item))) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
+   private String realLegendaryKey(ItemStack item) {
+      var weapons = this.plugin.getWeaponManager();
+      if (!weapons.isLegendaryWeapon(item) || this.isEcho(item)) {
+         return null;
+      }
+
+      String key = weapons.getWeaponKey(item);
+      return key != null && !weapons.getWeapon(key).getType().isAir() ? key : null;
+   }
+
+   /**
+    * A player's items in the order that matters for a fight: main hand, off-hand, the hotbar, then
+    * the rest of the inventory. A legendary counts whether or not it is in their hand.
+    */
+   private List<ItemStack> searchOrder(Player player) {
+      PlayerInventory inventory = player.getInventory();
+      List<ItemStack> items = new ArrayList<>();
+      items.add(inventory.getItemInMainHand());
+      items.add(inventory.getItemInOffHand());
+      for (int slot = 0; slot < 36; slot++) {
+         items.add(inventory.getItem(slot));
+      }
+
+      return items;
+   }
+
+   /**
+    * The slot the Chosen's echo is made in: the weapon in their hand if it's diamond or netherite,
+    * otherwise the first such weapon in the hotbar, then the rest of the inventory, then the
+    * off-hand. -1 when they carry none.
+    */
+   private int echoSlot(PlayerInventory inventory) {
+      int held = inventory.getHeldItemSlot();
+      if (this.canEcho(inventory.getItem(held))) {
+         return held;
+      }
+
+      for (int slot = 0; slot < 36; slot++) {
+         if (this.canEcho(inventory.getItem(slot))) {
+            return slot;
+         }
+      }
+
+      return this.canEcho(inventory.getItemInOffHand()) ? 40 : -1;      // 40 = the off-hand slot
+   }
+
+   private boolean canEcho(ItemStack item) {
+      return this.isEchoWeapon(item) && !this.plugin.getWeaponManager().isLegendaryWeapon(item);
    }
 
    private static Player playerBehind(Entity damager) {
@@ -492,11 +550,13 @@ public final class ChosenRole implements Listener {
       }
 
       PlayerInventory inventory = chosenPlayer.getInventory();
-      ItemStack held = inventory.getItemInMainHand();
-      if (!this.isEchoWeapon(held) || this.plugin.getWeaponManager().isLegendaryWeapon(held)) {
-         HudManager.message(chosenPlayer, Component.text(this.manager.publicName(opponent) + " wields " + this.weaponName(weaponKey) + ". Hold a diamond or netherite weapon to answer it.", NamedTextColor.GOLD));
+      int slot = this.echoSlot(inventory);                            // the hand first, else any diamond/netherite weapon they carry
+      if (slot < 0) {
+         HudManager.message(chosenPlayer, Component.text(this.manager.publicName(opponent) + " carries " + this.weaponName(weaponKey) + ". Carry a diamond or netherite weapon to answer it.", NamedTextColor.GOLD));
          return;
       }
+
+      ItemStack held = inventory.getItem(slot);
 
       String opponentName = this.manager.publicName(opponent);            // a Veil or Most Wanted name stays hidden
       Fight started = new Fight(opponent, opponentName, weaponKey);
@@ -506,7 +566,7 @@ public final class ChosenRole implements Listener {
       }
 
       this.fight = started;
-      inventory.setItemInMainHand(echo);
+      inventory.setItem(slot, echo);
       Location at = chosenPlayer.getLocation().add(0.0, 1.0, 0.0);
       ParticleManager.showcase(Particle.END_ROD, at, 30, 0.4, 0.6, 0.4, 0.1, null);
       ParticleManager.showcase(Particle.FLASH, at, 1, 0.0, 0.0, 0.0, 0.0, this.haloColour());
@@ -541,7 +601,7 @@ public final class ChosenRole implements Listener {
 
       this.offer = new Offer(opponent.getUniqueId(), name, weaponKey, now + OFFER_MILLIS);
       String next = this.weaponName(weaponKey);
-      chosenPlayer.sendMessage(Component.text("⚔ " + name + " wields " + next + ". ", NamedTextColor.GOLD)
+      chosenPlayer.sendMessage(Component.text("⚔ " + name + " carries " + next + ". ", NamedTextColor.GOLD)
          .append(Component.text("[Switch]", NamedTextColor.GREEN, net.kyori.adventure.text.format.TextDecoration.BOLD)
             .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/chosen switch"))
             .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Your echo becomes " + next + " and you fight " + name, NamedTextColor.GRAY))))
@@ -567,9 +627,9 @@ public final class ChosenRole implements Listener {
       }
 
       Player opponent = Bukkit.getPlayer(pending.opponent());
-      if (opponent == null || !opponent.isOnline() || opponent.isDead() || !pending.weaponKey().equals(this.heldLegendary(opponent))) {
+      if (opponent == null || !opponent.isOnline() || opponent.isDead() || !this.carries(opponent, pending.weaponKey())) {
          this.offer = null;
-         return pending.opponentName() + " no longer wields " + this.weaponName(pending.weaponKey()) + ".";
+         return pending.opponentName() + " no longer carries " + this.weaponName(pending.weaponKey()) + ".";
       }
 
       // every echo of this fight becomes the new legendary, carrying the very same original weapon

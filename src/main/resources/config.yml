@@ -659,8 +659,8 @@ events:
           - "AMETHYST_SHOVEL 1 w1"
           - "AMETHYST_AXE 1 w1"
 
-  # The Chosen (/lwevent chosen pick): someone without a legendary, wearing a halo. When they fight
-  # a player wielding a legendary with one of these weapons in hand, it becomes a copy of that
+  # The Chosen (/chosen pick): someone without a legendary, wearing a halo. When they fight a player
+  # carrying a legendary (held or not) while carrying one of these weapons (held or not), it becomes a copy of that
   # legendary (an "echo") until the fight ends. Taking up a real legendary ends the role.
   chosen:
     weapons: [DIAMOND_SWORD, DIAMOND_AXE, DIAMOND_SPEAR, NETHERITE_SWORD, NETHERITE_AXE, NETHERITE_SPEAR]
