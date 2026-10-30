@@ -125,7 +125,8 @@ public class TitansAxeListener extends AbstractWeaponListener implements Charged
                }
             }
 
-            if (victim instanceof Player blocking && blocking.isBlocking() && this.canAffect(attacker, blocking)) {
+            if (victim instanceof Player blocking && blocking.isBlocking() && this.canAffect(attacker, blocking)
+               && !TalariaListener.guarding(this.plugin, blocking)) {           // Talaria's blade keeps vanilla's normal disable
                final int disable = com.lumiweapons.abilities.Passives.ticks(this.abilityInt("shield-break-duration", 160), strength);
                // One tick later so vanilla's own 5s axe disable cannot overwrite the longer one.
                this.plugin.getServer().getScheduler().runTaskLater(this.plugin, () -> {

@@ -63,6 +63,9 @@ public class LumiWeapons extends JavaPlugin {
    private EnderGlaiveListener enderGlaiveListener;
    private HermesBladeListener hermesBladeListener;
    private ConfigManager configManager;
+   private com.lumiweapons.listeners.TalariaListener talariaListener;
+   private com.lumiweapons.listeners.OculusListener oculusListener;
+   private com.lumiweapons.listeners.HorizonListener horizonListener;
    private com.lumiweapons.managers.ConfigCheck configCheck;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
@@ -152,6 +155,11 @@ public class LumiWeapons extends JavaPlugin {
       LuminosityListener luminosityListener = new LuminosityListener(this);
       VeilOfMimicryListener veilOfMimicryListener = new VeilOfMimicryListener(this);
       TetherChainListener tetherChainListener = new TetherChainListener(this);
+      com.lumiweapons.listeners.TalariaListener talariaListener = this.talariaListener = new com.lumiweapons.listeners.TalariaListener(this);
+      com.lumiweapons.listeners.TwinRequiemListener twinRequiemListener = new com.lumiweapons.listeners.TwinRequiemListener(this);
+      com.lumiweapons.listeners.CrescentListener crescentListener = new com.lumiweapons.listeners.CrescentListener(this);
+      com.lumiweapons.listeners.OculusListener oculusListener = this.oculusListener = new com.lumiweapons.listeners.OculusListener(this);
+      com.lumiweapons.listeners.HorizonListener horizonListener = this.horizonListener = new com.lumiweapons.listeners.HorizonListener(this);
       this.abilityDispatcher = new AbilityDispatcher(this);
       this.abilityDispatcher.register(this.swordOfEclipseListener);
       this.abilityDispatcher.register(enderGlaiveListener);
@@ -164,6 +172,11 @@ public class LumiWeapons extends JavaPlugin {
       this.abilityDispatcher.register(luminosityListener);
       this.abilityDispatcher.register(veilOfMimicryListener);
       this.abilityDispatcher.register(tetherChainListener);
+      this.abilityDispatcher.register(talariaListener);
+      this.abilityDispatcher.register(twinRequiemListener);
+      this.abilityDispatcher.register(crescentListener);
+      this.abilityDispatcher.register(oculusListener);
+      this.abilityDispatcher.register(horizonListener);
       new CommandManager(this, this.swordOfEclipseListener, this.abilityDispatcher);
       TrustCommand trustCommand = new TrustCommand(this, this.trustManager);
 
@@ -184,6 +197,11 @@ public class LumiWeapons extends JavaPlugin {
          luminosityListener,
          veilOfMimicryListener,
          tetherChainListener,
+         talariaListener,
+         twinRequiemListener,
+         crescentListener,
+         oculusListener,
+         horizonListener,
          this.customItems,
          new com.lumiweapons.listeners.AmethystToolsListener(this),
          new AbilityListener(this, this.abilityDispatcher, enderGlaiveListener),
@@ -210,6 +228,12 @@ public class LumiWeapons extends JavaPlugin {
       }
 
       com.lumiweapons.managers.SpriteFx.shutdown();
+      if (this.talariaListener != null) {
+         this.talariaListener.cleanup();                   // floating shields, the eye, falling arrows
+         this.oculusListener.cleanup();
+         this.horizonListener.cleanup();
+      }
+
       if (this.bossManager != null) {
          this.bossManager.shutdown();
       }

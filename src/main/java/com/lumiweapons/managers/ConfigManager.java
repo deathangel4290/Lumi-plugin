@@ -198,6 +198,10 @@ public class ConfigManager {
       this.config = this.plugin.getConfig();
    }
 
+   public FileConfiguration raw() {
+      return this.config;
+   }
+
    public int getRitualTimer() {
       return this.config.getInt("ritual.timer", 900);
    }

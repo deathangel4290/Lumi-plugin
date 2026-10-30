@@ -164,3 +164,72 @@ tether-chain:
     - "Catch someone mid-dash | no dashing for {s:dash-lock-duration}"
   cooldowns:
     - "Hook | {s:hook-cooldown}"
+
+blade-of-talaria:
+  flavour: "A blade and its shield, given wings."
+  passives:
+    - "Hold right-click | the blade blocks like a shield"
+    - "~Your off-hand stays free: carry a totem there."
+    - "~Axes disable it for the normal 5s; legendary axes break it no longer."
+    - "Its shield | floats around you while you hold the blade"
+  ability:
+    - "Block and hit players | fill Divine Ascension"
+    - "Divine Ascension | rise in light, untouchable for {s:ascension-duration}"
+    - "~Anyone right beside you is thrown back."
+
+twin-requiem:
+  flavour: "Two blades, one endless turn."
+  passives:
+    - "Hits in a row | Momentum, up to {n:momentum-max-stacks}"
+    - "~A miss or {s:momentum-window} without a hit resets it."
+    - "Full Momentum | the next special reaches {x:momentum-range-bonus} further"
+  ability:
+    - "Cross Reap | a forward sweep for {h:cross-reap-damage}❤"
+    - "~Then the backswing all round you, {h:cross-reap-backswing-damage}❤ ({x:cross-reap-connect-bonus} if the first landed)."
+    - "Sneak + ability | Final Harvest, once charged"
+    - "~After a {s:final-harvest-windup} wind-up, {h:final-harvest-damage}❤ to everyone within {n:final-harvest-radius} blocks, and slows."
+  cooldowns:
+    - "Cross Reap | {s:cross-reap-cooldown}"
+
+crescent:
+  flavour: "It only cuts by moonlight."
+  ability:
+    - "Harvest Mark | cut the enemy in front, mark them for {s:mark-duration}"
+    - "~{n:mark-hits} hits on the marked enemy detonate it for {h:mark-detonation-damage}❤."
+    - "Sneak + ability | Moonlit Execution, once charged"
+    - "~Three quick slashes in front of you, then a final strike:"
+    - "~{h:execution-final-damage}❤, +{h:execution-final-per-slash}❤ for each slash that landed."
+  cooldowns:
+    - "Harvest Mark | {s:mark-cooldown}"
+  notes:
+    - "One mark at a time. It never teleports or chases."
+
+oculus:
+  flavour: "The eclipse looks back."
+  passives:
+    - "Watcher | names the nearest enemy you can see"
+    - "~Within {n:watch-radius} blocks, line of sight only."
+  ability:
+    - "Eye Beam | {h:beam-damage}❤ and Slowness for {s:beam-slow-duration}"
+    - "~It charges for {s:beam-charge}: step out of its line and it misses."
+    - "Sneak + ability | Judgement of Oculus, once charged"
+    - "~A giant eye marks the ground where you look; after {s:judgement-delay}"
+    - "~it strikes everyone still inside for {h:judgement-damage}❤."
+  cooldowns:
+    - "Eye Beam | {s:beam-cooldown}"
+  notes:
+    - "It never breaks blocks."
+
+horizon:
+  flavour: "Every arrow falls toward the horizon."
+  passives:
+    - "Hold a full draw still | the shot focuses"
+    - "~Up to {pct:focus-velocity-bonus} faster, +{h:focus-damage-bonus}❤ at full focus. Moving resets it."
+  ability:
+    - "Piercing Arrow | {h:piercing-damage}❤, through {n:piercing-pierce} enemy"
+    - "~A raised shield still stops it."
+    - "Sneak + ability | Heaven's Fall, once charged"
+    - "~Marks where it lands, then falls after {s:heavens-fall-charge}:"
+    - "~up to {h:heavens-fall-damage}❤ in the centre. Cover blocks it."
+  cooldowns:
+    - "Piercing Arrow | {s:piercing-cooldown}"

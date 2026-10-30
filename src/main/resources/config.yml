@@ -505,6 +505,175 @@ weapons:
     enchantments: [UNBREAKING:3]
     recipe: [LEAD:4, IRON_BLOCK:4, TRIPWIRE_HOOK:2, FRAGMENT_T2:2]
 
+  # --------------------------------------------------------------------------
+  # Blade of Talaria -- a sword and its shield in one. The shield floats around you; hold
+  # right-click and the blade blocks like a shield, so the off-hand stays free for a totem. Axes
+  # disable it for vanilla's normal 5s; the legendary axes' longer shield break doesn't apply.
+  # Blocking hits and landing hits fill Divine Ascension: rise in light, untouchable for a while.
+  # --------------------------------------------------------------------------
+  blade-of-talaria:
+    display-name: "§6§lBlade of Talaria"
+    ritual-colors: ["#E8C46A", "#C8102E"]
+    material: NETHERITE_SWORD
+    custom-model-data: 14
+    power-tier: 4
+    blocks-attacks: true                # the blade itself blocks like a shield
+    shield-model: ""                    # item model for the floating shield ("" = the vanilla shield; art: luminara:talaria_shield)
+    abilities:
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0      # each hit on a player
+      ultimate-charge-per-block: 8.0    # each hit blocked from the front
+      charge-drain-delay: 300           # 15s out of combat before the meter drains
+      charge-drain-per-second: 1.0
+      ascension-duration: 80            # 4s untouchable
+      ascension-lift: 0.9
+      ascension-push: 0.6               # throws back anyone within 3 blocks (0 = off)
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_SWORD, SHIELD, TOTEM_OF_UNDYING:2, FEATHER:32, FRAGMENT_T4:2]
+
+  # --------------------------------------------------------------------------
+  # Twin Requiem -- the double scythe. Hits in a row build Momentum; a miss or a pause resets it.
+  # Full Momentum makes the next Cross Reap or Final Harvest reach further.
+  # Final Harvest winds up for 1.5s with its edge drawn on the ground, so it can be escaped.
+  # --------------------------------------------------------------------------
+  twin-requiem:
+    display-name: "§b§lTwin Requiem"
+    ritual-colors: ["#C8D8F0", "#6FA8FF"]
+    material: NETHERITE_SWORD
+    custom-model-data: 15
+    power-tier: 3
+    abilities:
+      momentum-max-stacks: 5
+      momentum-window: 60               # 3s: longer than this between hits resets the stacks
+      momentum-range-bonus: 1.5         # reach multiplier at full stacks
+      cross-reap-cooldown: 400          # 20s
+      cross-reap-radius: 3.5
+      cross-reap-damage: 5.0            # the forward sweep
+      cross-reap-backswing-damage: 6.0  # the second sweep, all the way round you
+      cross-reap-connect-bonus: 1.25    # backswing multiplier when the first sweep hit
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      final-harvest-windup: 30          # 1.5s
+      final-harvest-radius: 6.0
+      final-harvest-damage: 12.0
+      final-harvest-armour-pierce: 0.2
+      final-harvest-slow-duration: 50   # 2.5s of Slowness II
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_HOE:2, WITHER_SKELETON_SKULL:2, SCULK:16, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Crescent -- the moon sickle. Harvest Mark: three hits on the marked enemy detonate it.
+  # Moonlit Execution: three quick slashes in front of you, then a final strike that grows with
+  # every slash that landed. Nothing teleports or chases.
+  # --------------------------------------------------------------------------
+  crescent:
+    display-name: "§9§lCrescent"
+    ritual-colors: ["#D8DCF0", "#3F5A8A"]
+    material: NETHERITE_SWORD
+    custom-model-data: 16
+    power-tier: 2
+    melee:                              # a quick, light blade
+      attack-damage: 7.0
+      attack-speed: 1.8
+    abilities:
+      mark-cooldown: 320                # 16s
+      mark-range: 4.0
+      mark-damage: 3.0
+      mark-duration: 100                # 5s
+      mark-hits: 3
+      mark-detonation-damage: 5.0
+      mark-detonation-armour-pierce: 0.3
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      execution-windup: 10              # the sickle glows for 0.5s first
+      execution-slash-interval: 4
+      execution-range: 4.0
+      execution-slash-damage: 2.5
+      execution-final-damage: 4.0
+      execution-final-per-slash: 3.0    # + this for each of the three slashes that landed
+      execution-final-armour-pierce: 0.25
+    enchantments: [UNBREAKING:3]
+    recipe: [DIAMOND_HOE, AMETHYST_SHARD:32, PHANTOM_MEMBRANE:8, FRAGMENT_T2:2]
+
+  # --------------------------------------------------------------------------
+  # Oculus -- the staff of the eclipse eye. Watcher names the nearest enemy you can see (line of
+  # sight only, never through walls). Eye Beam charges briefly, then fires down your aim.
+  # Judgement opens a giant eye over where you look; it fires into the marked circle after a
+  # delay. Blocks are never harmed.
+  # --------------------------------------------------------------------------
+  oculus:
+    display-name: "§6§lOculus"
+    ritual-colors: ["#FF8A1F", "#FFD27A"]
+    material: BREEZE_ROD
+    custom-model-data: 17
+    power-tier: 3
+    eye-model: ""                       # item model for Judgement's giant eye ("" = an Eye of Ender; art: luminara:vfx/oculus_eye)
+    melee:                              # a staff: slow and heavy
+      attack-damage: 7.0
+      attack-speed: 1.0
+    abilities:
+      watch-radius: 16.0
+      beam-cooldown: 260                # 13s
+      beam-charge: 15                   # 0.75s
+      beam-range: 24.0
+      beam-damage: 6.0
+      beam-armour-pierce: 0.2
+      beam-slow-duration: 40            # 2s of Slowness II
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      judgement-range: 40.0
+      judgement-radius: 5.0
+      judgement-delay: 50               # 2.5s to get out
+      judgement-eye-height: 12.0
+      judgement-damage: 14.0
+      judgement-armour-pierce: 0.3
+    enchantments: []
+    recipe: [BREEZE_ROD:4, ENDER_EYE:16, CRYING_OBSIDIAN:8, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Horizon -- the celestial longbow. True Aim: a full draw held still focuses the shot (a little
+  # faster, and a small bonus at full focus; no homing). Piercing Arrow passes through one enemy
+  # but not a raised shield. Heaven's Fall marks where it lands, then falls; cover blocks it.
+  # --------------------------------------------------------------------------
+  horizon:
+    display-name: "§9§lHorizon"
+    ritual-colors: ["#4B4BFF", "#F2C45A"]
+    material: BOW
+    custom-model-data: 18
+    power-tier: 3
+    abilities:
+      focus-ticks: 40                   # 2s of a still, full draw for full focus
+      focus-velocity-bonus: 0.2         # up to +20% arrow speed
+      focus-damage-bonus: 3.0           # at full focus
+      piercing-cooldown: 280            # 14s
+      piercing-speed: 4.0
+      piercing-damage: 9.0
+      piercing-pierce: 1                # enemies it passes through
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0      # melee hits
+      ultimate-charge-per-arrow: 6.0    # each of your arrows that hits a player
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      heavens-fall-range: 60.0
+      heavens-fall-radius: 6.0
+      heavens-fall-charge: 40           # 2s
+      heavens-fall-height: 30.0
+      heavens-fall-damage: 16.0         # at the centre
+      heavens-fall-edge-damage: 0.25    # share still dealt at the rim
+      heavens-fall-armour-pierce: 0.25
+    enchantments: [POWER:4, UNBREAKING:3]
+    recipe: [BOW, SPECTRAL_ARROW:32, LAPIS_BLOCK:8, FRAGMENT_T3:2]
+
 # ============================================================================
 #  Rituals
 # ============================================================================

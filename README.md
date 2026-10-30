@@ -26,9 +26,32 @@ Trident, Axe of Zeus) fly as their own models.
 | Tier | Weapon | Ability |
 |---|---|---|
 | I | Ender Glaive, Hermes's Blade | spear throw / pearl; dash through players |
-| II | Chione's Blade, Lost Trident, Blade of Diminution, **Tether Chain** | freeze + Ice Wave; water wall; shrink yourself; hook and pull |
-| III | Scythe of Diablo, Axe of Zeus, Hellstorm, Titan's Axe, Veil of Mimicry | combos/backstab; throw + stun; volley; armour-breaking Slam; disguise |
-| IV | Sword of Eclipse, Luminosity | kill-scaling split blades; dash charges + SuperNova |
+| II | Chione's Blade, Lost Trident, Blade of Diminution, **Tether Chain**, **Crescent** | freeze + Ice Wave; water wall; shrink yourself; hook and pull; Harvest Mark + Moonlit Execution |
+| III | Scythe of Diablo, Axe of Zeus, Hellstorm, Titan's Axe, Veil of Mimicry, **Twin Requiem**, **Oculus**, **Horizon** | combos/backstab; throw + stun; volley; armour-breaking Slam; disguise; Momentum + Cross Reap + Final Harvest; Watcher + Eye Beam + Judgement; True Aim + Piercing Arrow + Heaven's Fall |
+| IV | Sword of Eclipse, Luminosity, **Blade of Talaria** | kill-scaling split blades; dash charges + SuperNova; a blade that blocks like a shield + Divine Ascension |
+
+**Ultimates** (Talaria, Twin Requiem, Crescent, Oculus, Horizon): hitting players and using the
+weapon's ability fill a meter on the action bar; **sneak + ability key** fires the ultimate when it
+is full. It drains slowly out of combat. Every ultimate telegraphs itself (a wind-up, a circle on
+the ground, a glow) so it can be escaped or blocked:
+- **Blade of Talaria:** hold right-click and the blade blocks like a shield, so a totem can stay in
+  the off-hand; its shield floats around you. Axes disable it for the normal 5s, the legendary axes
+  no longer. Blocking and hitting fill **Divine Ascension**: rise in light, untouchable for 4s.
+- **Twin Requiem:** hits in a row build Momentum (a miss or a pause resets it); full Momentum makes
+  the next special reach further. **Cross Reap** sweeps forward, then all round you. **Final
+  Harvest** winds up for 1.5s, then a huge circular swing that slows.
+- **Crescent:** **Harvest Mark** cuts and marks the enemy in front; three hits detonate the mark.
+  **Moonlit Execution**: three quick slashes, then a final strike that grows with each slash that
+  landed. Nothing teleports or chases.
+- **Oculus:** **Watcher** names the nearest enemy you can see (line of sight only). **Eye Beam**
+  charges briefly, then fires down your aim and slows. **Judgement**: a giant eye marks the ground
+  where you look, then strikes it after 2.5s. Blocks are never harmed.
+- **Horizon:** **True Aim**: a full draw held still focuses the shot (faster, then a small bonus;
+  never homing). **Piercing Arrow** passes through one enemy but not a raised shield. **Heaven's
+  Fall** marks where it lands, then falls from the sky; cover blocks it.
+
+Their models are the art session's next job (`docs/NEW_WEAPONS.md`); until then each shows as its
+vanilla item (netherite sword, breeze rod, bow).
 
 **Lore** is in `lore.yml`, laid out the same way for every weapon:
 - a flavour line and the power tier

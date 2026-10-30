@@ -59,7 +59,17 @@ Renaming either side breaks the other, so change both in the same commit or leav
   - The model names are the `bettermodel:` keys in `config.yml`. Existing servers get them through
     `ConfigManager.RETUNED`.
 - **Weapon models:** item model ids and custom_model_data numbers are set in `config.yml`; the pack's
-  `assets/minecraft/items/*.json` must match them.
+  `assets/minecraft/items/*.json` must match them. The five newest (Talaria 14, Twin Requiem 15,
+  Crescent 16, Oculus 17 on `breeze_rod`, Horizon 18 on `bow`) have no models yet: see
+  `docs/NEW_WEAPONS.md`, with the user's concept art in `docs/concepts/`.
+- **Optional models switched on in config:** `weapons.blade-of-talaria.shield-model` (the floating
+  shield) and `weapons.oculus.eye-model` (Judgement's giant eye). Empty = a vanilla item.
+
+## Ultimates
+
+Weapons with an ultimate extend `abilities/UltimateWeapon`: the meter (hits and ability use fill
+it, it drains out of combat), the HUD segment, and shared targeting (`around`, `arc`). The ability
+key is the ability; sneak + ability key is the ultimate.
 
 ## Lore
 

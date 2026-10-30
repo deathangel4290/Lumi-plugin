@@ -73,9 +73,31 @@ public class WeaponManager {
          meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, weaponKey);
          meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, this.revision(weaponKey));
          weapon.setItemMeta(meta);
+         this.applyBlocking(weapon, weaponKey);
       }
 
       return weapon;
+   }
+
+   /**
+    * weapons.<weapon>.blocks-attacks: the weapon itself blocks like a shield when held up with
+    * right-click (Blade of Talaria), so the off-hand stays free. Axes disable it for vanilla's
+    * normal time (disable-cooldown-scale 1).
+    */
+   private void applyBlocking(ItemStack weapon, String weaponKey) {
+      if (!this.configManager.raw().getBoolean("weapons." + weaponKey + ".blocks-attacks", false)) {
+         return;
+      }
+
+      weapon.setData(io.papermc.paper.datacomponent.DataComponentTypes.BLOCKS_ATTACKS,
+         io.papermc.paper.datacomponent.item.BlocksAttacks.blocksAttacks()
+            .blockDelaySeconds(0.25F)
+            .disableCooldownScale(1.0F)
+            .addDamageReduction(io.papermc.paper.datacomponent.item.blocksattacks.DamageReduction.damageReduction()
+               .horizontalBlockingAngle(90.0F).base(0.0F).factor(1.0F).build())
+            .blockSound(net.kyori.adventure.key.Key.key("minecraft", "item.shield.block"))
+            .disableSound(net.kyori.adventure.key.Key.key("minecraft", "item.shield.break"))
+            .build());
    }
 
    /**
@@ -174,6 +196,7 @@ public class WeaponManager {
                   this.applyCooldownGroup(meta, weaponKey);
                   meta.getPersistentDataContainer().set(this.revisionKey, PersistentDataType.INTEGER, current);
                   item.setItemMeta(meta);
+                  this.applyBlocking(item, weaponKey);
                   return true;
                }
             }

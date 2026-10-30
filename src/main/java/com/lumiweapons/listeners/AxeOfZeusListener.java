@@ -273,7 +273,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
          hitEntity.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, stunDuration, 10, true, false));
          hitEntity.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS, weaknessDuration, 1, true, false));
          hitEntity.addPotionEffect(new PotionEffect(PotionEffectType.LEVITATION, 20, 0, true, false));
-         if (hitEntity instanceof Player victim && victim.isBlocking()) {
+         if (hitEntity instanceof Player victim && victim.isBlocking() && !TalariaListener.guarding(this.plugin, victim)) {
             this.disableShield(victim, 1.0);
          }
       }
@@ -420,7 +420,7 @@ public class AxeOfZeusListener implements Listener, WeaponAbility {
             victim.setVelocity(new Vector(0.0, 0.3, 0.0));
          }
 
-         if (event.getEntity() instanceof Player victim && victim.isBlocking()) {
+         if (event.getEntity() instanceof Player victim && victim.isBlocking() && !TalariaListener.guarding(this.plugin, victim)) {
             this.disableShield(victim, strength);
          }
       }
