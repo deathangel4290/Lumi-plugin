@@ -1,0 +1,78 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:using_item",
+    "on_false": {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:custom_model_data",
+      "index": 0,
+      "entries": [
+        {
+          "threshold": 22,
+          "model": {
+            "type": "minecraft:select",
+            "property": "minecraft:display_context",
+            "cases": [
+              {
+                "when": [
+                  "gui"
+                ],
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "luminara:item/talaria_shield__shield"
+                }
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "luminara:item/talaria_shield_3d"
+            }
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:special",
+        "base": "minecraft:item/shield",
+        "model": {
+          "type": "minecraft:shield"
+        }
+      }
+    },
+    "on_true": {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:custom_model_data",
+      "index": 0,
+      "entries": [
+        {
+          "threshold": 22,
+          "model": {
+            "type": "minecraft:select",
+            "property": "minecraft:display_context",
+            "cases": [
+              {
+                "when": [
+                  "gui"
+                ],
+                "model": {
+                  "type": "minecraft:model",
+                  "model": "luminara:item/talaria_shield__shield"
+                }
+              }
+            ],
+            "fallback": {
+              "type": "minecraft:model",
+              "model": "luminara:item/talaria_shield_3d_blocking"
+            }
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:special",
+        "base": "minecraft:item/shield_blocking",
+        "model": {
+          "type": "minecraft:shield"
+        }
+      }
+    }
+  }
+}

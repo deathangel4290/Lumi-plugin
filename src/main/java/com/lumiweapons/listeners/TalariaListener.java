@@ -13,7 +13,6 @@ import org.bukkit.Color;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Display;
@@ -96,12 +95,16 @@ public class TalariaListener extends UltimateWeapon {
 
    // ------------------------------------------------------------------ the floating shield
 
+   /** A shield wearing the pack's Talaria shield model (shield-model-data; 0 = a plain shield). */
    private ItemStack shieldItem() {
       ItemStack shield = new ItemStack(Material.SHIELD);
-      String model = this.plugin.getConfig().getString("weapons." + KEY + ".shield-model", "");
-      NamespacedKey key = model == null || model.isBlank() ? null : NamespacedKey.fromString(model.trim());
-      if (key != null) {
-         shield.editMeta(meta -> meta.setItemModel(key));
+      int model = this.plugin.getConfig().getInt("weapons." + KEY + ".shield-model-data", 22);
+      if (model > 0) {
+         shield.editMeta(meta -> {
+            var data = meta.getCustomModelDataComponent();
+            data.setFloats(java.util.List.of((float)model));
+            meta.setCustomModelDataComponent(data);
+         });
       }
 
       return shield;

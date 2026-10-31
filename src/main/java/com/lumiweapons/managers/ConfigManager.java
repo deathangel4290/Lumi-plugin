@@ -95,10 +95,18 @@ public class ConfigManager {
       {6, "token-shop.trader.model.bettermodel", "", "token_trader"},
       // the rename
       {7, "messages.prefix", "&6[LegendaryWeapons]&r", "&6[LumiWeapons]&r"},
+      // the five newest legendaries moved to the numbers their models use (15/16 are the Eclipse split blades)
+      {8, "weapons.blade-of-talaria.custom-model-data", 14, 17},
+      {8, "weapons.twin-requiem.custom-model-data", 15, 18},
+      {8, "weapons.crescent.custom-model-data", 16, 19},
+      {8, "weapons.oculus.custom-model-data", 17, 20},
+      {8, "weapons.oculus.material", "BREEZE_ROD", "NETHERITE_SWORD"},
+      {8, "weapons.horizon.custom-model-data", 18, 21},
    };
 
    /** Settings of removed features, dropped from existing configs on start. */
-   private static final String[] OBSOLETE = {"season", "events.chosen.weapons"};   // the Chosen's weapons became counterparts
+   private static final String[] OBSOLETE = {"season", "events.chosen.weapons",   // the Chosen's weapons became counterparts
+      "weapons.blade-of-talaria.shield-model"};                                     // the shield is the pack's model 22 now
 
    private void retune() {
       File file = new File(this.plugin.getDataFolder(), "config.yml");

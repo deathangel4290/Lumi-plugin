@@ -50,7 +50,7 @@
 #
 # ============================================================================
 config-version: 4
-balance-revision: 7                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
+balance-revision: 8                 # retuned defaults applied so far (see ConfigManager.RETUNED); leave alone
 
 
 # ============================================================================
@@ -515,10 +515,10 @@ weapons:
     display-name: "§6§lBlade of Talaria"
     ritual-colors: ["#E8C46A", "#C8102E"]
     material: NETHERITE_SWORD
-    custom-model-data: 14
+    custom-model-data: 17
     power-tier: 4
     blocks-attacks: true                # the blade itself blocks like a shield
-    shield-model: ""                    # item model for the floating shield ("" = the vanilla shield; art: luminara:talaria_shield)
+    shield-model-data: 22               # custom_model_data of the floating shield (the pack's Talaria shield; 0 = a plain shield)
     abilities:
       ultimate-charge-max: 100.0
       ultimate-charge-per-hit: 4.0      # each hit on a player
@@ -540,7 +540,7 @@ weapons:
     display-name: "§b§lTwin Requiem"
     ritual-colors: ["#C8D8F0", "#6FA8FF"]
     material: NETHERITE_SWORD
-    custom-model-data: 15
+    custom-model-data: 18
     power-tier: 3
     abilities:
       momentum-max-stacks: 5
@@ -573,7 +573,7 @@ weapons:
     display-name: "§9§lCrescent"
     ritual-colors: ["#D8DCF0", "#3F5A8A"]
     material: NETHERITE_SWORD
-    custom-model-data: 16
+    custom-model-data: 19
     power-tier: 2
     melee:                              # a quick, light blade
       attack-damage: 7.0
@@ -610,8 +610,8 @@ weapons:
   oculus:
     display-name: "§6§lOculus"
     ritual-colors: ["#FF8A1F", "#FFD27A"]
-    material: BREEZE_ROD
-    custom-model-data: 17
+    material: NETHERITE_SWORD
+    custom-model-data: 20
     power-tier: 3
     eye-model: ""                       # item model for Judgement's giant eye ("" = an Eye of Ender; art: luminara:vfx/oculus_eye)
     melee:                              # a staff: slow and heavy
@@ -648,7 +648,7 @@ weapons:
     display-name: "§9§lHorizon"
     ritual-colors: ["#4B4BFF", "#F2C45A"]
     material: BOW
-    custom-model-data: 18
+    custom-model-data: 21
     power-tier: 3
     abilities:
       focus-ticks: 40                   # 2s of a still, full draw for full focus

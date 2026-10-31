@@ -59,11 +59,11 @@ Renaming either side breaks the other, so change both in the same commit or leav
   - The model names are the `bettermodel:` keys in `config.yml`. Existing servers get them through
     `ConfigManager.RETUNED`.
 - **Weapon models:** item model ids and custom_model_data numbers are set in `config.yml`; the pack's
-  `assets/minecraft/items/*.json` must match them. The five newest (Talaria 14, Twin Requiem 15,
-  Crescent 16, Oculus 17 on `breeze_rod`, Horizon 18 on `bow`) have no models yet: see
-  `docs/NEW_WEAPONS.md`, with the user's concept art in `docs/concepts/`.
-- **Optional models switched on in config:** `weapons.blade-of-talaria.shield-model` (the floating
-  shield) and `weapons.oculus.eye-model` (Judgement's giant eye). Empty = a vanilla item.
+  `assets/minecraft/items/*.json` must match them. Numbers in use on `netherite_sword`:
+  1, 2, 4, 7, 8, 10, 15/16 (the Eclipse split blades), 17 Talaria, 18 Twin Requiem, 19 Crescent,
+  20 Oculus; `bow` 21 Horizon; `shield` 22 Talaria's floating shield. Pick a new number above 22.
+- **Optional model switched on in config:** `weapons.oculus.eye-model` (Judgement's giant eye, e.g.
+  `luminara:vfx/oculus_eye`). Empty = an Eye of Ender. Talaria's shield is `shield-model-data: 22`.
 
 ## Ultimates
 
