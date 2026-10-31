@@ -68,9 +68,12 @@ public class TalariaListener extends UltimateWeapon {
 
    /** True while this player is blocking with the Blade of Talaria: the legendary axes' long shield break skips them. */
    public static boolean guarding(LumiWeapons plugin, Player player) {
-      var weapons = plugin.getWeaponManager();
-      ItemStack held = player.getInventory().getItemInMainHand();
-      return player.isBlocking() && weapons.isLegendaryWeapon(held) && KEY.equals(weapons.getWeaponKey(held));
+      return player.isBlocking() && com.lumiweapons.abilities.Passives.strength(plugin, player, KEY) > 0.0;
+   }
+
+   /** In either hand: a sword in the main hand and Talaria in the off-hand is a sword-and-shield pair. */
+   private boolean carried(Player player) {
+      return this.passive(player) > 0.0;
    }
 
    @Override
@@ -113,7 +116,7 @@ public class TalariaListener extends UltimateWeapon {
    private void tick() {
       this.ticks += 2L;
       for (Player player : this.plugin.getServer().getOnlinePlayers()) {
-         boolean show = this.isHolding(player) && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR
+         boolean show = this.carried(player) && !player.isDead() && player.getGameMode() != GameMode.SPECTATOR
             && !player.hasPotionEffect(PotionEffectType.INVISIBILITY);
          ItemDisplay shield = this.shields.get(player.getUniqueId());
          if (!show) {

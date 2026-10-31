@@ -58,6 +58,16 @@ public class OculusListener extends UltimateWeapon {
 
    public OculusListener(LumiWeapons plugin) {
       super(plugin);
+      // Watcher from the off-hand: the eye still names who it sees (the main weapon's HUD comes first)
+      plugin.getHudManager().register(player -> {
+         if (this.isHolding(player) || com.lumiweapons.abilities.Passives.strength(plugin, player, KEY) <= 0.0) {
+            return null;
+         }
+
+         Player seen = this.watched(player);
+         return seen == null ? null : Component.text("👁 ", NamedTextColor.GOLD)
+            .append(Component.text(plugin.getEventManager().publicName(seen) + " " + (int)seen.getLocation().distance(player.getLocation()) + "m", NamedTextColor.WHITE));
+      });
    }
 
    @Override

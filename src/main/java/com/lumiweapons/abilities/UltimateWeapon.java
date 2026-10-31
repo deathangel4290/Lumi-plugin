@@ -31,7 +31,7 @@ import org.bukkit.util.Vector;
  * Also the shared targeting the new weapons use: everyone an ability may touch in a circle or in
  * an arc in front of (or around) the wielder.
  */
-public abstract class UltimateWeapon extends AbstractWeaponListener {
+public abstract class UltimateWeapon extends AbstractWeaponListener implements ChargedWeapon {
    /** Wielders mid-ultimate: the meter neither drains nor refills while it plays out. */
    protected final Set<UUID> ulting = new HashSet<>();
    /** Wielders already told their ultimate is ready (so the chime plays once per fill). */
@@ -59,6 +59,19 @@ public abstract class UltimateWeapon extends AbstractWeaponListener {
 
    public double ultimateFraction(Player player) {
       return this.plugin.getChargeMeter().get(player, this.meterKey()) / this.ultimateMax();
+   }
+
+   /** /charge: set the ultimate meter (0..1). */
+   @Override
+   public void setChargeFraction(Player player, double fraction) {
+      this.plugin.getChargeMeter().set(player, this.meterKey(), fraction * this.ultimateMax(), this.ultimateMax());
+      this.plugin.getChargeMeter().markCombat(player);
+      this.announced.remove(player.getUniqueId());
+   }
+
+   @Override
+   public double getChargeFraction(Player player) {
+      return this.ultimateFraction(player);
    }
 
    protected boolean ultimateReady(Player player) {

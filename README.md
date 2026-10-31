@@ -66,7 +66,10 @@ update when either file changes.
 
 **Off-hand passives:** a legendary in the off-hand gives its passives (not its abilities), so you
 can combine two weapons' passives. This works for the Scythe of Diablo, Axe of Zeus, Hermes's Blade,
-Chione's Blade, Titan's Axe and Blade of Diminution. `passives.off-hand-strength` sets how strong
+Chione's Blade, Titan's Axe, Blade of Diminution, and three of the new ones: the **Blade of
+Talaria** (in the off-hand it is your shield: any sword in the main hand, Talaria blocks and its
+shield floats around you), **Oculus** (Watcher still names who it sees) and **Horizon** (True Aim
+focuses any bow you draw). Every ultimate also works with `/charge` for testing. `passives.off-hand-strength` sets how strong
 they are: `FULL`, or `REDUCED` (×`reduced-multiplier`).
 
 **Cooldowns:** each legendary greys out on its own when an ability is on cooldown, not every item

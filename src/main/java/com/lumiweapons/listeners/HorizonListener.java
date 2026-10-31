@@ -72,6 +72,11 @@ public class HorizonListener extends UltimateWeapon {
       this.pierceKey = LumiWeapons.key("horizon-pierce");
       this.shotKey = LumiWeapons.key("horizon-shot");
       plugin.getServer().getScheduler().runTaskTimer(plugin, this::focusTick, 2L, 2L);
+      // off-hand True Aim: show the focus while a plain bow is drawn
+      plugin.getHudManager().register(player -> {
+         int held = this.focus.getOrDefault(player.getUniqueId(), 0);
+         return this.isHolding(player) || held <= 0 ? null : HudManager.meter("Focus", held / (double)this.focusTicks(), NamedTextColor.AQUA);
+      });
    }
 
    @Override
@@ -130,7 +135,7 @@ public class HorizonListener extends UltimateWeapon {
          UUID id = player.getUniqueId();
          Location now = player.getLocation();
          Location before = this.lastSpot.put(id, now);
-         boolean drawn = this.isHolding(player) && player.isHandRaised() && player.getActiveItem().getType() == Material.BOW
+         boolean drawn = this.aims(player) && player.isHandRaised() && player.getActiveItem().getType() == Material.BOW
             && player.getActiveItemUsedTime() >= 20;
          boolean still = before != null && before.getWorld() == now.getWorld()
             && horizontal(now.toVector().subtract(before.toVector())).lengthSquared() < 0.0016;
@@ -151,13 +156,34 @@ public class HorizonListener extends UltimateWeapon {
       }
    }
 
+   /** True Aim works for Horizon in hand, or from the off-hand for any bow drawn in the main hand. */
+   private boolean aims(Player player) {
+      return this.isHolding(player) || this.offHandAim(player) > 0.0;
+   }
+
+   /** Off-hand True Aim strength while a plain bow is in the main hand (0 otherwise). */
+   private double offHandAim(Player player) {
+      return player.getInventory().getItemInMainHand().getType() == Material.BOW
+         && !this.plugin.getWeaponManager().isLegendaryWeapon(player.getInventory().getItemInMainHand())
+         ? com.lumiweapons.abilities.Passives.strength(this.plugin, player, KEY) : 0.0;
+   }
+
    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
    public void onShoot(EntityShootBowEvent event) {
-      if (!(event.getEntity() instanceof Player player) || !this.isThisWeapon(event.getBow()) || !(event.getProjectile() instanceof AbstractArrow arrow)) {
+      if (!(event.getEntity() instanceof Player player) || !(event.getProjectile() instanceof AbstractArrow arrow)) {
          return;
       }
 
-      arrow.getPersistentDataContainer().set(this.shotKey, PersistentDataType.BYTE, (byte)1);    // its hits feed Heaven's Fall
+      boolean horizon = this.isThisWeapon(event.getBow());
+      double strength = horizon ? 1.0 : this.offHandAim(player);
+      if (strength <= 0.0) {
+         return;
+      }
+
+      if (horizon) {
+         arrow.getPersistentDataContainer().set(this.shotKey, PersistentDataType.BYTE, (byte)1);    // its hits feed Heaven's Fall
+      }
+
       int held = this.focus.getOrDefault(player.getUniqueId(), 0);
       this.focus.remove(player.getUniqueId());
       if (held <= 0 || event.getForce() < 0.99F) {
@@ -165,9 +191,9 @@ public class HorizonListener extends UltimateWeapon {
       }
 
       double fraction = held / (double)this.focusTicks();
-      arrow.setVelocity(arrow.getVelocity().multiply(1.0 + this.ability("focus-velocity-bonus", 0.2) * fraction));
+      arrow.setVelocity(arrow.getVelocity().multiply(1.0 + this.ability("focus-velocity-bonus", 0.2) * fraction * strength));
       if (fraction >= 1.0) {
-         arrow.getPersistentDataContainer().set(this.focusKey, PersistentDataType.DOUBLE, this.ability("focus-damage-bonus", 3.0));
+         arrow.getPersistentDataContainer().set(this.focusKey, PersistentDataType.DOUBLE, this.ability("focus-damage-bonus", 3.0) * strength);
          this.trail(arrow, GOLD, 60);
          this.plugin.getSoundManager().world(player.getLocation(), Sound.ITEM_CROSSBOW_SHOOT, 0.8F, 1.6F);
       }

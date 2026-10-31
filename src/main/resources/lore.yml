@@ -171,7 +171,8 @@ blade-of-talaria:
     - "Hold right-click | the blade blocks like a shield"
     - "~Your off-hand stays free: carry a totem there."
     - "~Axes disable it for the normal 5s; legendary axes break it no longer."
-    - "Its shield | floats around you while you hold the blade"
+    - "Its shield | floats around you while you carry the blade"
+    - "~In the off-hand it's your shield: any sword in the main hand, Talaria to block."
   ability:
     - "Block and hit players | fill Divine Ascension"
     - "Divine Ascension | rise in light, untouchable for {s:ascension-duration}"
@@ -225,6 +226,7 @@ horizon:
   passives:
     - "Hold a full draw still | the shot focuses"
     - "~Up to {pct:focus-velocity-bonus} faster, +{h:focus-damage-bonus}❤ at full focus. Moving resets it."
+    - "~In the off-hand it focuses any bow you draw."
   ability:
     - "Piercing Arrow | {h:piercing-damage}❤, through {n:piercing-pierce} enemy"
     - "~A raised shield still stops it."
