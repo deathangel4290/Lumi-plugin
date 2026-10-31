@@ -98,7 +98,7 @@ public class ConfigManager {
    };
 
    /** Settings of removed features, dropped from existing configs on start. */
-   private static final String[] OBSOLETE = {"season"};
+   private static final String[] OBSOLETE = {"season", "events.chosen.weapons"};   // the Chosen's weapons became counterparts
 
    private void retune() {
       File file = new File(this.plugin.getDataFolder(), "config.yml");

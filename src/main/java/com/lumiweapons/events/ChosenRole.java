@@ -117,19 +117,58 @@ public final class ChosenRole implements Listener {
       return section != null ? section : new org.bukkit.configuration.file.YamlConfiguration();
    }
 
-   private boolean isEchoWeapon(ItemStack item) {
-      if (item == null || item.getType().isAir()) {
-         return false;
-      }
-
-      for (String name : this.settings().getStringList("weapons")) {
-         Material material = Material.matchMaterial(name.trim());    // spears and friends differ between versions
-         if (material == item.getType()) {
-            return true;
+   /**
+    * The kind of item a legendary is: "sword", "axe", "spear" (and the other tools) by its tool
+    * type, else its own item ("trident", "bow", "crossbow", "mace", "book", "lead", "breeze_rod").
+    */
+   private static String family(Material material) {
+      String name = material.name();
+      for (String tool : new String[]{"PICKAXE", "SWORD", "AXE", "SPEAR", "HOE", "SHOVEL"}) {
+         if (name.endsWith("_" + tool)) {
+            return tool.toLowerCase(Locale.ROOT);
          }
       }
 
-      return false;
+      return name.toLowerCase(Locale.ROOT);
+   }
+
+   private String familyOf(String weaponKey) {
+      return family(this.plugin.getWeaponManager().getWeapon(weaponKey).getType());
+   }
+
+   /** The items that answer this legendary: events.chosen.counterparts.<its kind>. */
+   private List<Material> counterparts(String weaponKey) {
+      List<Material> out = new ArrayList<>();
+      for (String name : this.settings().getStringList("counterparts." + this.familyOf(weaponKey))) {
+         Material material = Material.matchMaterial(name.trim());    // spears and friends differ between versions
+         if (material != null && !material.isAir()) {
+            out.add(material);
+         }
+      }
+
+      return out;
+   }
+
+   /** Whether this item of the Chosen's can become an echo of this legendary (a legendary itself never can). */
+   private boolean answers(ItemStack item, String weaponKey) {
+      return item != null && !item.getType().isAir() && !this.plugin.getWeaponManager().isLegendaryWeapon(item)
+         && this.counterparts(weaponKey).contains(item.getType());
+   }
+
+   /** "a diamond or netherite axe", "a trident", ... for messages. */
+   private String counterpartName(String weaponKey) {
+      List<Material> items = this.counterparts(weaponKey);
+      if (items.isEmpty()) {
+         return "nothing (events.chosen.counterparts." + this.familyOf(weaponKey) + " is empty)";
+      }
+
+      List<String> names = new ArrayList<>();
+      for (Material material : items) {
+         names.add(material.name().toLowerCase(Locale.ROOT).replace('_', ' '));
+      }
+
+      String joined = String.join(" or ", names);
+      return (joined.matches("^[aeiou].*") ? "an " : "a ") + joined;
    }
 
    // ------------------------------------------------------------------ who is the Chosen
@@ -478,23 +517,19 @@ public final class ChosenRole implements Listener {
     * otherwise the first such weapon in the hotbar, then the rest of the inventory, then the
     * off-hand. -1 when they carry none.
     */
-   private int echoSlot(PlayerInventory inventory) {
+   private int echoSlot(PlayerInventory inventory, String weaponKey) {
       int held = inventory.getHeldItemSlot();
-      if (this.canEcho(inventory.getItem(held))) {
+      if (this.answers(inventory.getItem(held), weaponKey)) {
          return held;
       }
 
       for (int slot = 0; slot < 36; slot++) {
-         if (this.canEcho(inventory.getItem(slot))) {
+         if (this.answers(inventory.getItem(slot), weaponKey)) {
             return slot;
          }
       }
 
-      return this.canEcho(inventory.getItemInOffHand()) ? 40 : -1;      // 40 = the off-hand slot
-   }
-
-   private boolean canEcho(ItemStack item) {
-      return this.isEchoWeapon(item) && !this.plugin.getWeaponManager().isLegendaryWeapon(item);
+      return this.answers(inventory.getItemInOffHand(), weaponKey) ? 40 : -1;      // 40 = the off-hand slot
    }
 
    private static Player playerBehind(Entity damager) {
@@ -550,9 +585,10 @@ public final class ChosenRole implements Listener {
       }
 
       PlayerInventory inventory = chosenPlayer.getInventory();
-      int slot = this.echoSlot(inventory);                            // the hand first, else any diamond/netherite weapon they carry
+      int slot = this.echoSlot(inventory, weaponKey);                 // its counterpart: in hand first, else anywhere they carry one
       if (slot < 0) {
-         HudManager.message(chosenPlayer, Component.text(this.manager.publicName(opponent) + " carries " + this.weaponName(weaponKey) + ". Carry a diamond or netherite weapon to answer it.", NamedTextColor.GOLD));
+         HudManager.message(chosenPlayer, Component.text(this.manager.publicName(opponent) + " carries " + this.weaponName(weaponKey) + ". Carry "
+            + this.counterpartName(weaponKey) + " to answer it.", NamedTextColor.GOLD));
          return;
       }
 
@@ -593,6 +629,16 @@ public final class ChosenRole implements Listener {
          return;
       }
 
+      if (!this.canAnswer(chosenPlayer, current, weaponKey)) {
+         if (this.declined.getOrDefault(opponent.getUniqueId(), 0L) <= now) {
+            this.declined.put(opponent.getUniqueId(), now + DECLINE_MILLIS);            // say it once, not on every hit
+            HudManager.message(chosenPlayer, Component.text(name + " carries " + this.weaponName(weaponKey) + ". Carry "
+               + this.counterpartName(weaponKey) + " to answer it.", NamedTextColor.GOLD));
+         }
+
+         return;
+      }
+
       if (!this.settings().getBoolean("switch-offer", true)
          || this.offer != null && this.offer.opponent().equals(opponent.getUniqueId()) && this.offer.weaponKey().equals(weaponKey) && this.offer.until() > now
          || this.declined.getOrDefault(opponent.getUniqueId(), 0L) > now) {
@@ -611,6 +657,17 @@ public final class ChosenRole implements Listener {
             .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(Component.text("Stay as you are", NamedTextColor.GRAY))))
          .append(Component.text("  (" + OFFER_MILLIS / 1000L + "s)", NamedTextColor.DARK_GRAY)));
       this.plugin.getSoundManager().self(chosenPlayer, Sound.BLOCK_NOTE_BLOCK_CHIME, 0.8F, 1.6F);
+   }
+
+   /** Whether the Chosen could switch to this legendary: an echo's weapon answers it, or they carry its counterpart. */
+   private boolean canAnswer(Player player, Fight current, String weaponKey) {
+      for (ItemStack item : player.getInventory().getContents()) {
+         if (this.isEcho(item) && this.echoOf(item, current.id) && this.answers(this.original(item), weaponKey)) {
+            return true;
+         }
+      }
+
+      return this.echoSlot(player.getInventory(), weaponKey) >= 0;
    }
 
    /** /chosen switch: the echo becomes the offered legendary. Null on success, else why not. */
@@ -632,24 +689,50 @@ public final class ChosenRole implements Listener {
          return pending.opponentName() + " no longer carries " + this.weaponName(pending.weaponKey()) + ".";
       }
 
-      // every echo of this fight becomes the new legendary, carrying the very same original weapon
-      int switched = 0;
+      // An echo whose weapon answers the new legendary changes in place, keeping the very same
+      // original. One that doesn't (a sword echo when an axe legendary comes in) turns back, and
+      // the counterpart the Chosen carries becomes the new echo instead.
       PlayerInventory inventory = player.getInventory();
       ItemStack[] contents = inventory.getContents();
+      List<Integer> live = new ArrayList<>();
+      List<Integer> inPlace = new ArrayList<>();
       for (int i = 0; i < contents.length; i++) {
          if (this.isEcho(contents[i]) && this.echoOf(contents[i], current.id)) {
-            byte[] original = contents[i].getItemMeta().getPersistentDataContainer().get(this.originalKey, PersistentDataType.BYTE_ARRAY);
-            ItemStack back = this.original(contents[i]);
-            ItemStack echo = original == null || back == null ? null : this.makeEcho(original, itemName(back), pending.weaponKey(), current.id);
-            if (echo != null) {
-               inventory.setItem(i, echo);
-               switched++;
+            live.add(i);
+            if (this.answers(this.original(contents[i]), pending.weaponKey())) {
+               inPlace.add(i);
             }
          }
       }
 
-      if (switched == 0) {
+      if (live.isEmpty()) {
          return "Your echo isn't in your inventory (is it in flight?).";
+      }
+
+      int fresh = inPlace.isEmpty() ? this.echoSlot(inventory, pending.weaponKey()) : -1;
+      if (inPlace.isEmpty() && fresh < 0) {
+         return "Carry " + this.counterpartName(pending.weaponKey()) + " to answer " + this.weaponName(pending.weaponKey()) + ".";
+      }
+
+      for (int i : live) {
+         ItemStack echo = contents[i];
+         ItemStack back = this.original(echo);
+         if (inPlace.contains(i)) {
+            byte[] original = echo.getItemMeta().getPersistentDataContainer().get(this.originalKey, PersistentDataType.BYTE_ARRAY);
+            ItemStack next = this.makeEcho(original, itemName(back), pending.weaponKey(), current.id);
+            if (next != null) {
+               inventory.setItem(i, next);
+            }
+         } else {
+            inventory.setItem(i, back);                    // this one can't answer the new legendary: it's yours again
+         }
+      }
+
+      if (fresh >= 0) {
+         ItemStack next = this.makeEcho(inventory.getItem(fresh), pending.weaponKey(), current.id);
+         if (next != null) {
+            inventory.setItem(fresh, next);
+         }
       }
 
       this.offer = null;

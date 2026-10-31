@@ -857,7 +857,17 @@ events:
   # carrying a legendary (held or not) while carrying one of these weapons (held or not), it becomes a copy of that
   # legendary (an "echo") until the fight ends. Taking up a real legendary ends the role.
   chosen:
-    weapons: [DIAMOND_SWORD, DIAMOND_AXE, DIAMOND_SPEAR, NETHERITE_SWORD, NETHERITE_AXE, NETHERITE_SPEAR]
+    counterparts:              # which of the Chosen's items answer each kind of legendary (its own item kind)
+      sword: [DIAMOND_SWORD, NETHERITE_SWORD]
+      axe: [DIAMOND_AXE, NETHERITE_AXE]
+      spear: [DIAMOND_SPEAR, NETHERITE_SPEAR]
+      trident: [TRIDENT]
+      bow: [BOW]
+      crossbow: [CROSSBOW]
+      mace: [MACE]
+      book: [BOOK, WRITABLE_BOOK]
+      lead: [LEAD]
+      breeze_rod: [BREEZE_ROD, BLAZE_ROD]
     fight-timeout: 15          # SECONDS without a hit between the two before the echo turns back
     max-distance: 48.0         # ...or when they are further apart than this
     include-admins: true       # admins can be picked too

@@ -38,7 +38,7 @@ public final class ConfigCheck {
    /** Sections whose keys are names the admin chooses (mobs, outpost types, windows, ...). */
    private static final String[] FREE_FORM = {
       "fragments.mob-drops.", "outposts.types.", "director.windows.", "ritual-block-recipe.ingredients.", "messages.",
-      "token-shop.trader.model.states.", "token-shop.trader.model.animations."
+      "token-shop.trader.model.states.", "token-shop.trader.model.animations.", "events.chosen.counterparts."
    };
 
    private final LumiWeapons plugin;
