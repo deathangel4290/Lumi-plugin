@@ -104,21 +104,21 @@ public class TwinRequiemListener extends UltimateWeapon {
    }
 
    @Override
-   public boolean trigger(Player player, boolean secondary) {
-      if (!this.isHolding(player)) {
-         return true;
-      }
-
-      if (secondary) {
-         if (!this.harvesting.containsKey(player.getUniqueId()) && this.spendUltimate(player)) {
-            this.finalHarvest(player);
-         }
-      } else if (this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("cross-reap-cooldown", 400L))) {
+   protected void firstAbility(Player player) {
+      if (this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("cross-reap-cooldown", 400L))) {
          this.crossReap(player);
          this.chargeFromAbility(player);
       }
+   }
 
-      return true;
+   @Override
+   protected String ultimateBlocked(Player player) {
+      return this.harvesting.containsKey(player.getUniqueId()) ? "Already harvesting." : null;
+   }
+
+   @Override
+   protected void ultimate(Player player) {
+      this.finalHarvest(player);
    }
 
    // ------------------------------------------------------------------ Endless Rotation

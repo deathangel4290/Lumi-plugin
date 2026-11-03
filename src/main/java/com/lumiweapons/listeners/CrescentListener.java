@@ -87,20 +87,18 @@ public class CrescentListener extends UltimateWeapon {
    }
 
    @Override
-   public boolean trigger(Player player, boolean secondary) {
-      if (!this.isHolding(player)) {
-         return true;
-      }
+   protected void firstAbility(Player player) {
+      this.harvestMark(player);
+   }
 
-      if (secondary) {
-         if (!this.executing.contains(player.getUniqueId()) && this.spendUltimate(player)) {
-            this.execution(player);
-         }
-      } else {
-         this.harvestMark(player);
-      }
+   @Override
+   protected String ultimateBlocked(Player player) {
+      return this.executing.contains(player.getUniqueId()) ? "Already executing." : null;
+   }
 
-      return true;
+   @Override
+   protected void ultimate(Player player) {
+      this.execution(player);
    }
 
    // ------------------------------------------------------------------ Harvest Mark

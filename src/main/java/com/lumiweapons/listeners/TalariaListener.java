@@ -86,14 +86,16 @@ public class TalariaListener extends UltimateWeapon {
       return this.ultimateHud(player);
    }
 
-   /** The ability key (either way) is Divine Ascension: the blade's other power is the block itself. */
+   /** The key: no ability of its own (the block is its power); it says how far Divine Ascension is. */
    @Override
-   public boolean trigger(Player player, boolean secondary) {
-      if (this.isHolding(player) && this.spendUltimate(player)) {
-         this.ascend(player);
-      }
+   protected void firstAbility(Player player) {
+      HudManager.message(player, Component.text("Divine Ascension ", NamedTextColor.GOLD)
+         .append(Component.text((int)Math.floor(this.ultimateFraction(player) * 100.0) + "%  (double-tap when full)", NamedTextColor.GRAY)));
+   }
 
-      return true;
+   @Override
+   protected void ultimate(Player player) {
+      this.ascend(player);
    }
 
    // ------------------------------------------------------------------ the floating shield

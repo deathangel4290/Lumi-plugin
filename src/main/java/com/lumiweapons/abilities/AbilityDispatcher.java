@@ -74,9 +74,19 @@ public class AbilityDispatcher {
       return target instanceof Player && this.trustManager.isTrusted(player, (Player)target) && this.configManager.isPreventAbilityDamage();
    }
 
+   /** Legendaries whose abilities also work from the off-hand (a shield is carried there). */
+   public static final java.util.Set<String> OFF_HAND_WIELDED = java.util.Set.of("mirror-shield");
+
+   /** The legendary whose abilities the ability key fires: the main hand's, else an off-hand shield's. */
    public String heldWeaponKey(Player player) {
       ItemStack weapon = player.getInventory().getItemInMainHand();
-      return this.weaponManager.isLegendaryWeapon(weapon) ? this.weaponManager.getWeaponKey(weapon) : null;
+      if (this.weaponManager.isLegendaryWeapon(weapon)) {
+         return this.weaponManager.getWeaponKey(weapon);
+      }
+
+      ItemStack off = player.getInventory().getItemInOffHand();
+      String key = this.weaponManager.isLegendaryWeapon(off) ? this.weaponManager.getWeaponKey(off) : null;
+      return key != null && OFF_HAND_WIELDED.contains(key) ? key : null;
    }
 
    public boolean trigger(Player player) {

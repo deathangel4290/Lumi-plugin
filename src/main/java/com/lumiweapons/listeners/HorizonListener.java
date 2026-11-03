@@ -110,21 +110,16 @@ public class HorizonListener extends UltimateWeapon {
    }
 
    @Override
-   public boolean trigger(Player player, boolean secondary) {
-      if (!this.isHolding(player)) {
-         return true;
-      }
-
-      if (secondary) {
-         if (this.spendUltimate(player)) {
-            this.heavensFall(player);
-         }
-      } else if (this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("piercing-cooldown", 280L))) {
+   protected void firstAbility(Player player) {
+      if (this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("piercing-cooldown", 280L))) {
          this.piercingArrow(player);
          this.chargeFromAbility(player);
       }
+   }
 
-      return true;
+   @Override
+   protected void ultimate(Player player) {
+      this.heavensFall(player);
    }
 
    // ------------------------------------------------------------------ True Aim

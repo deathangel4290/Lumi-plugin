@@ -121,21 +121,16 @@ public class OculusListener extends UltimateWeapon {
    }
 
    @Override
-   public boolean trigger(Player player, boolean secondary) {
-      if (!this.isHolding(player)) {
-         return true;
-      }
-
-      if (secondary) {
-         if (this.spendUltimate(player)) {
-            this.judgement(player);
-         }
-      } else if (!this.charging.contains(player.getUniqueId()) && this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("beam-cooldown", 260L))) {
+   protected void firstAbility(Player player) {
+      if (!this.charging.contains(player.getUniqueId()) && this.tryCooldown(player, COOLDOWN_KEY, this.abilityLong("beam-cooldown", 260L))) {
          this.chargeBeam(player);
          this.chargeFromAbility(player);
       }
+   }
 
-      return true;
+   @Override
+   protected void ultimate(Player player) {
+      this.judgement(player);
    }
 
    // ------------------------------------------------------------------ Eye Beam
