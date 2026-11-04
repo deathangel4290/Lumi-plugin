@@ -99,6 +99,11 @@ public final class WeaponMenu extends Menu {
          });
       }
 
+      if (com.lumiweapons.abilities.AbilityDispatcher.OFF_HAND_WIELDED.contains(this.weaponKey)) {
+         this.show(32, Icon.of(Material.SHIELD).name("Either hand", GOOD).text("Its passive and abilities work from the main hand or the off-hand.").build());
+         return;
+      }
+
       boolean passives = Passives.WITH_PASSIVES.contains(this.weaponKey) && Passives.offHandEnabled(this.plugin);
       double strength = Passives.offHandStrength(this.plugin);
       this.show(32, Icon.of(Material.SHIELD).name("Off-hand", passives ? GOOD : TEXT)

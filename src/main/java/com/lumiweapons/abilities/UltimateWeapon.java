@@ -192,6 +192,13 @@ public abstract class UltimateWeapon extends AbstractWeaponListener implements C
       this.safeFall.values().removeIf(until -> until < now);
    }
 
+   /** Forget a leaving player's double-tap and ready chime (the meter itself is kept by ChargeMeter). */
+   @EventHandler
+   public void forgetOnQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+      this.lastTap.remove(event.getPlayer().getUniqueId());
+      this.announced.remove(event.getPlayer().getUniqueId());
+   }
+
    /** Melee hits on players with this weapon in hand fill the meter (ultimate-charge-per-hit). */
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void chargeOnHit(EntityDamageByEntityEvent event) {

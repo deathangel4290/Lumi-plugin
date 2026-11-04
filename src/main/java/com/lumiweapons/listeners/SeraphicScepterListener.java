@@ -96,6 +96,11 @@ public class SeraphicScepterListener extends UltimateWeapon {
       return healing;
    }
 
+   @org.bukkit.event.EventHandler
+   public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+      this.healed.remove(event.getPlayer().getUniqueId());
+   }
+
    // ------------------------------------------------------------------ Healing Ray
 
    @Override

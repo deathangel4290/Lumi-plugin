@@ -138,11 +138,7 @@ public class GolemGauntletListener extends UltimateWeapon {
          return;
       }
 
-      Material material = Material.matchMaterial(this.abilities() == null ? "" : this.abilities().getString("wall-material", "COBBLED_DEEPSLATE"));
-      if (material == null || !material.isBlock() || !material.isSolid()) {
-         material = Material.COBBLED_DEEPSLATE;
-      }
-
+      Material material = this.wallMaterial();
       int width = Math.max(1, this.abilityInt("wall-width", 5));
       int height = Math.max(1, this.abilityInt("wall-height", 3));
       Vector forward = facing(player);
@@ -154,7 +150,8 @@ public class GolemGauntletListener extends UltimateWeapon {
          Location column = base.clone().add(side.clone().multiply(w - (width - 1) / 2.0));
          for (int h = 0; h < height; h++) {
             Block block = column.clone().add(0, h, 0).getBlock();
-            if (block.getType().isAir() && this.plugin.getProtectionManager().canBuild(player, block.getLocation())) {
+            if (block.getType().isAir() && this.plugin.getProtectionManager().canBuild(player, block.getLocation())
+               && block.getWorld().getNearbyEntities(org.bukkit.util.BoundingBox.of(block), e -> e instanceof LivingEntity).isEmpty()) {
                block.setType(material, false);
                this.wall.put(block, until);
                placed++;
@@ -173,6 +170,11 @@ public class GolemGauntletListener extends UltimateWeapon {
       this.chargeFromAbility(player);
    }
 
+   private Material wallMaterial() {
+      Material material = Material.matchMaterial(this.abilities().getString("wall-material", "COBBLED_DEEPSLATE"));
+      return material == null || !material.isBlock() || !material.isSolid() ? Material.COBBLED_DEEPSLATE : material;
+   }
+
    private void crumbleTick() {
       long now = System.currentTimeMillis();
       for (Map.Entry<Block, Long> entry : new ArrayList<>(this.wall.entrySet())) {
@@ -184,7 +186,7 @@ public class GolemGauntletListener extends UltimateWeapon {
 
    private void crumble(Block block) {
       this.wall.remove(block);
-      if (!block.getType().isAir()) {
+      if (block.getType() == this.wallMaterial()) {         // only our stone: never a block someone put there since
          ParticleManager.spawn(Particle.BLOCK, block.getLocation().add(0.5, 0.5, 0.5), 8, 0.3, 0.3, 0.3, 0.0, block.getBlockData());
          block.setType(Material.AIR, false);
       }
@@ -195,6 +197,21 @@ public class GolemGauntletListener extends UltimateWeapon {
       if (this.wall.remove(event.getBlock()) != null) {
          event.setDropItems(false);
          event.setExpToDrop(0);
+      }
+   }
+
+   /** Pistons can't shove wall blocks somewhere they'd never crumble. */
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onPistonPush(org.bukkit.event.block.BlockPistonExtendEvent event) {
+      if (event.getBlocks().stream().anyMatch(this.wall::containsKey)) {
+         event.setCancelled(true);
+      }
+   }
+
+   @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+   public void onPistonPull(org.bukkit.event.block.BlockPistonRetractEvent event) {
+      if (event.getBlocks().stream().anyMatch(this.wall::containsKey)) {
+         event.setCancelled(true);
       }
    }
 
@@ -272,7 +289,7 @@ public class GolemGauntletListener extends UltimateWeapon {
          }
 
          List<LivingEntity> enemies = this.around(owner, golem.getLocation(), this.ability("colossus-range", 16.0));
-         enemies.removeIf(e -> e.equals(golem) || this.golems.containsKey(e.getUniqueId()));
+         enemies.removeIf(e -> !this.isEnemy(owner, e));
          golem.setTarget(enemies.stream()
             .min(Comparator.comparingDouble(e -> e.getLocation().distanceSquared(golem.getLocation()))).orElse(null));
          if (golem.getTarget() == null && golem.getLocation().distanceSquared(owner.getLocation()) > 64.0) {
@@ -286,7 +303,9 @@ public class GolemGauntletListener extends UltimateWeapon {
          return false;
       }
 
-      return !(entity instanceof Player other && this.isAlly(owner, other)) && this.canAffect(owner, entity);
+      // players who aren't allies, and hostile mobs: never villagers, animals or pets
+      boolean foe = entity instanceof Player other ? !this.isAlly(owner, other) : entity instanceof org.bukkit.entity.Enemy;
+      return foe && this.canAffect(owner, entity);
    }
 
    private UUID ownerOf(Entity entity) {

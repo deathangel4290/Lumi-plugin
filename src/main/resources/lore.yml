@@ -262,7 +262,8 @@ abyssal-trident:
   ability:
     - "Tidal Pull | a water bolt drags an enemy toward you, {h:pull-damage}❤"
     - "~The same enemy can't be pulled again for {s:pull-immunity}."
-    - "Sneak + ability | Undertow: a wave that pushes enemies away"
+    - "Sneak + ability | Undertow: surge forward on a wave"
+    - "~Enemies in your path are thrown aside for {h:undertow-damage}❤."
     - "Double-tap ability | Abyssal Surge, once charged"
     - "~A tidal wave {n:surge-length} blocks long: {h:surge-damage}❤, and it carries them."
   cooldowns:
@@ -275,9 +276,9 @@ shadowblades:
     - "Hits | Blood Mark on the target, up to {n:mark-max}"
     - "~Marks fade after {s:mark-window} without a hit."
   ability:
-    - "Shadowstep | dash the way you're moving"
+    - "Shadowstep | dash the way you look"
     - "Sneak + ability | Crosscut: {h:crosscut-damage}❤ in front of you"
-    - "~+{h:crosscut-bonus-damage}❤ on a marked target."
+    - "~Two cuts; if both land, +{h:crosscut-bonus-damage}❤ more."
     - "Double-tap ability | Execution, once charged"
     - "~Appear behind the enemy you look at and strike:"
     - "~{h:execution-damage}❤, +{h:execution-damage-per-mark}❤ for each Blood Mark."

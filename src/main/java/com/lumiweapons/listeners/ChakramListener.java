@@ -96,6 +96,11 @@ public class ChakramListener extends UltimateWeapon {
       }
    }
 
+   @EventHandler
+   public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+      this.edge.remove(event.getPlayer().getUniqueId());
+   }
+
    // ------------------------------------------------------------------ the flying chakram
 
    private ItemDisplay spawnDisc(Player player, Location at, boolean spectral) {

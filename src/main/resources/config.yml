@@ -725,7 +725,7 @@ weapons:
   # Abyssal Trident -- area control. Deep Pressure: repeated hits (melee or thrown) on the same
   # enemy add a little damage each time. Tidal Pull drags an enemy toward you, but not closer than
   # a few blocks, and the same enemy can't be pulled again for a while (no endless combos).
-  # Undertow throws a wave that pushes enemies away. Abyssal Surge: a tidal wave that carries
+  # Undertow surges you forward on a wave that throws enemies aside. Abyssal Surge: a tidal wave that carries
   # enemies along. Throwing it still works like a trident with Loyalty.
   # --------------------------------------------------------------------------
   abyssal-trident:
@@ -765,8 +765,8 @@ weapons:
 
   # --------------------------------------------------------------------------
   # Shadowblades -- very mobile, light hits. Blood Mark: hits mark the target (stacks fade if you
-  # stop). Shadowstep dashes the way you move. Crosscut slashes in front, harder on marked
-  # targets. Execution teleports behind the marked enemy you look at and strikes, harder for each
+  # stop). Shadowstep dashes the way you look. Crosscut slashes twice in front; both landing
+  # adds a bonus. Execution teleports behind the marked enemy you look at and strikes, harder for each
   # mark.
   # --------------------------------------------------------------------------
   shadowblades:
@@ -786,7 +786,7 @@ weapons:
       crosscut-cooldown: 200            # 10s
       crosscut-range: 3.5
       crosscut-damage: 3.0
-      crosscut-bonus-damage: 4.0        # on a marked target
+      crosscut-bonus-damage: 4.0        # when both cuts land on the same enemy
       ultimate-charge-max: 100.0
       ultimate-charge-per-hit: 3.0
       ultimate-charge-per-ability: 15.0
