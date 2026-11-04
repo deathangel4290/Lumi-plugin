@@ -72,7 +72,7 @@ public class EarthshakerListener extends UltimateWeapon {
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onHeavyHit(EntityDamageByEntityEvent event) {
-      if (AbilityDamage.active() || !(event.getDamager() instanceof Player attacker) || !this.isHolding(attacker) || !this.isFullSwing(attacker)) {
+      if (AbilityDamage.active() || !(event.getDamager() instanceof Player attacker) || this.passive(attacker) <= 0.0 || !this.isFullSwing(attacker)) {
          return;
       }
 
@@ -82,7 +82,7 @@ public class EarthshakerListener extends UltimateWeapon {
       this.plugin.getSoundManager().world(at, Sound.ITEM_MACE_SMASH_GROUND, 0.8F, 0.9F);
       for (LivingEntity nearby : this.around(attacker, at, radius)) {
          if (!nearby.equals(event.getEntity())) {
-            AbilityDamage.hit(attacker, nearby, this.ability("impact-damage", 3.0));
+            AbilityDamage.hit(attacker, nearby, this.ability("impact-damage", 3.0) * this.passive(attacker));
          }
       }
    }

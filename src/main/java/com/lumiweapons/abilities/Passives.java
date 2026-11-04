@@ -21,7 +21,8 @@ public final class Passives {
    /** Weapons with passives worth having in the off-hand. The rest only have abilities. */
    public static final Set<String> WITH_PASSIVES = Set.of(
       "scythe-of-diablo", "axe-of-zeus", "hermes-blade", "chiones-blade", "titans-axe", "blade-of-diminution",
-      "blade-of-talaria", "oculus", "horizon"     // the shield and block, Watcher, True Aim
+      "blade-of-talaria", "oculus", "horizon",    // the shield and block, Watcher, True Aim
+      "earthshaker-hammer", "abyssal-trident", "glacial-glaive"   // Heavy Impact, Deep Pressure, Frostbite
    );
 
    private Passives() {

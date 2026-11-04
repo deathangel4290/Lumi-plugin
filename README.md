@@ -30,9 +30,13 @@ Trident, Axe of Zeus) fly as their own models.
 | III | Scythe of Diablo, Axe of Zeus, Hellstorm, Titan's Axe, Veil of Mimicry, **Twin Requiem**, **Oculus**, **Horizon** | combos/backstab; throw + stun; volley; armour-breaking Slam; disguise; Momentum + Cross Reap + Final Harvest; Watcher + Eye Beam + Judgement; True Aim + Piercing Arrow + Heaven's Fall |
 | IV | Sword of Eclipse, Luminosity, **Blade of Talaria** | kill-scaling split blades; dash charges + SuperNova; a blade that blocks like a shield + Divine Ascension |
 
-**Ultimates** (Talaria, Twin Requiem, Crescent, Oculus, Horizon): hitting players and using the
-weapon's ability fill a meter on the action bar; **sneak + ability key** fires the ultimate when it
-is full. It drains slowly out of combat. Every ultimate telegraphs itself (a wind-up, a circle on
+**Controls, the same for every weapon with an ultimate:** ability key = Ability 1, sneak + ability
+key = Ability 2, **double-tap the ability key** = the ultimate, once its meter is full
+(`ultimates.double-tap-millis`, 400 by default).
+
+**Ultimates** (Talaria, Twin Requiem, Crescent, Oculus, Horizon and the twelve below): hitting
+players and using the weapon's abilities fill a meter on the action bar; double-tap fires the
+ultimate when it is full. It drains slowly out of combat. Every ultimate telegraphs itself (a wind-up, a circle on
 the ground, a glow) so it can be escaped or blocked:
 - **Blade of Talaria:** hold right-click and the blade blocks like a shield, so a totem can stay in
   the off-hand; its shield floats around you. Axes disable it for the normal 5s, the legendary axes
@@ -54,6 +58,26 @@ Their models are in the resource pack: Talaria, Twin Requiem, Crescent and Oculu
 sword (custom_model_data 17-20), Horizon on the bow (21, with its draw states), and Talaria's
 floating shield on the shield (22).
 
+**Twelve more legendaries** (tier III unless noted; each has a passive, two abilities and an ultimate):
+
+| Weapon | Item | Passive | Ability 1 | Ability 2 | Ultimate |
+|---|---|---|---|---|---|
+| Earthshaker Hammer | mace | Heavy Impact (full swings hit around the target) | Groundbreaker | Fissure | Cataclysm (leap and crash) |
+| Abyssal Trident | trident | Deep Pressure (stacking hits) | Tidal Pull (no chain-pulls) | Undertow | Abyssal Surge |
+| Shadowblades | sword | Blood Mark | Shadowstep | Crosscut | Execution (behind the target) |
+| Phoenix Wand | blaze rod | Embers | Firebolt (3 charges) | Phoenix Flight | Rebirth (fire + absorption) |
+| Glacial Glaive | sword | Frostbite (slows) | Ice Lance | Frozen Ground | Absolute Zero (short root) |
+| Seraphic Scepter | breeze rod | Divine Light | Healing Ray | Blessing | Divine Sanctuary (heal cap per player) |
+| Arcane Crossbow | crossbow | Arcane Charge | Ricochet Bolt | Triple Shot | Starfall (warned, dodgeable) |
+| Chakram of Chaos | sword | Returning Edge | Spiral Throw (hits out and back) | Orbit | Chaos Storm |
+| Golem Gauntlet | axe | Stone Skin | Boulder Punch | Stone Wall (temporary, no drops) | Colossus (a weak golem ally) |
+| Chronoscourge | hoe | Time Fracture | Time Snare | Rewind (position only) | Time Collapse (slows projectiles too) |
+| Mirror Shield | shield, either hand | Reflection (timed blocks) | Mirror Parry | Reflect | Mirror Realm |
+| Battle Horn (II) | goat horn | Rally | War Cry (Speed I) | Dreadful Roar (Weakness I) | Call to War (Strength I, enemies glow) |
+
+Their models aren't made yet (custom_model_data 23-34, see `docs/NEW_WEAPONS.md`); until then they
+look like the plain item.
+
 **Lore** is in `lore.yml`, laid out the same way for every weapon:
 - a flavour line and the power tier
 - **✦ Passive**, marked when it also works from the off-hand
@@ -69,7 +93,8 @@ can combine two weapons' passives. This works for the Scythe of Diablo, Axe of Z
 Chione's Blade, Titan's Axe, Blade of Diminution, and three of the new ones: the **Blade of
 Talaria** (in the off-hand it is your shield: any sword in the main hand, Talaria blocks and its
 shield floats around you), **Oculus** (Watcher still names who it sees) and **Horizon** (True Aim
-focuses any bow you draw). Every ultimate also works with `/charge` for testing. `passives.off-hand-strength` sets how strong
+focuses any bow you draw), and the **Earthshaker Hammer** (Heavy Impact), **Abyssal Trident** (Deep
+Pressure) and **Glacial Glaive** (Frostbite) on whatever you hit with. Every ultimate also works with `/charge` for testing. `passives.off-hand-strength` sets how strong
 they are: `FULL`, or `REDUCED` (×`reduced-multiplier`).
 
 **Cooldowns:** each legendary greys out on its own when an ability is on cooldown, not every item

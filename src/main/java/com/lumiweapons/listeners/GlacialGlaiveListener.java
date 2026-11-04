@@ -129,7 +129,7 @@ public class GlacialGlaiveListener extends UltimateWeapon {
 
    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
    public void onHit(EntityDamageByEntityEvent event) {
-      if (!AbilityDamage.active() && event.getDamager() instanceof Player attacker && this.isHolding(attacker)
+      if (!AbilityDamage.active() && event.getDamager() instanceof Player attacker && this.passive(attacker) > 0.0
          && event.getEntity() instanceof LivingEntity target && this.canAffect(attacker, target)) {
          this.addFrost(target, 1);
       }

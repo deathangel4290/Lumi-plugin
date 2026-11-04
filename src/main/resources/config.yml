@@ -163,6 +163,11 @@ passives:
   off-hand-strength: FULL       # FULL, or REDUCED: multipliers, chances and durations x reduced-multiplier
   reduced-multiplier: 0.5
 
+# Ultimates: the ability key is Ability 1, sneak + ability key is Ability 2. Tap the ability key
+# twice quickly while the weapon's meter is full to fire its ultimate.
+ultimates:
+  double-tap-millis: 400        # how quickly the second tap must follow the first
+
 
 # ============================================================================
 #  Weapons -- name, item, model, power tier, numbers, enchantments and ritual
@@ -674,6 +679,468 @@ weapons:
     enchantments: [POWER:4, UNBREAKING:3]
     recipe: [BOW, SPECTRAL_ARROW:32, LAPIS_BLOCK:8, FRAGMENT_T3:2]
 
+  # --------------------------------------------------------------------------
+  # Earthshaker Hammer -- slow, heavy, long cooldowns. Heavy Impact: a full swing also hits
+  # everyone close around the target. Groundbreaker slams a shockwave around you. Fissure cracks
+  # the ground in a line ahead. Cataclysm: leap up and crash down, launching everyone near the
+  # landing. Blocks are never broken.
+  # --------------------------------------------------------------------------
+  earthshaker-hammer:
+    display-name: "§6§lEarthshaker Hammer"
+    ritual-colors: ["#8B5A2B", "#E0A040"]
+    material: MACE
+    custom-model-data: 23
+    power-tier: 3
+    melee:                              # slow and powerful
+      attack-damage: 12.0
+      attack-speed: 0.7
+    abilities:
+      impact-radius: 3.0                # Heavy Impact: full swings only
+      impact-damage: 3.0
+      groundbreaker-cooldown: 400       # 20s
+      groundbreaker-radius: 5.0
+      groundbreaker-damage: 6.0
+      groundbreaker-knockback: 1.3
+      fissure-cooldown: 360             # 18s
+      fissure-length: 12.0
+      fissure-width: 1.5
+      fissure-damage: 5.0
+      fissure-slow-duration: 40
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 5.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      cataclysm-forward: 0.6
+      cataclysm-lift: 1.3
+      cataclysm-radius: 8.0
+      cataclysm-damage: 14.0            # at the centre
+      cataclysm-edge-damage: 0.4        # share still dealt at the rim
+      cataclysm-armour-pierce: 0.2
+      cataclysm-launch: 1.0
+    enchantments: [UNBREAKING:3]
+    recipe: [MACE, HEAVY_CORE, OBSIDIAN:32, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Abyssal Trident -- area control. Deep Pressure: repeated hits (melee or thrown) on the same
+  # enemy add a little damage each time. Tidal Pull drags an enemy toward you, but not closer than
+  # a few blocks, and the same enemy can't be pulled again for a while (no endless combos).
+  # Undertow throws a wave that pushes enemies away. Abyssal Surge: a tidal wave that carries
+  # enemies along. Throwing it still works like a trident with Loyalty.
+  # --------------------------------------------------------------------------
+  abyssal-trident:
+    display-name: "§3§lAbyssal Trident"
+    ritual-colors: ["#0E3A5C", "#3FD0C8"]
+    material: TRIDENT
+    custom-model-data: 24
+    power-tier: 3
+    abilities:
+      pressure-window: 80               # 4s between hits keeps the stacks
+      pressure-max-stacks: 5
+      pressure-damage-per-stack: 0.5
+      pull-cooldown: 240                # 12s
+      pull-speed: 1.6
+      pull-range: 20.0
+      pull-damage: 3.0
+      pull-strength: 1.0
+      pull-immunity: 100                # 5s before the same enemy can be pulled again
+      undertow-cooldown: 260            # 13s
+      undertow-power: 1.4
+      undertow-width: 2.5
+      undertow-push: 1.0
+      undertow-damage: 2.0
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      surge-width: 5.0
+      surge-length: 16.0
+      surge-ticks: 30
+      surge-damage: 10.0
+      surge-armour-pierce: 0.2
+      surge-carry: 0.8
+    enchantments: [LOYALTY:3, IMPALING:3, UNBREAKING:3]
+    recipe: [TRIDENT, HEART_OF_THE_SEA, NAUTILUS_SHELL:8, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Shadowblades -- very mobile, light hits. Blood Mark: hits mark the target (stacks fade if you
+  # stop). Shadowstep dashes the way you move. Crosscut slashes in front, harder on marked
+  # targets. Execution teleports behind the marked enemy you look at and strikes, harder for each
+  # mark.
+  # --------------------------------------------------------------------------
+  shadowblades:
+    display-name: "§8§lShadowblades"
+    ritual-colors: ["#2A0A12", "#B0202E"]
+    material: NETHERITE_SWORD
+    custom-model-data: 25
+    power-tier: 3
+    melee:                              # fast and light
+      attack-damage: 6.0
+      attack-speed: 2.0
+    abilities:
+      mark-max: 5
+      mark-window: 100                  # 5s without a hit and the marks fade
+      shadowstep-cooldown: 100          # 5s
+      shadowstep-power: 1.6
+      crosscut-cooldown: 200            # 10s
+      crosscut-range: 3.5
+      crosscut-damage: 3.0
+      crosscut-bonus-damage: 4.0        # on a marked target
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 3.0
+      ultimate-charge-per-ability: 15.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      execution-range: 16.0
+      execution-mark-cap: 5
+      execution-damage: 6.0
+      execution-damage-per-mark: 2.5
+      execution-armour-pierce: 0.3
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_SWORD:2, WITHER_ROSE:4, BLACK_DYE:16, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Phoenix Wand -- burst and mobility on a budget. Firebolts come in a few charges that refill
+  # slowly, so it never replaces a bow. Embers: Firebolt hits fill the Rebirth meter. Phoenix
+  # Flight throws you up and forward. Rebirth: an eruption of fire around you and a shield of
+  # absorption hearts. Fire never spreads to blocks.
+  # --------------------------------------------------------------------------
+  phoenix-wand:
+    display-name: "§c§lPhoenix Wand"
+    ritual-colors: ["#FF6A1A", "#FFC83A"]
+    material: BLAZE_ROD
+    custom-model-data: 26
+    power-tier: 3
+    abilities:
+      firebolt-charges: 3
+      firebolt-recharge: 80             # 4s per charge
+      firebolt-speed: 2.0
+      firebolt-range: 30.0
+      firebolt-radius: 2.5
+      firebolt-damage: 5.0              # at the centre, half at the edge
+      firebolt-burn: 40
+      flight-cooldown: 240              # 12s
+      flight-forward: 1.2
+      flight-lift: 0.9
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 2.0
+      ultimate-charge-per-ability: 0.0
+      ultimate-charge-per-ability-hit: 15.0   # Embers: each Firebolt that hits someone
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      rebirth-radius: 5.0
+      rebirth-damage: 8.0
+      rebirth-armour-pierce: 0.2
+      rebirth-burn: 60
+      rebirth-knockback: 1.0
+      rebirth-shield-duration: 120      # 6s
+      rebirth-shield-level: 2           # Absorption II: 4 extra hearts
+    enchantments: []
+    recipe: [BLAZE_ROD:16, FIRE_CHARGE:32, GOLD_BLOCK:4, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Glacial Glaive -- crowd control. Frostbite: hits add Frost; 3 stacks slow, 5 slow hard, and
+  # they thaw one at a time. Ice Lance pierces a line. Frozen Ground slows everyone on it. Absolute
+  # Zero fills Frost around you and roots for a moment; the same enemy can't be rooted again soon.
+  # --------------------------------------------------------------------------
+  glacial-glaive:
+    display-name: "§b§lGlacial Glaive"
+    ritual-colors: ["#A8E4FF", "#3F8FD0"]
+    material: NETHERITE_SWORD
+    custom-model-data: 27
+    power-tier: 3
+    melee:
+      attack-damage: 8.0
+      attack-speed: 1.2
+    abilities:
+      frost-max-stacks: 5
+      frost-slow-at: 3
+      frost-thaw: 40                    # 2s per stack
+      root-duration: 30                 # 1.5s
+      root-immunity: 100                # 5s after a root ends
+      lance-cooldown: 220               # 11s
+      lance-speed: 2.2
+      lance-range: 20.0
+      lance-damage: 5.0
+      lance-frost: 1
+      ground-cooldown: 360              # 18s
+      ground-range: 12.0
+      ground-radius: 4.0
+      ground-duration: 120
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      zero-radius: 7.0
+      zero-damage: 6.0
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_SWORD, BLUE_ICE:32, POWDER_SNOW_BUCKET:2, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Seraphic Scepter -- support. Every heal on one player counts toward heal-cap per
+  # heal-cap-window, so nobody becomes unkillable. Divine Light: healing allies fills the meter.
+  # Healing Ray heals the ally you look at. Blessing gives Resistance inside a small circle.
+  # Divine Sanctuary heals allies slowly inside a large one. Allies: you, teammates, /trust.
+  # --------------------------------------------------------------------------
+  seraphic-scepter:
+    display-name: "§e§lSeraphic Scepter"
+    ritual-colors: ["#FFF2B0", "#9FD8FF"]
+    material: BREEZE_ROD
+    custom-model-data: 28
+    power-tier: 3
+    abilities:
+      heal-cap: 10.0                    # health (5 hearts)...
+      heal-cap-window: 200              # ...per 10s, per player
+      ray-range: 20.0
+      ray-cooldown: 200                 # 10s
+      ray-heal: 4.0
+      blessing-cooldown: 400            # 20s
+      blessing-radius: 4.0
+      blessing-duration: 100
+      blessing-resistance: 1            # Resistance I
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 2.0
+      ultimate-charge-per-ability: 10.0
+      ultimate-charge-per-heal: 4.0     # per health healed on others
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      sanctuary-radius: 7.0
+      sanctuary-duration: 160
+      sanctuary-heal-per-second: 1.0
+    enchantments: []
+    recipe: [BREEZE_ROD:4, GOLDEN_APPLE:8, GLOW_BERRIES:32, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Arcane Crossbow -- precision. Arcane Charge: your bolts that hit fill the meter. Ricochet Bolt
+  # bounces off walls and jumps once to a second enemy. Triple Shot fires a spread of three.
+  # Starfall marks the ground where you aim, then rains bolts there: dodgeable, never homing.
+  # --------------------------------------------------------------------------
+  arcane-crossbow:
+    display-name: "§d§lArcane Crossbow"
+    ritual-colors: ["#7A3CFF", "#D6B8FF"]
+    material: CROSSBOW
+    custom-model-data: 29
+    power-tier: 3
+    abilities:
+      ricochet-cooldown: 200            # 10s
+      ricochet-speed: 2.0
+      ricochet-range: 32.0
+      ricochet-bounces: 2               # off walls
+      ricochet-damage: 6.0
+      ricochet-jump-range: 6.0
+      ricochet-jump-damage: 0.7         # share dealt to the second enemy
+      triple-cooldown: 240              # 12s
+      triple-spread-degrees: 8.0
+      triple-speed: 3.0
+      triple-damage: 5.0                # each
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 3.0
+      ultimate-charge-per-bolt: 6.0
+      ultimate-charge-per-ability: 15.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      starfall-range: 50.0
+      starfall-radius: 5.0
+      starfall-warning: 30              # 1.5s of warning circle
+      starfall-bolts: 20
+      starfall-duration: 40
+      starfall-bolt-radius: 1.3
+      starfall-bolt-damage: 3.0
+    enchantments: [QUICK_CHARGE:2, UNBREAKING:3]
+    recipe: [CROSSBOW, AMETHYST_BLOCK:16, ENDER_PEARL:16, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Chakram of Chaos -- mid-range zoning. An echo of the chakram flies; the weapon stays in your
+  # hand. Spiral Throw cuts on the way out and again on the way back, so where you stand while it
+  # returns matters. Returning Edge: a chakram that comes home after hitting sharpens your next
+  # melee hit. Orbit circles you. Chaos Storm throws spectral chakrams in every direction.
+  # --------------------------------------------------------------------------
+  chakram-of-chaos:
+    display-name: "§5§lChakram of Chaos"
+    ritual-colors: ["#D0306A", "#8F7BFF"]
+    material: NETHERITE_SWORD
+    custom-model-data: 30
+    power-tier: 3
+    melee:
+      attack-damage: 7.0
+      attack-speed: 1.6
+    abilities:
+      throw-cooldown: 160               # 8s
+      throw-speed: 1.1
+      throw-distance: 12.0
+      throw-damage: 5.0                 # each way
+      edge-bonus-damage: 2.0
+      edge-duration: 100                # 5s to use it
+      orbit-cooldown: 300               # 15s
+      orbit-duration: 100
+      orbit-radius: 2.0
+      orbit-damage: 2.5
+      orbit-hit-interval: 15
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 4.0
+      ultimate-charge-per-ability: 20.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      storm-chakrams: 6
+      storm-distance: 9.0
+      storm-damage: 4.0                 # each way
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_SWORD, DIAMOND_BLOCK:2, AMETHYST_SHARD:32, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Golem Gauntlet -- the tank. Stone Skin: damage you take fills the meter. Boulder Punch knocks
+  # the enemy in front far back. Stone Wall raises a short wall (air only, where you can build;
+  # drops nothing; crumbles after a few seconds). Colossus: a stone golem fights for you for a
+  # while. It has limited health and a soft punch, never attacks you or your allies, drops nothing.
+  # --------------------------------------------------------------------------
+  golem-gauntlet:
+    display-name: "§7§lGolem Gauntlet"
+    ritual-colors: ["#8A8A80", "#5FA05A"]
+    material: NETHERITE_AXE
+    custom-model-data: 31
+    power-tier: 3
+    melee:
+      attack-damage: 9.0
+      attack-speed: 0.9
+    abilities:
+      stone-charge-per-damage: 3.0      # meter per health of damage taken
+      punch-range: 4.0
+      punch-cooldown: 200               # 10s
+      punch-damage: 7.0
+      punch-knockback: 1.8
+      wall-cooldown: 400                # 20s
+      wall-material: COBBLED_DEEPSLATE
+      wall-width: 5
+      wall-height: 3
+      wall-distance: 2.5
+      wall-duration: 120                # 6s
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 3.0
+      ultimate-charge-per-ability: 10.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      colossus-duration: 300            # 15s
+      colossus-health: 40.0
+      colossus-damage: 6.0              # an iron golem hits for 15
+      colossus-speed: 1.0
+      colossus-range: 16.0
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_AXE, IRON_BLOCK:16, CARVED_PUMPKIN, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Chronoscourge -- control. Time Fracture: hits fill the meter. Time Snare slows enemies in a
+  # field. Rewind takes you back to where you stood a few seconds ago (only that far, and only
+  # within rewind-max-distance); it never restores health or undoes damage. Time Collapse slows
+  # enemies and the projectiles flying through a large field.
+  # --------------------------------------------------------------------------
+  chronoscourge:
+    display-name: "§e§lChronoscourge"
+    ritual-colors: ["#E8C66A", "#5A6BD8"]
+    material: NETHERITE_HOE
+    custom-model-data: 32
+    power-tier: 3
+    melee:
+      attack-damage: 8.0
+      attack-speed: 1.1
+    abilities:
+      snare-cooldown: 300               # 15s
+      snare-range: 14.0
+      snare-radius: 3.5
+      snare-duration: 100
+      snare-slowness: 2
+      rewind-cooldown: 360              # 18s
+      rewind-ticks-back: 60             # 3s
+      rewind-max-distance: 20.0
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 5.0
+      ultimate-charge-per-ability: 15.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      collapse-radius: 8.0
+      collapse-duration: 120            # 6s
+      collapse-slowness: 3
+      collapse-projectile-speed: 0.3    # top speed of enemy projectiles inside
+    enchantments: [UNBREAKING:3]
+    recipe: [NETHERITE_HOE, CLOCK:8, ECHO_SHARD:8, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Mirror Shield -- timing. Works in either hand. Only blows and projectiles count: explosions,
+  # magic, fire and falls go past it. Reflection: blocking stores energy; a timed block (raised
+  # just before the hit) stores the whole blow. Mirror Parry opens a brief perfect-parry window.
+  # Reflect fires the stored energy as a bolt (capped). Mirror Realm throws enemy projectiles back
+  # and lets allies inside take less damage.
+  # --------------------------------------------------------------------------
+  mirror-shield:
+    display-name: "§f§lMirror Shield"
+    ritual-colors: ["#CFEFFF", "#FFFFFF"]
+    material: SHIELD
+    custom-model-data: 33
+    power-tier: 3
+    abilities:
+      timed-block-window: 10            # raised within 0.5s before the hit
+      lazy-block-energy: 0.3            # share of a blow stored by a plain block
+      parry-cooldown: 160               # 8s
+      parry-window: 15                  # 0.75s
+      parry-reduction: 0.8
+      parry-knockback: 0.6
+      reflect-cooldown: 100             # 5s
+      reflect-max-energy: 20.0
+      reflect-min-energy: 2.0
+      reflect-damage-per-energy: 0.6
+      reflect-damage-cap: 12.0
+      reflect-speed: 2.0
+      reflect-range: 24.0
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 3.0
+      ultimate-charge-per-energy: 3.0
+      ultimate-charge-per-ability: 10.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      realm-radius: 4.0
+      realm-duration: 120               # 6s
+      realm-damage-reduction: 0.3
+    enchantments: [UNBREAKING:3]
+    recipe: [SHIELD, GLASS:32, DIAMOND_BLOCK:2, FRAGMENT_T3:2]
+
+  # --------------------------------------------------------------------------
+  # Battle Horn -- team support with modest buffs. Rally: you and allies fighting near you fill the
+  # meter (the horn must be in your hand or hotbar). War Cry: Speed for allies. Dreadful Roar
+  # pushes and weakens enemies near you. Call to War: Strength for allies, and enemies within a
+  # limited radius glow.
+  # --------------------------------------------------------------------------
+  battle-horn:
+    display-name: "§4§lBattle Horn"
+    ritual-colors: ["#C8462A", "#E0B050"]
+    material: GOAT_HORN
+    custom-model-data: 34
+    power-tier: 2
+    abilities:
+      rally-radius: 12.0
+      rally-charge-per-hit: 3.0         # half for hits on mobs
+      war-cry-cooldown: 400             # 20s
+      war-cry-radius: 10.0
+      war-cry-duration: 120             # 6s
+      war-cry-speed: 1                  # Speed I
+      roar-cooldown: 360                # 18s
+      roar-radius: 6.0
+      roar-damage: 0.0
+      roar-knockback: 0.9
+      roar-weakness: 1                  # Weakness I
+      roar-weakness-duration: 100
+      ultimate-charge-max: 100.0
+      ultimate-charge-per-hit: 3.0
+      ultimate-charge-per-ability: 10.0
+      charge-drain-delay: 300
+      charge-drain-per-second: 1.0
+      call-ally-radius: 12.0
+      call-duration: 160                # 8s
+      call-strength: 1                  # Strength I
+      call-reveal-radius: 30.0
+    enchantments: []
+    recipe: [GOAT_HORN, BELL, GOLD_BLOCK:4, FRAGMENT_T2:2]
+
 # ============================================================================
 #  Rituals
 # ============================================================================
@@ -868,6 +1335,10 @@ events:
       book: [BOOK, WRITABLE_BOOK]
       lead: [LEAD]
       breeze_rod: [BREEZE_ROD, BLAZE_ROD]
+      blaze_rod: [BLAZE_ROD, BREEZE_ROD]
+      hoe: [DIAMOND_HOE, NETHERITE_HOE]
+      shield: [SHIELD]
+      goat_horn: [GOAT_HORN]
     fight-timeout: 15          # SECONDS without a hit between the two before the echo turns back
     max-distance: 48.0         # ...or when they are further apart than this
     include-admins: true       # admins can be picked too

@@ -91,7 +91,7 @@ public class AbyssalTridentListener extends UltimateWeapon {
       }
 
       Player attacker = null;
-      if (event.getDamager() instanceof Player player && this.isHolding(player)) {
+      if (event.getDamager() instanceof Player player && this.passive(player) > 0.0) {
          attacker = player;
       } else if (event.getDamager() instanceof Trident trident && trident.getShooter() instanceof Player thrower && this.isThisWeapon(trident.getItemStack())) {
          attacker = thrower;
@@ -105,7 +105,7 @@ public class AbyssalTridentListener extends UltimateWeapon {
       Pressure before = this.pressure.get(attacker.getUniqueId());
       int stacks = before != null && before.target().equals(target.getUniqueId()) ? Math.min(max, this.stacks(attacker) + 1) : 1;
       this.pressure.put(attacker.getUniqueId(), new Pressure(target.getUniqueId(), stacks, System.currentTimeMillis()));
-      event.setDamage(event.getDamage() + (stacks - 1) * this.ability("pressure-damage-per-stack", 0.5));
+      event.setDamage(event.getDamage() + (stacks - 1) * this.ability("pressure-damage-per-stack", 0.5) * (event.getDamager() instanceof Trident ? 1.0 : this.passive(attacker)));
       ParticleManager.spawn(Particle.BUBBLE_POP, target.getLocation().add(0, 1, 0), 4 + stacks * 2, 0.3, 0.4, 0.3, 0.05);
    }
 

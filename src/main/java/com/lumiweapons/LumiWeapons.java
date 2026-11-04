@@ -66,6 +66,8 @@ public class LumiWeapons extends JavaPlugin {
    private com.lumiweapons.listeners.TalariaListener talariaListener;
    private com.lumiweapons.listeners.OculusListener oculusListener;
    private com.lumiweapons.listeners.HorizonListener horizonListener;
+   private com.lumiweapons.listeners.ChakramListener chakramListener;
+   private com.lumiweapons.listeners.GolemGauntletListener golemGauntletListener;
    private com.lumiweapons.managers.ConfigCheck configCheck;
    private WeaponManager weaponManager;
    private RitualManager ritualManager;
@@ -177,6 +179,25 @@ public class LumiWeapons extends JavaPlugin {
       this.abilityDispatcher.register(crescentListener);
       this.abilityDispatcher.register(oculusListener);
       this.abilityDispatcher.register(horizonListener);
+      Listener[] legendaries = {
+         new com.lumiweapons.listeners.EarthshakerListener(this),
+         new com.lumiweapons.listeners.AbyssalTridentListener(this),
+         new com.lumiweapons.listeners.ShadowbladesListener(this),
+         new com.lumiweapons.listeners.PhoenixWandListener(this),
+         new com.lumiweapons.listeners.GlacialGlaiveListener(this),
+         new com.lumiweapons.listeners.SeraphicScepterListener(this),
+         new com.lumiweapons.listeners.ArcaneCrossbowListener(this),
+         this.chakramListener = new com.lumiweapons.listeners.ChakramListener(this),
+         this.golemGauntletListener = new com.lumiweapons.listeners.GolemGauntletListener(this),
+         new com.lumiweapons.listeners.ChronoscourgeListener(this),
+         new com.lumiweapons.listeners.MirrorShieldListener(this),
+         new com.lumiweapons.listeners.BattleHornListener(this)
+      };
+      for (Listener legendary : legendaries) {
+         this.abilityDispatcher.register((com.lumiweapons.abilities.WeaponAbility)legendary);
+         this.getServer().getPluginManager().registerEvents(legendary, this);
+      }
+
       new CommandManager(this, this.swordOfEclipseListener, this.abilityDispatcher);
       TrustCommand trustCommand = new TrustCommand(this, this.trustManager);
 
@@ -232,6 +253,8 @@ public class LumiWeapons extends JavaPlugin {
          this.talariaListener.cleanup();                   // floating shields, the eye, falling arrows
          this.oculusListener.cleanup();
          this.horizonListener.cleanup();
+         this.chakramListener.cleanup();                 // chakrams in the air
+         this.golemGauntletListener.cleanup();           // stone walls and Colossi
       }
 
       if (this.bossManager != null) {

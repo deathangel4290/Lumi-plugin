@@ -128,7 +128,7 @@ public class ChakramListener extends UltimateWeapon {
     * wall turns it back early. If it hit anyone, the Returning Edge sharpens the next melee hit.
     */
    private void throwDisc(Player player, Vector direction, double distance, double damage, boolean spectral) {
-      Vector heading = horizontal(direction).lengthSquared() < 1.0E-4 ? direction.clone().normalize() : direction.clone().normalize();
+      Vector heading = direction.clone().normalize();
       Location at = player.getEyeLocation().subtract(0, 0.4, 0);
       ItemDisplay disc = this.spawnDisc(player, at, spectral);
       double speed = this.ability("throw-speed", 1.1);

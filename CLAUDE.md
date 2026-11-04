@@ -61,7 +61,12 @@ Renaming either side breaks the other, so change both in the same commit or leav
 - **Weapon models:** item model ids and custom_model_data numbers are set in `config.yml`; the pack's
   `assets/minecraft/items/*.json` must match them. Numbers in use on `netherite_sword`:
   1, 2, 4, 7, 8, 10, 15/16 (the Eclipse split blades), 17 Talaria, 18 Twin Requiem, 19 Crescent,
-  20 Oculus; `bow` 21 Horizon; `shield` 22 Talaria's floating shield. Pick a new number above 22.
+  20 Oculus; `bow` 21 Horizon; `shield` 22 Talaria's floating shield. The twelve after those (see
+  `docs/NEW_WEAPONS.md`): 23 Earthshaker (`mace`), 24 Abyssal Trident (`trident`), 25 Shadowblades,
+  27 Glacial Glaive, 30 Chakram (`netherite_sword`), 26 Phoenix Wand (`blaze_rod`), 28 Seraphic
+  Scepter (`breeze_rod`), 29 Arcane Crossbow (`crossbow`), 31 Golem Gauntlet (`netherite_axe`),
+  32 Chronoscourge (`netherite_hoe`), 33 Mirror Shield (`shield`), 34 Battle Horn (`goat_horn`).
+  Pick a new number above 34.
 - **Optional model switched on in config:** `weapons.oculus.eye-model` (Judgement's giant eye, e.g.
   `luminara:vfx/oculus_eye`). Empty = an Eye of Ender. Talaria's shield is `shield-model-data: 22`.
 
@@ -69,7 +74,10 @@ Renaming either side breaks the other, so change both in the same commit or leav
 
 Weapons with an ultimate extend `abilities/UltimateWeapon`: the meter (hits and ability use fill
 it, it drains out of combat), the HUD segment, and shared targeting (`around`, `arc`). The ability
-key is the ability; sneak + ability key is the ultimate.
+key is Ability 1 (`firstAbility`), sneak + ability key is Ability 2 (`secondAbility`), and a
+double-tap of the ability key (`ultimates.double-tap-millis`) fires the ultimate when the meter is
+full. A weapon whose abilities work from the off-hand (a shield) goes in
+`AbilityDispatcher.OFF_HAND_WIELDED` and overrides `wields()`.
 
 ## Lore
 

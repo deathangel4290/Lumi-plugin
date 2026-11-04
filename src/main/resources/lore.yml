@@ -175,7 +175,8 @@ blade-of-talaria:
     - "~In the off-hand it's your shield: any sword in the main hand, Talaria to block."
   ability:
     - "Block and hit players | fill Divine Ascension"
-    - "Divine Ascension | rise in light, untouchable for {s:ascension-duration}"
+    - "Double-tap ability | Divine Ascension, once charged"
+    - "~Rise in light, untouchable for {s:ascension-duration}."
     - "~Anyone right beside you is thrown back."
 
 twin-requiem:
@@ -187,7 +188,7 @@ twin-requiem:
   ability:
     - "Cross Reap | a forward sweep for {h:cross-reap-damage}❤"
     - "~Then the backswing all round you, {h:cross-reap-backswing-damage}❤ ({x:cross-reap-connect-bonus} if the first landed)."
-    - "Sneak + ability | Final Harvest, once charged"
+    - "Double-tap ability | Final Harvest, once charged"
     - "~After a {s:final-harvest-windup} wind-up, {h:final-harvest-damage}❤ to everyone within {n:final-harvest-radius} blocks, and slows."
   cooldowns:
     - "Cross Reap | {s:cross-reap-cooldown}"
@@ -197,7 +198,7 @@ crescent:
   ability:
     - "Harvest Mark | cut the enemy in front, mark them for {s:mark-duration}"
     - "~{n:mark-hits} hits on the marked enemy detonate it for {h:mark-detonation-damage}❤."
-    - "Sneak + ability | Moonlit Execution, once charged"
+    - "Double-tap ability | Moonlit Execution, once charged"
     - "~Three quick slashes in front of you, then a final strike:"
     - "~{h:execution-final-damage}❤, +{h:execution-final-per-slash}❤ for each slash that landed."
   cooldowns:
@@ -213,7 +214,7 @@ oculus:
   ability:
     - "Eye Beam | {h:beam-damage}❤ and Slowness for {s:beam-slow-duration}"
     - "~It charges for {s:beam-charge}: step out of its line and it misses."
-    - "Sneak + ability | Judgement of Oculus, once charged"
+    - "Double-tap ability | Judgement of Oculus, once charged"
     - "~A giant eye marks the ground where you look; after {s:judgement-delay}"
     - "~it strikes everyone still inside for {h:judgement-damage}❤."
   cooldowns:
@@ -230,8 +231,203 @@ horizon:
   ability:
     - "Piercing Arrow | {h:piercing-damage}❤, through {n:piercing-pierce} enemy"
     - "~A raised shield still stops it."
-    - "Sneak + ability | Heaven's Fall, once charged"
+    - "Double-tap ability | Heaven's Fall, once charged"
     - "~Marks where it lands, then falls after {s:heavens-fall-charge}:"
     - "~up to {h:heavens-fall-damage}❤ in the centre. Cover blocks it."
   cooldowns:
     - "Piercing Arrow | {s:piercing-cooldown}"
+
+earthshaker-hammer:
+  flavour: "The ground remembers every blow."
+  passives:
+    - "Full swings | Heavy Impact: {h:impact-damage}❤ to everyone within {n:impact-radius} blocks"
+  ability:
+    - "Groundbreaker | a shockwave around you, {h:groundbreaker-damage}❤"
+    - "~Within {n:groundbreaker-radius} blocks, and knocks them back."
+    - "Sneak + ability | Fissure: the ground cracks {n:fissure-length} blocks ahead"
+    - "~{h:fissure-damage}❤ and Slowness for {s:fissure-slow-duration}."
+    - "Double-tap ability | Cataclysm, once charged"
+    - "~Leap and crash down: up to {h:cataclysm-damage}❤ within {n:cataclysm-radius} blocks, launching them."
+  cooldowns:
+    - "Groundbreaker | {s:groundbreaker-cooldown}"
+    - "Fissure | {s:fissure-cooldown}"
+  notes:
+    - "Slow and heavy. It never breaks blocks."
+
+abyssal-trident:
+  flavour: "Pulled from where light never reached."
+  passives:
+    - "Hits on the same enemy | Deep Pressure, +{h:pressure-damage-per-stack}❤ a stack"
+    - "~Up to {n:pressure-max-stacks} stacks; {s:pressure-window} without a hit clears them."
+  ability:
+    - "Tidal Pull | a water bolt drags an enemy toward you, {h:pull-damage}❤"
+    - "~The same enemy can't be pulled again for {s:pull-immunity}."
+    - "Sneak + ability | Undertow: a wave that pushes enemies away"
+    - "Double-tap ability | Abyssal Surge, once charged"
+    - "~A tidal wave {n:surge-length} blocks long: {h:surge-damage}❤, and it carries them."
+  cooldowns:
+    - "Tidal Pull | {s:pull-cooldown}"
+    - "Undertow | {s:undertow-cooldown}"
+
+shadowblades:
+  flavour: "Two shadows that bleed."
+  passives:
+    - "Hits | Blood Mark on the target, up to {n:mark-max}"
+    - "~Marks fade after {s:mark-window} without a hit."
+  ability:
+    - "Shadowstep | dash the way you're moving"
+    - "Sneak + ability | Crosscut: {h:crosscut-damage}❤ in front of you"
+    - "~+{h:crosscut-bonus-damage}❤ on a marked target."
+    - "Double-tap ability | Execution, once charged"
+    - "~Appear behind the enemy you look at and strike:"
+    - "~{h:execution-damage}❤, +{h:execution-damage-per-mark}❤ for each Blood Mark."
+  cooldowns:
+    - "Shadowstep | {s:shadowstep-cooldown}"
+    - "Crosscut | {s:crosscut-cooldown}"
+
+phoenix-wand:
+  flavour: "Every ending is a spark."
+  passives:
+    - "Firebolt hits | Embers fill Rebirth"
+  ability:
+    - "Firebolt | a fireball, up to {h:firebolt-damage}❤ where it bursts"
+    - "~{n:firebolt-charges} charges, one back every {s:firebolt-recharge}."
+    - "Sneak + ability | Phoenix Flight: thrown up and forward"
+    - "Double-tap ability | Rebirth, once charged"
+    - "~Erupt in fire: {h:rebirth-damage}❤ within {n:rebirth-radius} blocks,"
+    - "~then absorption hearts and fire resistance for {s:rebirth-shield-duration}."
+  cooldowns:
+    - "Phoenix Flight | {s:flight-cooldown}"
+  notes:
+    - "Fire never spreads to blocks."
+
+glacial-glaive:
+  flavour: "Winter, sharpened."
+  passives:
+    - "Hits | Frost on the target, up to {n:frost-max-stacks}"
+    - "~{n:frost-slow-at} stacks slow them; full Frost slows them hard."
+  ability:
+    - "Ice Lance | pierces a line, {h:lance-damage}❤ to each"
+    - "Sneak + ability | Frozen Ground where you look"
+    - "~Enemies on it are slowed and frost over, for {s:ground-duration}."
+    - "Double-tap ability | Absolute Zero, once charged"
+    - "~{h:zero-damage}❤ within {n:zero-radius} blocks, full Frost, rooted for {s:root-duration}."
+  cooldowns:
+    - "Ice Lance | {s:lance-cooldown}"
+    - "Frozen Ground | {s:ground-cooldown}"
+  notes:
+    - "The same enemy can't be rooted again for {s:root-immunity}."
+
+seraphic-scepter:
+  flavour: "Light that refuses to let you fall."
+  passives:
+    - "Healing allies | Divine Light fills Sanctuary"
+  ability:
+    - "Healing Ray | heal the ally you look at by {h:ray-heal}❤"
+    - "Sneak + ability | Blessing: Resistance for allies in a circle"
+    - "~{n:blessing-radius} blocks, for {s:blessing-duration}."
+    - "Double-tap ability | Divine Sanctuary, once charged"
+    - "~Allies within {n:sanctuary-radius} blocks heal slowly for {s:sanctuary-duration}."
+  cooldowns:
+    - "Healing Ray | {s:ray-cooldown}"
+    - "Blessing | {s:blessing-cooldown}"
+  notes:
+    - "Nobody can be healed more than {h:heal-cap}❤ every {s:heal-cap-window}."
+
+arcane-crossbow:
+  flavour: "Each bolt remembers the last."
+  passives:
+    - "Your bolts that hit | Arcane Charge fills Starfall"
+  ability:
+    - "Ricochet Bolt | {h:ricochet-damage}❤, bounces off {n:ricochet-bounces} walls"
+    - "~Then jumps once to an enemy within {n:ricochet-jump-range} blocks."
+    - "Sneak + ability | Triple Shot: three bolts, {h:triple-damage}❤ each"
+    - "Double-tap ability | Starfall, once charged"
+    - "~Marks the ground where you aim; after {s:starfall-warning} bolts rain down there."
+  cooldowns:
+    - "Ricochet Bolt | {s:ricochet-cooldown}"
+    - "Triple Shot | {s:triple-cooldown}"
+  notes:
+    - "Nothing homes: it rewards aim."
+
+chakram-of-chaos:
+  flavour: "What goes out comes back sharper."
+  passives:
+    - "A Spiral Throw comes home after hitting | Returning Edge"
+    - "~Your next hit within {s:edge-duration} deals +{h:edge-bonus-damage}❤."
+  ability:
+    - "Spiral Throw | out {n:throw-distance} blocks and back"
+    - "~{h:throw-damage}❤ on the way out, and again on the way back."
+    - "Sneak + ability | Orbit: it circles you for {s:orbit-duration}"
+    - "~{h:orbit-damage}❤ to anyone it touches."
+    - "Double-tap ability | Chaos Storm, once charged"
+    - "~{n:storm-chakrams} spectral chakrams fly out all round you and back."
+  cooldowns:
+    - "Spiral Throw | {s:throw-cooldown}"
+    - "Orbit | {s:orbit-cooldown}"
+  notes:
+    - "The chakram itself stays in your hand."
+
+golem-gauntlet:
+  flavour: "Stone does not forget a blow."
+  passives:
+    - "Taking damage | Stone Skin fills Colossus"
+  ability:
+    - "Boulder Punch | {h:punch-damage}❤ and knocks them far back"
+    - "Sneak + ability | Stone Wall: {n:wall-width} wide, {n:wall-height} high"
+    - "~Stops people and projectiles; crumbles after {s:wall-duration}."
+    - "Double-tap ability | Colossus, once charged"
+    - "~A stone golem fights for you for {s:colossus-duration}."
+  cooldowns:
+    - "Boulder Punch | {s:punch-cooldown}"
+    - "Stone Wall | {s:wall-cooldown}"
+  notes:
+    - "The wall only fills air and drops nothing. The Colossus never attacks you or your allies."
+
+chronoscourge:
+  flavour: "It cuts the moment, not the man."
+  passives:
+    - "Hits | Time Fracture fills Time Collapse"
+  ability:
+    - "Time Snare | a field where you look slows enemies"
+    - "~{n:snare-radius} blocks, for {s:snare-duration}."
+    - "Sneak + ability | Rewind: back to where you were {s:rewind-ticks-back} ago"
+    - "~Only if it's within {n:rewind-max-distance} blocks. It never heals you."
+    - "Double-tap ability | Time Collapse, once charged"
+    - "~Enemies and their projectiles crawl within {n:collapse-radius} blocks, for {s:collapse-duration}."
+  cooldowns:
+    - "Time Snare | {s:snare-cooldown}"
+    - "Rewind | {s:rewind-cooldown}"
+
+mirror-shield:
+  flavour: "It gives back what it is given."
+  passives:
+    - "Block a hit | store Reflection energy"
+    - "~Raise it just before the hit lands to store the whole blow."
+    - "~Works in either hand."
+  ability:
+    - "Mirror Parry | for {s:parry-window}, hits from any side lose {pct:parry-reduction}"
+    - "Sneak + ability | Reflect: fire the stored energy as a bolt"
+    - "~Up to {h:reflect-damage-cap}❤, depending on what you absorbed."
+    - "Double-tap ability | Mirror Realm, once charged"
+    - "~For {s:realm-duration}, enemy projectiles are thrown back and allies inside take {pct:realm-damage-reduction} less."
+  cooldowns:
+    - "Mirror Parry | {s:parry-cooldown}"
+    - "Reflect | {s:reflect-cooldown}"
+  notes:
+    - "Only blows and projectiles: not explosions, magic, fire or falls."
+
+battle-horn:
+  flavour: "Heard by friend and foe alike."
+  passives:
+    - "Fighting near allies | Rally fills Call to War"
+    - "~The horn must be in your hand or hotbar."
+  ability:
+    - "War Cry | Speed for allies within {n:war-cry-radius} blocks, {s:war-cry-duration}"
+    - "Sneak + ability | Dreadful Roar: pushes enemies back"
+    - "~Weakness for {s:roar-weakness-duration}, within {n:roar-radius} blocks."
+    - "Double-tap ability | Call to War, once charged"
+    - "~Strength for allies for {s:call-duration}; enemies within {n:call-reveal-radius} blocks glow."
+  cooldowns:
+    - "War Cry | {s:war-cry-cooldown}"
+    - "Dreadful Roar | {s:roar-cooldown}"
