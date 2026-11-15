@@ -1,0 +1,26 @@
+{
+  "model": {
+    "type": "minecraft:range_dispatch",
+    "property": "minecraft:custom_model_data",
+    "index": 0,
+    "entries": [
+      {
+        "threshold": 28,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/breeze_rod",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 16773808
+            }
+          ]
+        }
+      }
+    ],
+    "fallback": {
+      "type": "minecraft:model",
+      "model": "minecraft:item/breeze_rod"
+    }
+  }
+}

@@ -20,10 +20,15 @@ of Ender scaled up.
 
 # The twelve after those: models wanted
 
-Code, config and lore are done (plugin session, 2026-11-04). The weapons work now and look like
-the plain item until the pack has these. Add a `custom_model_data` range-dispatch entry for each
-number to the item's `assets/minecraft/items/<item>.json` (new files for the items that have
-none yet).
+Code, config and lore are done (plugin session, 2026-11-04). Since 2026-11-15 each number has a
+**placeholder** entry in the item definitions (made by `tools/pack_placeholders.py`): the vanilla
+item tinted in the weapon's colour, or the plain vanilla look where the game draws the item
+specially (trident in hand, shield). Replace each placeholder entry with the real model when it's
+made. The new files `blaze_rod.json`, `breeze_rod.json`, `netherite_hoe.json` and
+`goat_horn.json` are vanilla definitions with these entries added.
+
+Without its own entry, a weapon borrows the look of the legendary with the next lower number
+(the Shadowblades showed up as Oculus), so every weapon must keep one.
 
 | Weapon (config key) | Item | custom_model_data | Look |
 |---|---|---|---|

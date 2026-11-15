@@ -25,6 +25,19 @@
             "model": "luminara:item/luminosity_3d"
           }
         }
+      },
+      {
+        "threshold": 23,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/mace",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 14721088
+            }
+          ]
+        }
       }
     ],
     "fallback": {

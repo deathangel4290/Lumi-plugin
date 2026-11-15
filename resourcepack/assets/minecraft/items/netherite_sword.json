@@ -267,6 +267,45 @@
             "model": "luminara:item/oculus_3d"
           }
         }
+      },
+      {
+        "threshold": 25,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/iron_sword",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 11542574
+            }
+          ]
+        }
+      },
+      {
+        "threshold": 27,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/iron_sword",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 11068671
+            }
+          ]
+        }
+      },
+      {
+        "threshold": 30,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/iron_sword",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 9403391
+            }
+          ]
+        }
       }
     ],
     "fallback": {

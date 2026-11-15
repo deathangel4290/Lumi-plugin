@@ -28,6 +28,16 @@
               "model": "luminara:item/talaria_shield_3d"
             }
           }
+        },
+        {
+          "threshold": 33,
+          "model": {
+            "type": "minecraft:special",
+            "base": "minecraft:item/shield",
+            "model": {
+              "type": "minecraft:shield"
+            }
+          }
         }
       ],
       "fallback": {
@@ -62,6 +72,16 @@
             "fallback": {
               "type": "minecraft:model",
               "model": "luminara:item/talaria_shield_3d_blocking"
+            }
+          }
+        },
+        {
+          "threshold": 33,
+          "model": {
+            "type": "minecraft:special",
+            "base": "minecraft:item/shield_blocking",
+            "model": {
+              "type": "minecraft:shield"
             }
           }
         }

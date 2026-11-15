@@ -49,6 +49,19 @@
         }
       },
       {
+        "threshold": 31,
+        "model": {
+          "type": "minecraft:model",
+          "model": "minecraft:item/iron_axe",
+          "tints": [
+            {
+              "type": "minecraft:constant",
+              "value": 9079424
+            }
+          ]
+        }
+      },
+      {
         "threshold": 303,
         "model": {
           "type": "minecraft:select",

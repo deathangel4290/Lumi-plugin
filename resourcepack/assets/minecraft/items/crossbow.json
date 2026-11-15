@@ -31,6 +31,19 @@
                   "model": "luminara:item/hellstorm_3d_arrow"
                 }
               }
+            },
+            {
+              "threshold": 29,
+              "model": {
+                "type": "minecraft:model",
+                "model": "minecraft:item/crossbow_arrow",
+                "tints": [
+                  {
+                    "type": "minecraft:constant",
+                    "value": 14072063
+                  }
+                ]
+              }
             }
           ],
           "fallback": {
@@ -66,6 +79,19 @@
                   "type": "minecraft:model",
                   "model": "luminara:item/hellstorm_3d_firework"
                 }
+              }
+            },
+            {
+              "threshold": 29,
+              "model": {
+                "type": "minecraft:model",
+                "model": "minecraft:item/crossbow_firework",
+                "tints": [
+                  {
+                    "type": "minecraft:constant",
+                    "value": 14072063
+                  }
+                ]
               }
             }
           ],
@@ -111,6 +137,19 @@
                       "model": "luminara:item/hellstorm_3d_pulling_1"
                     }
                   }
+                },
+                {
+                  "threshold": 29,
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "minecraft:item/crossbow_pulling_1",
+                    "tints": [
+                      {
+                        "type": "minecraft:constant",
+                        "value": 14072063
+                      }
+                    ]
+                  }
                 }
               ],
               "fallback": {
@@ -147,6 +186,19 @@
                       "model": "luminara:item/hellstorm_3d_pulling_2"
                     }
                   }
+                },
+                {
+                  "threshold": 29,
+                  "model": {
+                    "type": "minecraft:model",
+                    "model": "minecraft:item/crossbow_pulling_2",
+                    "tints": [
+                      {
+                        "type": "minecraft:constant",
+                        "value": 14072063
+                      }
+                    ]
+                  }
                 }
               ],
               "fallback": {
@@ -182,6 +234,19 @@
                   "model": "luminara:item/hellstorm_3d_pulling_0"
                 }
               }
+            },
+            {
+              "threshold": 29,
+              "model": {
+                "type": "minecraft:model",
+                "model": "minecraft:item/crossbow_pulling_0",
+                "tints": [
+                  {
+                    "type": "minecraft:constant",
+                    "value": 14072063
+                  }
+                ]
+              }
             }
           ],
           "fallback": {
@@ -215,6 +280,19 @@
                 "type": "minecraft:model",
                 "model": "luminara:item/hellstorm_3d_standby"
               }
+            }
+          },
+          {
+            "threshold": 29,
+            "model": {
+              "type": "minecraft:model",
+              "model": "minecraft:item/crossbow",
+              "tints": [
+                {
+                  "type": "minecraft:constant",
+                  "value": 14072063
+                }
+              ]
             }
           }
         ],

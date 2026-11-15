@@ -1,0 +1,54 @@
+{
+  "model": {
+    "type": "minecraft:condition",
+    "property": "minecraft:using_item",
+    "on_false": {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:custom_model_data",
+      "index": 0,
+      "entries": [
+        {
+          "threshold": 34,
+          "model": {
+            "type": "minecraft:model",
+            "model": "minecraft:item/goat_horn",
+            "tints": [
+              {
+                "type": "minecraft:constant",
+                "value": 14725200
+              }
+            ]
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/goat_horn"
+      }
+    },
+    "on_true": {
+      "type": "minecraft:range_dispatch",
+      "property": "minecraft:custom_model_data",
+      "index": 0,
+      "entries": [
+        {
+          "threshold": 34,
+          "model": {
+            "type": "minecraft:model",
+            "model": "minecraft:item/tooting_goat_horn",
+            "tints": [
+              {
+                "type": "minecraft:constant",
+                "value": 14725200
+              }
+            ]
+          }
+        }
+      ],
+      "fallback": {
+        "type": "minecraft:model",
+        "model": "minecraft:item/tooting_goat_horn"
+      }
+    }
+  }
+}

@@ -66,7 +66,10 @@ Renaming either side breaks the other, so change both in the same commit or leav
   27 Glacial Glaive, 30 Chakram (`netherite_sword`), 26 Phoenix Wand (`blaze_rod`), 28 Seraphic
   Scepter (`breeze_rod`), 29 Arcane Crossbow (`crossbow`), 31 Golem Gauntlet (`netherite_axe`),
   32 Chronoscourge (`netherite_hoe`), 33 Mirror Shield (`shield`), 34 Battle Horn (`goat_horn`).
-  Pick a new number above 34.
+  Pick a new number above 34. **Every weapon needs its own entry** in each custom_model_data
+  dispatch of its item: without one it borrows the look of the next lower number.
+  `tools/pack_placeholders.py` adds a tinted placeholder for any number that has none and never
+  changes an existing entry, so run it after adding a weapon.
 - **Optional model switched on in config:** `weapons.oculus.eye-model` (Judgement's giant eye, e.g.
   `luminara:vfx/oculus_eye`). Empty = an Eye of Ender. Talaria's shield is `shield-model-data: 22`.
 
