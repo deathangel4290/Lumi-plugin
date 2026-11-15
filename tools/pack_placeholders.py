@@ -14,6 +14,7 @@ Where the vanilla item draws itself with a special renderer (a trident in the ha
 the placeholder is the plain vanilla look there, since a tint can't apply to those.
 
 Run from the repository root:  python3 tools/pack_placeholders.py
+With --check it only reports weapons without their own entry and changes nothing.
 """
 import json
 import os
@@ -89,6 +90,7 @@ def wrap(vanilla):
 
 
 def main():
+    check = "--check" in sys.argv
     config = yaml.safe_load(open("src/main/resources/config.yml"))
     added = 0
     for key, weapon in config["weapons"].items():
@@ -112,17 +114,24 @@ def main():
         for node in dispatches(definition):
             if any(entry["threshold"] == cmd for entry in node["entries"]):
                 continue
+            if check:
+                print(f"!! {key}: no entry of its own at {cmd} in {item}.json")
+                added += 1
+                break
             node["entries"].append({"threshold": cmd, "model": placeholder(node["fallback"], tint_of(weapon))})
             node["entries"].sort(key=lambda entry: entry["threshold"])
             changed = True
 
-        if changed:
+        if changed and not check:
             with open(path, "w") as out:
                 json.dump(definition, out, indent=2)
                 out.write("\n")
             added += 1
             print(f"+ {key}: placeholder at {cmd} in {item}.json")
 
+    if check:
+        print("pack: ok" if added == 0 else f"pack: {added} weapon(s) without their own entry")
+        return 1 if added else 0
     print(f"{added} weapon(s) given placeholder entries")
     return 0
 

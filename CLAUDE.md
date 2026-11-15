@@ -8,7 +8,7 @@ models for the bosses and the Token Trader (`bettermodel/models/`).
 
 | Session | Owns |
 |---|---|
-| Plugin session (cloud) | Java code, `config.yml`, `plugin.yml`, `pom.xml`, docs, building the jar |
+| Plugin session (cloud or local) | Java code, `config.yml`, `plugin.yml`, `pom.xml`, docs, building the jar |
 | Art session (local, Windows) | Resource pack art: textures, item models, `.bbmodel` files, `docs/previews/` |
 
 Either one may touch the other's area when a change needs both sides, but say so in the commit
@@ -108,6 +108,9 @@ namespace, so things made before the rename still work. Always make tag keys wit
 
 - `mvn -B package` produces `target/LumiWeapons-1.3.0.jar`. It needs paper-api 1.21.11 and
   BetterModel's `bettermodel-api` and `bettermodel-bukkit-api` 2.2.0 (provided; not shaded).
+- **Checks without a server:** `tools/check.sh` builds, runs `ConfigCheck` on the stock
+  `config.yml`, checks `lore.yml` placeholders and checks every weapon has its own pack entry.
+  Run it before pushing. (Offline: `MVN_OFFLINE=-o tools/check.sh`.)
 - **Cloud sessions can't reach repo.papermc.io.** Run `tools/build-paper-api.sh` once per container:
   it builds paper-api 1.21.11 from Paper's GitHub source (and brigadier from Mojang's) and installs
   it in `~/.m2`, then `mvn -B -o package` works.
